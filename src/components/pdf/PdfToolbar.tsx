@@ -7,12 +7,15 @@ interface PdfToolbarProps {
   totalPages: number;
   zoom: number;
   highlightMode: boolean;
+  isSpeaking: boolean;
   onPrevPage: () => void;
   onNextPage: () => void;
   onGoToPage: (page: number) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onToggleHighlightMode: () => void;
+  onReadPage: () => void;
+  onReadSelection: () => void;
 }
 
 export default function PdfToolbar({
@@ -20,12 +23,15 @@ export default function PdfToolbar({
   totalPages,
   zoom,
   highlightMode,
+  isSpeaking,
   onPrevPage,
   onNextPage,
   onGoToPage,
   onZoomIn,
   onZoomOut,
   onToggleHighlightMode,
+  onReadPage,
+  onReadSelection,
 }: PdfToolbarProps) {
   const [pageInput, setPageInput] = useState("");
 
@@ -92,6 +98,25 @@ export default function PdfToolbar({
           }`}
         >
           {highlightMode ? "Highlighting ON" : "Highlight"}
+        </button>
+
+        <div className="w-px h-5 bg-gray-300" />
+
+        <button
+          onClick={onReadPage}
+          disabled={isSpeaking}
+          className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-40"
+          title="Read the current page aloud"
+        >
+          Read Page
+        </button>
+        <button
+          onClick={onReadSelection}
+          disabled={isSpeaking}
+          className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-40"
+          title="Read selected text aloud"
+        >
+          Read Selection
         </button>
 
         <div className="w-px h-5 bg-gray-300" />

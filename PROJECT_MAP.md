@@ -2,7 +2,7 @@
 
 > This file is kept up to date as the project evolves. It describes every folder and file so you always know what's where.
 
-**Last updated:** 2026-03-30 (Phase 6 — OCR)
+**Last updated:** 2026-03-30 (Phase 7 — Text-to-Speech)
 
 ---
 
@@ -97,13 +97,22 @@ CeriseScholar/
 │   │   ├── usePdf.ts                  # Hook for PDF loading, page nav, zoom
 │   │   ├── useHighlights.ts           # CRUD for highlights + auto-creates lit review entry
 │   │   ├── useAnnotations.ts          # CRUD for sticky notes/comments
-│   │   └── useLiteratureReview.ts     # Fetch, update, delete lit review entries
+│   │   ├── useLiteratureReview.ts     # Fetch, update, delete lit review entries
+│   │   └── useTts.ts                  # TTS state management (speaking, paused, voices)
 │   │
 │   ├── components/ocr/
 │   │   └── OcrStatusBadge.tsx         # Shows OCR status (Pending/Processing/Ready/Failed)
 │   │
 │   ├── lib/ocr/
 │   │   └── runOcr.ts                  # Client-side utility to trigger OCR API
+│   │
+│   ├── lib/tts/
+│   │   └── speak.ts                   # Web Speech API wrapper (speak, pause, stop)
+│   │
+│   ├── lib/pdf/extractText.ts         # Extracts text from a PDF page
+│   │
+│   ├── components/tts/
+│   │   └── TtsControls.tsx            # Play/pause/stop, speed slider, voice selector
 │   │
 │   ├── lib/pdf/
 │   │   └── loadPdf.ts                 # Loads a PDF document using PDF.js
@@ -168,5 +177,5 @@ CeriseScholar/
 - [x] Phase 4: Highlighting + Annotations
 - [x] Phase 5: Literature Review Table
 - [x] Phase 6: OCR
-- [ ] Phase 7: Text-to-Speech
+- [x] Phase 7: Text-to-Speech
 - [ ] Phase 8: Polish + Landing Page + Cloudflare Deployment

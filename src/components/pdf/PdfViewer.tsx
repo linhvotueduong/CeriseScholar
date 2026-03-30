@@ -4,8 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { usePdf } from "@/hooks/usePdf";
 import { useHighlights } from "@/hooks/useHighlights";
 import { useAnnotations } from "@/hooks/useAnnotations";
+import { useTts } from "@/hooks/useTts";
+import { extractPageText } from "@/lib/pdf/extractText";
 import PdfPage from "./PdfPage";
 import PdfToolbar from "./PdfToolbar";
+import TtsControls from "@/components/tts/TtsControls";
 import AnnotationSidebar from "@/components/annotations/AnnotationSidebar";
 import NoteModal from "@/components/annotations/NoteModal";
 import Spinner from "@/components/ui/Spinner";
@@ -34,6 +37,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
 
   const { highlights, createHighlight, deleteHighlight } = useHighlights(pdfId);
   const { annotations, createAnnotation } = useAnnotations(pdfId);
+  const tts = useTts();
 
   const [highlightMode, setHighlightMode] = useState(false);
   const [noteModal, setNoteModal] = useState<{
@@ -84,6 +88,32 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
     [pdfId, noteModal, createAnnotation]
   );
 
+  // TTS: Read the entire current page
+  const handleReadPage = useCallback(async () => {
+    if (!document) return;
+    const text = await extractPageText(document, currentPage);
+    if (text) {
+      tts.speak(text);
+    }
+  }, [document, currentPage, tts]);
+
+  // TTS: Read currently selected text
+  const handleReadSelection = useCallback(() => {
+    const selection = window.getSelection();
+    const text = selection?.toString().trim();
+    if (text) {
+      tts.speak(text);
+    }
+  }, [tts]);
+
+  // TTS: Read a specific highlight's text
+  const handleReadHighlight = useCallback(
+    (text: string) => {
+      tts.speak(text);
+    },
+    [tts]
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -112,12 +142,15 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
           totalPages={totalPages}
           zoom={zoom}
           highlightMode={highlightMode}
+          isSpeaking={tts.isSpeaking}
           onPrevPage={prevPage}
           onNextPage={nextPage}
           onGoToPage={goToPage}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
           onToggleHighlightMode={() => setHighlightMode((m) => !m)}
+          onReadPage={handleReadPage}
+          onReadSelection={handleReadSelection}
         />
 
         <div
@@ -134,6 +167,20 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
             onCreateHighlight={handleCreateHighlight}
           />
         </div>
+
+        {/* TTS controls — shown at the bottom when speaking */}
+        <TtsControls
+          isSpeaking={tts.isSpeaking}
+          isPaused={tts.isPaused}
+          voices={tts.voices}
+          selectedVoice={tts.selectedVoice}
+          rate={tts.rate}
+          onPause={tts.pause}
+          onResume={tts.resume}
+          onStop={tts.stop}
+          onVoiceChange={tts.setSelectedVoice}
+          onRateChange={tts.setRate}
+        />
       </div>
 
       {/* Annotation sidebar */}
@@ -144,6 +191,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
         onGoToPage={goToPage}
         onDeleteHighlight={deleteHighlight}
         onAddNote={handleAddNote}
+        onReadHighlight={handleReadHighlight}
       />
 
       {/* Note modal */}

@@ -10,6 +10,7 @@ interface AnnotationSidebarProps {
   onGoToPage: (page: number) => void;
   onDeleteHighlight: (id: string) => void;
   onAddNote: (highlightId: string, pageNumber: number) => void;
+  onReadHighlight?: (text: string) => void;
 }
 
 export default function AnnotationSidebar({
@@ -19,6 +20,7 @@ export default function AnnotationSidebar({
   onGoToPage,
   onDeleteHighlight,
   onAddNote,
+  onReadHighlight,
 }: AnnotationSidebarProps) {
   const [filter, setFilter] = useState<"all" | "page">("all");
 
@@ -77,14 +79,25 @@ export default function AnnotationSidebar({
                   key={highlight.id}
                   className="p-3 hover:bg-gray-50 transition-colors"
                 >
-                  {/* Page badge + delete */}
+                  {/* Page badge + read aloud + delete */}
                   <div className="flex items-center justify-between mb-1">
-                    <button
-                      onClick={() => onGoToPage(highlight.page_number)}
-                      className="text-xs text-[#DE3163] font-medium hover:underline"
-                    >
-                      Page {highlight.page_number}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onGoToPage(highlight.page_number)}
+                        className="text-xs text-[#DE3163] font-medium hover:underline"
+                      >
+                        Page {highlight.page_number}
+                      </button>
+                      {onReadHighlight && (
+                        <button
+                          onClick={() => onReadHighlight(highlight.highlighted_text)}
+                          className="text-xs text-gray-400 hover:text-[#DE3163]"
+                          title="Read this highlight aloud"
+                        >
+                          &#9654;
+                        </button>
+                      )}
+                    </div>
                     <button
                       onClick={() => onDeleteHighlight(highlight.id)}
                       className="text-xs text-gray-400 hover:text-red-500"
