@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TextLayer } from "pdfjs-dist";
+import { TextLayer, setLayerDimensions } from "pdfjs-dist";
 import type { PDFDocumentProxy } from "@/lib/pdf/loadPdf";
 import HighlightLayer from "./HighlightLayer";
 import type { Highlight } from "@/types/annotation";
@@ -40,7 +40,7 @@ export default function PdfPage({
       const textLayerDiv = textLayerRef.current;
       if (!canvas || !textLayerDiv) return;
 
-      // Cancel any previous render on this canvas
+      // Cancel any previous render
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
         renderTaskRef.current = null;
@@ -52,6 +52,7 @@ export default function PdfPage({
       const viewport = page.getViewport({ scale: zoom });
       setPageDimensions({ width: viewport.width, height: viewport.height });
 
+      // Set canvas dimensions with device pixel ratio for sharp rendering
       const dpr = window.devicePixelRatio || 1;
       canvas.width = viewport.width * dpr;
       canvas.height = viewport.height * dpr;
@@ -61,6 +62,7 @@ export default function PdfPage({
       const ctx = canvas.getContext("2d")!;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+      // Render the page to canvas
       const renderTask = page.render({
         canvasContext: ctx,
         viewport,
@@ -70,16 +72,23 @@ export default function PdfPage({
       try {
         await renderTask.promise;
       } catch (err: unknown) {
-        if (err && typeof err === "object" && "name" in err && (err as { name: string }).name === "RenderingCancelledException") return;
+        if (
+          err &&
+          typeof err === "object" &&
+          "name" in err &&
+          (err as { name: string }).name === "RenderingCancelledException"
+        )
+          return;
         throw err;
       }
 
       if (cancelled) return;
 
-      // Build text layer
+      // Build the text layer
       textLayerDiv.innerHTML = "";
-      textLayerDiv.style.width = `${viewport.width}px`;
-      textLayerDiv.style.height = `${viewport.height}px`;
+
+      // Use setLayerDimensions for proper text positioning
+      setLayerDimensions(textLayerDiv, viewport);
 
       const textContent = await page.getTextContent();
       if (cancelled) return;
@@ -114,16 +123,17 @@ export default function PdfPage({
     <div
       className="relative inline-block shadow-lg bg-white mb-4"
       data-page-number={pageNumber}
+      style={{ width: pageDimensions.width || "auto", height: pageDimensions.height ? pageDimensions.height + 24 : "auto" }}
     >
       <canvas ref={canvasRef} className="block" />
 
-      {/* Text layer — must be ABOVE highlight layer for text selection */}
+      {/* Text layer — ABOVE highlight layer for text selection */}
       <div
         ref={textLayerRef}
-        className="absolute top-0 left-0 textLayer"
+        className="textLayer"
       />
 
-      {/* Highlight layer — renders colored rects BELOW text layer */}
+      {/* Highlight layer — renders colored rects, clipped to page */}
       <HighlightLayer
         highlights={highlights}
         pageNumber={pageNumber}
