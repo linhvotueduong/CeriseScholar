@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
-import * as pdfjs from "pdfjs-dist";
+import { useEffect, useRef, useState } from "react";
+import { TextLayer } from "pdfjs-dist";
 import type { PDFDocumentProxy } from "@/lib/pdf/loadPdf";
 import HighlightLayer from "./HighlightLayer";
 import type { Highlight } from "@/types/annotation";
@@ -29,72 +29,101 @@ export default function PdfPage({
 }: PdfPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
   const [pageDimensions, setPageDimensions] = useState({ width: 0, height: 0 });
 
-  const renderPage = useCallback(async () => {
-    const canvas = canvasRef.current;
-    const textLayerDiv = textLayerRef.current;
-    if (!canvas || !textLayerDiv) return;
+  useEffect(() => {
+    let cancelled = false;
 
-    const page = await document.getPage(pageNumber);
-    const viewport = page.getViewport({ scale: zoom });
+    async function renderPage() {
+      const canvas = canvasRef.current;
+      const textLayerDiv = textLayerRef.current;
+      if (!canvas || !textLayerDiv) return;
 
-    setPageDimensions({ width: viewport.width, height: viewport.height });
+      // Cancel any previous render on this canvas
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
 
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = viewport.width * dpr;
-    canvas.height = viewport.height * dpr;
-    canvas.style.width = `${viewport.width}px`;
-    canvas.style.height = `${viewport.height}px`;
+      const page = await document.getPage(pageNumber);
+      if (cancelled) return;
 
-    const ctx = canvas.getContext("2d")!;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const viewport = page.getViewport({ scale: zoom });
+      setPageDimensions({ width: viewport.width, height: viewport.height });
 
-    await page.render({
-      canvasContext: ctx,
-      viewport,
-    }).promise;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = viewport.width * dpr;
+      canvas.height = viewport.height * dpr;
+      canvas.style.width = `${viewport.width}px`;
+      canvas.style.height = `${viewport.height}px`;
 
-    textLayerDiv.innerHTML = "";
-    textLayerDiv.style.width = `${viewport.width}px`;
-    textLayerDiv.style.height = `${viewport.height}px`;
+      const ctx = canvas.getContext("2d")!;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const textContent = await page.getTextContent();
-    pdfjs.renderTextLayer({
-      textContentSource: textContent,
-      container: textLayerDiv,
-      viewport,
-    });
+      const renderTask = page.render({
+        canvasContext: ctx,
+        viewport,
+      });
+      renderTaskRef.current = renderTask;
+
+      try {
+        await renderTask.promise;
+      } catch (err: unknown) {
+        if (err && typeof err === "object" && "name" in err && (err as { name: string }).name === "RenderingCancelledException") return;
+        throw err;
+      }
+
+      if (cancelled) return;
+
+      // Build text layer
+      textLayerDiv.innerHTML = "";
+      textLayerDiv.style.width = `${viewport.width}px`;
+      textLayerDiv.style.height = `${viewport.height}px`;
+
+      const textContent = await page.getTextContent();
+      if (cancelled) return;
+
+      const textLayer = new TextLayer({
+        textContentSource: textContent,
+        container: textLayerDiv,
+        viewport,
+      });
+      await textLayer.render();
+    }
+
+    renderPage();
+
+    return () => {
+      cancelled = true;
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
+    };
   }, [document, pageNumber, zoom]);
 
-  useEffect(() => {
-    renderPage();
-  }, [renderPage]);
-
-  const handleCreateHighlight = useCallback(
-    (
-      text: string,
-      rects: { x: number; y: number; width: number; height: number }[]
-    ) => {
-      onCreateHighlight(pageNumber, text, rects);
-    },
-    [pageNumber, onCreateHighlight]
-  );
+  const handleCreateHighlight = (
+    text: string,
+    rects: { x: number; y: number; width: number; height: number }[]
+  ) => {
+    onCreateHighlight(pageNumber, text, rects);
+  };
 
   return (
     <div
-      ref={containerRef}
       className="relative inline-block shadow-lg bg-white mb-4"
       data-page-number={pageNumber}
     >
       <canvas ref={canvasRef} className="block" />
 
+      {/* Text layer — must be ABOVE highlight layer for text selection */}
       <div
         ref={textLayerRef}
         className="absolute top-0 left-0 textLayer"
       />
 
+      {/* Highlight layer — renders colored rects BELOW text layer */}
       <HighlightLayer
         highlights={highlights}
         pageNumber={pageNumber}
@@ -104,7 +133,6 @@ export default function PdfPage({
         onCreateHighlight={handleCreateHighlight}
       />
 
-      {/* Page number label */}
       <div className="text-center text-xs text-gray-400 py-1">
         Page {pageNumber}
       </div>
