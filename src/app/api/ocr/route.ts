@@ -61,7 +61,8 @@ export async function POST(request: Request) {
 
       // Combine all text items on this page
       const pageText = textContent.items
-        .map((item: { str?: string }) => item.str || "")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((item: any) => item.str || "")
         .join(" ")
         .trim();
 

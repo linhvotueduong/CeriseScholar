@@ -11,7 +11,8 @@ export async function extractPageText(
   const textContent = await page.getTextContent();
 
   return textContent.items
-    .map((item: { str?: string }) => item.str || "")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((item: any) => item.str || "")
     .join(" ")
     .trim();
 }

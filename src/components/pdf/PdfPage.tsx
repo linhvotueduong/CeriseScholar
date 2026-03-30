@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import * as pdfjs from "pdfjs-dist";
+import { renderTextLayer } from "pdfjs-dist";
 import type { PDFDocumentProxy } from "@/lib/pdf/loadPdf";
 import HighlightLayer from "./HighlightLayer";
 import type { Highlight } from "@/types/annotation";
@@ -64,7 +65,7 @@ export default function PdfPage({
 
     // Build the text layer (invisible but selectable text over the canvas)
     const textContent = await page.getTextContent();
-    await pdfjs.renderTextLayer({
+    await renderTextLayer({
       textContentSource: textContent,
       container: textLayerDiv,
       viewport,
