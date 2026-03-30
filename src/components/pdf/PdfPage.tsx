@@ -29,6 +29,7 @@ export default function PdfPage({
 }: PdfPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
   const [pageDimensions, setPageDimensions] = useState({ width: 0, height: 0 });
 
@@ -38,9 +39,9 @@ export default function PdfPage({
     async function renderPage() {
       const canvas = canvasRef.current;
       const textLayerDiv = textLayerRef.current;
-      if (!canvas || !textLayerDiv) return;
+      const container = containerRef.current;
+      if (!canvas || !textLayerDiv || !container) return;
 
-      // Cancel any previous render
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
         renderTaskRef.current = null;
@@ -52,7 +53,9 @@ export default function PdfPage({
       const viewport = page.getViewport({ scale: zoom });
       setPageDimensions({ width: viewport.width, height: viewport.height });
 
-      // Set canvas dimensions with device pixel ratio for sharp rendering
+      // Set --scale-factor on the container — PDF.js uses this for text positioning
+      container.style.setProperty("--scale-factor", String(viewport.scale));
+
       const dpr = window.devicePixelRatio || 1;
       canvas.width = viewport.width * dpr;
       canvas.height = viewport.height * dpr;
@@ -62,11 +65,7 @@ export default function PdfPage({
       const ctx = canvas.getContext("2d")!;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Render the page to canvas
-      const renderTask = page.render({
-        canvasContext: ctx,
-        viewport,
-      });
+      const renderTask = page.render({ canvasContext: ctx, viewport });
       renderTaskRef.current = renderTask;
 
       try {
@@ -84,10 +83,8 @@ export default function PdfPage({
 
       if (cancelled) return;
 
-      // Build the text layer
+      // Build text layer
       textLayerDiv.innerHTML = "";
-
-      // Use setLayerDimensions for proper text positioning
       setLayerDimensions(textLayerDiv, viewport);
 
       const textContent = await page.getTextContent();
@@ -99,6 +96,36 @@ export default function PdfPage({
         viewport,
       });
       await textLayer.render();
+
+      // Add the "endOfContent" selection fence div — this is how PDF.js
+      // prevents the browser from selecting entire paragraphs at once
+      const endOfContent = window.document.createElement("div");
+      endOfContent.className = "endOfContent";
+      textLayerDiv.append(endOfContent);
+
+      // Selection management: toggle "selecting" class during mouse selection
+      function onMouseDown() {
+        textLayerDiv.classList.add("selecting");
+      }
+
+      function onMouseUp() {
+        textLayerDiv.classList.remove("selecting");
+        endOfContent.style.top = "";
+      }
+
+      textLayerDiv.addEventListener("mousedown", onMouseDown);
+      document.addEventListener("mouseup", onMouseUp);
+
+      // Clean up listeners on next render
+      const cleanup = () => {
+        textLayerDiv.removeEventListener("mousedown", onMouseDown);
+        document.removeEventListener("mouseup", onMouseUp);
+      };
+
+      // Store cleanup for the effect's return
+      if (!cancelled) {
+        cleanupRef.current = cleanup;
+      }
     }
 
     renderPage();
@@ -109,8 +136,14 @@ export default function PdfPage({
         renderTaskRef.current.cancel();
         renderTaskRef.current = null;
       }
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      }
     };
   }, [document, pageNumber, zoom]);
+
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const handleCreateHighlight = (
     text: string,
@@ -121,19 +154,14 @@ export default function PdfPage({
 
   return (
     <div
+      ref={containerRef}
       className="relative inline-block shadow-lg bg-white mb-4"
       data-page-number={pageNumber}
-      style={{ width: pageDimensions.width || "auto", height: pageDimensions.height ? pageDimensions.height + 24 : "auto" }}
     >
       <canvas ref={canvasRef} className="block" />
 
-      {/* Text layer — ABOVE highlight layer for text selection */}
-      <div
-        ref={textLayerRef}
-        className="textLayer"
-      />
+      <div ref={textLayerRef} className="textLayer" />
 
-      {/* Highlight layer — renders colored rects, clipped to page */}
       <HighlightLayer
         highlights={highlights}
         pageNumber={pageNumber}

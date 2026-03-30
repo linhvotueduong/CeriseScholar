@@ -39,43 +39,46 @@ export default function HighlightLayer({
     const layer = layerRef.current;
     if (!layer) return;
 
-    const range = selection.getRangeAt(0);
-
-    // Check if the selection is within this page's text layer
-    const pageContainer = layer.parentElement;
+    // Get the page container and its canvas for reference measurements
+    const pageContainer = layer.closest("[data-page-number]");
     if (!pageContainer) return;
 
+    const canvas = pageContainer.querySelector("canvas");
+    if (!canvas) return;
+
+    // Check the selection is within this page's text layer
     const textLayerDiv = pageContainer.querySelector(".textLayer");
     if (!textLayerDiv) return;
 
-    // Verify the selection starts or ends within this page's text layer
     const selectionAnchor = selection.anchorNode;
     if (!selectionAnchor || !textLayerDiv.contains(selectionAnchor)) return;
 
+    const range = selection.getRangeAt(0);
     const clientRects = range.getClientRects();
     if (clientRects.length === 0) return;
 
-    const layerRect = layer.getBoundingClientRect();
+    // Measure relative to the canvas — most reliable reference
+    const canvasRect = canvas.getBoundingClientRect();
 
     const rects: { x: number; y: number; width: number; height: number }[] = [];
     for (let i = 0; i < clientRects.length; i++) {
       const r = clientRects[i];
       if (r.width <= 0 || r.height <= 0) continue;
 
-      // Calculate position as percentage of the page
-      const x = ((r.left - layerRect.left) / layerRect.width) * 100;
-      const y = ((r.top - layerRect.top) / layerRect.height) * 100;
-      const w = (r.width / layerRect.width) * 100;
-      const h = (r.height / layerRect.height) * 100;
+      // Position as percentage of canvas dimensions
+      let x = ((r.left - canvasRect.left) / canvasRect.width) * 100;
+      let y = ((r.top - canvasRect.top) / canvasRect.height) * 100;
+      let w = (r.width / canvasRect.width) * 100;
+      let h = (r.height / canvasRect.height) * 100;
 
-      // Clamp to page bounds (0-100%)
-      const clampedX = Math.max(0, x);
-      const clampedY = Math.max(0, y);
-      const clampedW = Math.min(w, 100 - clampedX);
-      const clampedH = Math.min(h, 100 - clampedY);
+      // Clamp to page bounds
+      x = Math.max(0, x);
+      y = Math.max(0, y);
+      w = Math.min(w, 100 - x);
+      h = Math.min(h, 100 - y);
 
-      if (clampedW > 0 && clampedH > 0) {
-        rects.push({ x: clampedX, y: clampedY, width: clampedW, height: clampedH });
+      if (w > 0.5 && h > 0.5) {
+        rects.push({ x, y, width: w, height: h });
       }
     }
 
@@ -100,7 +103,7 @@ export default function HighlightLayer({
         highlight.rects.map((rect, i) => (
           <div
             key={`${highlight.id}-${i}`}
-            className="absolute rounded-[2px]"
+            className="absolute"
             style={{
               left: `${rect.x}%`,
               top: `${rect.y}%`,
@@ -109,6 +112,7 @@ export default function HighlightLayer({
               backgroundColor: highlight.color || "#FFD700",
               opacity: 0.35,
               mixBlendMode: "multiply",
+              borderRadius: "2px",
             }}
           />
         ))
