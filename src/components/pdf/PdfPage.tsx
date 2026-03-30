@@ -53,7 +53,8 @@ export default function PdfPage({
     const ctx = canvas.getContext("2d")!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    await page.render({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (page as any).render({
       canvasContext: ctx,
       viewport,
     }).promise;
