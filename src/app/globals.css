@@ -25,7 +25,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* PDF.js text layer — positions invisible selectable text over the canvas */
+/* PDF.js text layer — invisible selectable text over the canvas */
 .textLayer {
   position: absolute;
   text-align: initial;
@@ -36,6 +36,7 @@ body {
   text-size-adjust: none;
   forced-color-adjust: none;
   z-index: 2;
+  /* Text must be selectable — do NOT set pointer-events: none */
 }
 
 .textLayer span,
@@ -44,15 +45,9 @@ body {
   position: absolute;
   white-space: pre;
   transform-origin: 0% 0%;
+  cursor: text;
 }
 
 .textLayer ::selection {
-  background: rgba(222, 49, 99, 0.3);
-}
-
-.textLayer .highlight {
-  margin: -1px;
-  padding: 1px;
-  background-color: rgba(222, 49, 99, 0.3);
-  border-radius: 4px;
+  background: rgba(222, 49, 99, 0.4);
 }

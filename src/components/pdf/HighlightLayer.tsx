@@ -25,7 +25,6 @@ export default function HighlightLayer({
 }: HighlightLayerProps) {
   const layerRef = useRef<HTMLDivElement>(null);
 
-  // Filter highlights for the current page
   const pageHighlights = highlights.filter((h) => h.page_number === pageNumber);
 
   const handleMouseUp = useCallback(() => {
@@ -35,6 +34,8 @@ export default function HighlightLayer({
     if (!selection || selection.isCollapsed || !selection.toString().trim()) return;
 
     const text = selection.toString().trim();
+    if (text.length < 2) return;
+
     const range = selection.getRangeAt(0);
     const clientRects = range.getClientRects();
     const layer = layerRef.current;
@@ -43,18 +44,30 @@ export default function HighlightLayer({
 
     const layerRect = layer.getBoundingClientRect();
 
-    // Convert screen coordinates to percentage-based coordinates
-    // This way highlights stay in the right place regardless of zoom
+    // Check if the selection is within this page's bounds
+    const firstRect = clientRects[0];
+    if (
+      firstRect.top < layerRect.top - 10 ||
+      firstRect.top > layerRect.bottom + 10
+    ) {
+      return; // Selection is on a different page
+    }
+
     const rects: { x: number; y: number; width: number; height: number }[] = [];
     for (let i = 0; i < clientRects.length; i++) {
       const r = clientRects[i];
-      rects.push({
-        x: ((r.left - layerRect.left) / layerRect.width) * 100,
-        y: ((r.top - layerRect.top) / layerRect.height) * 100,
-        width: (r.width / layerRect.width) * 100,
-        height: (r.height / layerRect.height) * 100,
-      });
+      // Only include rects that are within this page
+      if (r.width > 0 && r.height > 0) {
+        rects.push({
+          x: ((r.left - layerRect.left) / layerRect.width) * 100,
+          y: ((r.top - layerRect.top) / layerRect.height) * 100,
+          width: (r.width / layerRect.width) * 100,
+          height: (r.height / layerRect.height) * 100,
+        });
+      }
     }
+
+    if (rects.length === 0) return;
 
     onCreateHighlight(text, rects);
     selection.removeAllRanges();
@@ -68,10 +81,9 @@ export default function HighlightLayer({
   return (
     <div
       ref={layerRef}
-      className="absolute top-0 left-0 z-[3] pointer-events-none"
-      style={{ width: containerWidth, height: containerHeight }}
+      className="absolute top-0 left-0 pointer-events-none"
+      style={{ width: containerWidth, height: containerHeight, zIndex: 1 }}
     >
-      {/* Render existing highlights as colored rectangles */}
       {pageHighlights.map((highlight) =>
         highlight.rects.map((rect, i) => (
           <div

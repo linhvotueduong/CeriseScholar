@@ -13,6 +13,7 @@ interface PdfPageProps {
   highlights: Highlight[];
   highlightMode: boolean;
   onCreateHighlight: (
+    pageNumber: number,
     text: string,
     rects: { x: number; y: number; width: number; height: number }[]
   ) => void;
@@ -41,14 +42,12 @@ export default function PdfPage({
 
     setPageDimensions({ width: viewport.width, height: viewport.height });
 
-    // Set canvas dimensions
     const dpr = window.devicePixelRatio || 1;
     canvas.width = viewport.width * dpr;
     canvas.height = viewport.height * dpr;
     canvas.style.width = `${viewport.width}px`;
     canvas.style.height = `${viewport.height}px`;
 
-    // Render the PDF page onto the canvas
     const ctx = canvas.getContext("2d")!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
@@ -57,12 +56,10 @@ export default function PdfPage({
       viewport,
     }).promise;
 
-    // Clear old text layer content
     textLayerDiv.innerHTML = "";
     textLayerDiv.style.width = `${viewport.width}px`;
     textLayerDiv.style.height = `${viewport.height}px`;
 
-    // Build the text layer (invisible but selectable text over the canvas)
     const textContent = await page.getTextContent();
     pdfjs.renderTextLayer({
       textContentSource: textContent,
@@ -75,26 +72,42 @@ export default function PdfPage({
     renderPage();
   }, [renderPage]);
 
+  const handleCreateHighlight = useCallback(
+    (
+      text: string,
+      rects: { x: number; y: number; width: number; height: number }[]
+    ) => {
+      onCreateHighlight(pageNumber, text, rects);
+    },
+    [pageNumber, onCreateHighlight]
+  );
+
   return (
-    <div ref={containerRef} className="relative inline-block shadow-lg bg-white">
-      {/* Layer 1: Canvas — the visual PDF rendering */}
+    <div
+      ref={containerRef}
+      className="relative inline-block shadow-lg bg-white mb-4"
+      data-page-number={pageNumber}
+    >
       <canvas ref={canvasRef} className="block" />
 
-      {/* Layer 2: Text layer — invisible selectable text positioned over the canvas */}
       <div
         ref={textLayerRef}
         className="absolute top-0 left-0 textLayer"
       />
 
-      {/* Layer 3: Highlight layer — colored highlight rectangles */}
       <HighlightLayer
         highlights={highlights}
         pageNumber={pageNumber}
         highlightMode={highlightMode}
         containerWidth={pageDimensions.width}
         containerHeight={pageDimensions.height}
-        onCreateHighlight={onCreateHighlight}
+        onCreateHighlight={handleCreateHighlight}
       />
+
+      {/* Page number label */}
+      <div className="text-center text-xs text-gray-400 py-1">
+        Page {pageNumber}
+      </div>
     </div>
   );
 }

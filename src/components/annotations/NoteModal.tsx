@@ -5,9 +5,10 @@ import { useState } from "react";
 interface NoteModalProps {
   onSave: (content: string) => void;
   onClose: () => void;
+  highlightText?: string;
 }
 
-export default function NoteModal({ onSave, onClose }: NoteModalProps) {
+export default function NoteModal({ onSave, onClose, highlightText }: NoteModalProps) {
   const [content, setContent] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
@@ -23,12 +24,19 @@ export default function NoteModal({ onSave, onClose }: NoteModalProps) {
         onSubmit={handleSubmit}
         className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4"
       >
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Add a Note</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Add a Note</h3>
+
+        {highlightText && (
+          <p className="text-sm text-gray-500 mb-3 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400 line-clamp-3">
+            &ldquo;{highlightText}&rdquo;
+          </p>
+        )}
+
         <textarea
           autoFocus
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Write your note or comment here..."
+          placeholder="Write your note or comment about this highlight..."
           rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DE3163] focus:border-transparent resize-none"
         />
@@ -38,7 +46,7 @@ export default function NoteModal({ onSave, onClose }: NoteModalProps) {
             onClick={onClose}
             className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
           >
-            Cancel
+            Skip
           </button>
           <button
             type="submit"

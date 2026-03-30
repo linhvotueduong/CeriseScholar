@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { usePdf } from "@/hooks/usePdf";
 import { useHighlights } from "@/hooks/useHighlights";
 import { useAnnotations } from "@/hooks/useAnnotations";
@@ -43,33 +43,50 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
   const [noteModal, setNoteModal] = useState<{
     highlightId: string;
     pageNumber: number;
+    highlightText?: string;
   } | null>(null);
+
+  // For the "highlight then immediately add note" flow
+  const [pendingNoteHighlightId, setPendingNoteHighlightId] = useState<string | null>(null);
 
   useEffect(() => {
     load(url);
   }, [url, load]);
 
+  // When a new highlight is created, immediately show the note popup
   const handleCreateHighlight = useCallback(
     async (
+      pageNumber: number,
       text: string,
       rects: { x: number; y: number; width: number; height: number }[]
     ) => {
-      await createHighlight({
+      const highlight = await createHighlight({
         pdfId,
-        pageNumber: currentPage,
+        pageNumber,
         highlightedText: text,
         rects,
         pdfDisplayName,
       });
+
+      if (highlight) {
+        // Immediately show the note modal for this highlight
+        setPendingNoteHighlightId(highlight.id);
+        setNoteModal({ highlightId: highlight.id, pageNumber, highlightText: text });
+      }
     },
-    [pdfId, currentPage, pdfDisplayName, createHighlight]
+    [pdfId, pdfDisplayName, createHighlight]
   );
 
   const handleAddNote = useCallback(
     (highlightId: string, pageNumber: number) => {
-      setNoteModal({ highlightId, pageNumber });
+      const hl = highlights.find((h) => h.id === highlightId);
+      setNoteModal({
+        highlightId,
+        pageNumber,
+        highlightText: hl?.highlighted_text,
+      });
     },
-    []
+    [highlights]
   );
 
   const handleSaveNote = useCallback(
@@ -84,34 +101,52 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
         highlightId: noteModal.highlightId,
       });
       setNoteModal(null);
+      setPendingNoteHighlightId(null);
     },
     [pdfId, noteModal, createAnnotation]
   );
 
-  // TTS: Read the entire current page
+  const handleCloseNote = useCallback(() => {
+    setNoteModal(null);
+    setPendingNoteHighlightId(null);
+  }, []);
+
+  // TTS handlers
   const handleReadPage = useCallback(async () => {
     if (!document) return;
     const text = await extractPageText(document, currentPage);
-    if (text) {
-      tts.speak(text);
-    }
+    if (text) tts.speak(text);
   }, [document, currentPage, tts]);
 
-  // TTS: Read currently selected text
   const handleReadSelection = useCallback(() => {
     const selection = window.getSelection();
     const text = selection?.toString().trim();
-    if (text) {
-      tts.speak(text);
-    }
+    if (text) tts.speak(text);
   }, [tts]);
 
-  // TTS: Read a specific highlight's text
   const handleReadHighlight = useCallback(
-    (text: string) => {
-      tts.speak(text);
-    },
+    (text: string) => tts.speak(text),
     [tts]
+  );
+
+  // Generate array of page numbers to render
+  const pageNumbers = useMemo(() => {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }, [totalPages]);
+
+  // Scroll to a specific page
+  const scrollToPage = useCallback((page: number) => {
+    const el = window.document.querySelector(`[data-page-number="${page}"]`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  // Override goToPage to scroll instead of re-render
+  const handleGoToPage = useCallback(
+    (page: number) => {
+      goToPage(page);
+      scrollToPage(page);
+    },
+    [goToPage, scrollToPage]
   );
 
   if (loading) {
@@ -143,9 +178,9 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
           zoom={zoom}
           highlightMode={highlightMode}
           isSpeaking={tts.isSpeaking}
-          onPrevPage={prevPage}
-          onNextPage={nextPage}
-          onGoToPage={goToPage}
+          onPrevPage={() => { prevPage(); scrollToPage(currentPage - 1); }}
+          onNextPage={() => { nextPage(); scrollToPage(currentPage + 1); }}
+          onGoToPage={handleGoToPage}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
           onToggleHighlightMode={() => setHighlightMode((m) => !m)}
@@ -153,22 +188,26 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
           onReadSelection={handleReadSelection}
         />
 
+        {/* Scrollable container with ALL pages */}
         <div
-          className={`flex-1 overflow-auto bg-gray-100 flex justify-center py-6 px-4 ${
+          className={`flex-1 overflow-auto bg-gray-100 flex flex-col items-center py-6 px-4 ${
             highlightMode ? "cursor-text" : ""
           }`}
         >
-          <PdfPage
-            document={document}
-            pageNumber={currentPage}
-            zoom={zoom}
-            highlights={highlights}
-            highlightMode={highlightMode}
-            onCreateHighlight={handleCreateHighlight}
-          />
+          {pageNumbers.map((num) => (
+            <PdfPage
+              key={num}
+              document={document}
+              pageNumber={num}
+              zoom={zoom}
+              highlights={highlights}
+              highlightMode={highlightMode}
+              onCreateHighlight={handleCreateHighlight}
+            />
+          ))}
         </div>
 
-        {/* TTS controls — shown at the bottom when speaking */}
+        {/* TTS controls */}
         <TtsControls
           isSpeaking={tts.isSpeaking}
           isPaused={tts.isPaused}
@@ -188,17 +227,18 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
         highlights={highlights}
         annotations={annotations}
         currentPage={currentPage}
-        onGoToPage={goToPage}
+        onGoToPage={handleGoToPage}
         onDeleteHighlight={deleteHighlight}
         onAddNote={handleAddNote}
         onReadHighlight={handleReadHighlight}
       />
 
-      {/* Note modal */}
+      {/* Note modal — pops up immediately after highlighting */}
       {noteModal && (
         <NoteModal
           onSave={handleSaveNote}
-          onClose={() => setNoteModal(null)}
+          onClose={handleCloseNote}
+          highlightText={noteModal.highlightText}
         />
       )}
     </div>
