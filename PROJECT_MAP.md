@@ -2,7 +2,7 @@
 
 > This file is kept up to date as the project evolves. It describes every folder and file so you always know what's where.
 
-**Last updated:** 2026-03-30 (Phase 5 — Literature Review Table)
+**Last updated:** 2026-03-30 (Phase 6 — OCR)
 
 ---
 
@@ -61,6 +61,10 @@ CeriseScholar/
 │   │       └── literature-review/
 │   │           └── page.tsx           # Literature review table page
 │   │
+│   ├── app/api/
+│   │   └── ocr/
+│   │       └── route.ts              # Server-side OCR endpoint (Tesseract.js)
+│   │
 │   ├── components/
 │   │   ├── auth/
 │   │   │   ├── LoginForm.tsx          # Email/password login form
@@ -94,6 +98,12 @@ CeriseScholar/
 │   │   ├── useHighlights.ts           # CRUD for highlights + auto-creates lit review entry
 │   │   ├── useAnnotations.ts          # CRUD for sticky notes/comments
 │   │   └── useLiteratureReview.ts     # Fetch, update, delete lit review entries
+│   │
+│   ├── components/ocr/
+│   │   └── OcrStatusBadge.tsx         # Shows OCR status (Pending/Processing/Ready/Failed)
+│   │
+│   ├── lib/ocr/
+│   │   └── runOcr.ts                  # Client-side utility to trigger OCR API
 │   │
 │   ├── lib/pdf/
 │   │   └── loadPdf.ts                 # Loads a PDF document using PDF.js
@@ -145,6 +155,7 @@ CeriseScholar/
 | `papaparse` | ^5.5.3 | Exports tables to CSV files |
 | `clsx` | ^2.1.1 | CSS class name helper |
 | `tailwind-merge` | ^3.5.0 | Merges Tailwind CSS classes |
+| `canvas` | latest | Server-side canvas for PDF page rendering (OCR) |
 
 ---
 
@@ -156,6 +167,6 @@ CeriseScholar/
 - [x] Phase 3: PDF Viewer
 - [x] Phase 4: Highlighting + Annotations
 - [x] Phase 5: Literature Review Table
-- [ ] Phase 6: OCR
+- [x] Phase 6: OCR
 - [ ] Phase 7: Text-to-Speech
 - [ ] Phase 8: Polish + Landing Page + Cloudflare Deployment

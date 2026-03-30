@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
+import { runOcr } from "@/lib/ocr/runOcr";
 import Spinner from "@/components/ui/Spinner";
 
 export default function UploadPage() {
@@ -62,7 +63,10 @@ export default function UploadPage() {
       return;
     }
 
-    // 3. Redirect to dashboard
+    // 3. Trigger OCR in the background (fire-and-forget)
+    runOcr(fileId);
+
+    // 4. Redirect to dashboard
     router.push("/dashboard");
     router.refresh();
   }

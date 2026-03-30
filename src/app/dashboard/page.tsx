@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import type { Pdf } from "@/types/pdf";
+import OcrStatusBadge from "@/components/ocr/OcrStatusBadge";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -55,7 +56,7 @@ export default async function DashboardPage() {
                     ? `${(pdf.file_size / 1024 / 1024).toFixed(1)} MB`
                     : ""}
                 </span>
-                <OcrBadge status={pdf.ocr_status} />
+                <OcrStatusBadge status={pdf.ocr_status} />
               </div>
               <p className="text-xs text-gray-400 mt-2">
                 {new Date(pdf.created_at).toLocaleDateString()}
@@ -65,31 +66,5 @@ export default async function DashboardPage() {
         </div>
       )}
     </div>
-  );
-}
-
-function OcrBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-700",
-    processing: "bg-blue-100 text-blue-700",
-    completed: "bg-green-100 text-green-700",
-    failed: "bg-red-100 text-red-700",
-  };
-
-  const labels: Record<string, string> = {
-    pending: "OCR Pending",
-    processing: "OCR Processing",
-    completed: "OCR Ready",
-    failed: "OCR Failed",
-  };
-
-  return (
-    <span
-      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-        styles[status] || styles.pending
-      }`}
-    >
-      {labels[status] || "Unknown"}
-    </span>
   );
 }
