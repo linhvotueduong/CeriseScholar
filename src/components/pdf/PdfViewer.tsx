@@ -4,12 +4,14 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { usePdf } from "@/hooks/usePdf";
 import { useHighlights } from "@/hooks/useHighlights";
 import { useAnnotations } from "@/hooks/useAnnotations";
+import { useCodes } from "@/hooks/useCodes";
 import { useTts } from "@/hooks/useTts";
 import { extractPageText } from "@/lib/pdf/extractText";
 import PdfPage from "./PdfPage";
 import PdfToolbar from "./PdfToolbar";
 import TtsControls from "@/components/tts/TtsControls";
 import AnnotationSidebar from "@/components/annotations/AnnotationSidebar";
+import CodeSystemPanel from "@/components/codes/CodeSystemPanel";
 import NoteModal from "@/components/annotations/NoteModal";
 import Spinner from "@/components/ui/Spinner";
 
@@ -44,6 +46,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
 
   const { highlights, createHighlight, deleteHighlight } = useHighlights(pdfId);
   const { annotations, createAnnotation } = useAnnotations(pdfId);
+  const { codes, createCode, updateCode, deleteCode } = useCodes();
   const tts = useTts();
 
   const [highlightMode, setHighlightMode] = useState(false);
@@ -74,9 +77,9 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
     []
   );
 
-  // When user saves from the new-highlight modal (with color + optional note)
+  // When user saves from the new-highlight modal (with color, code, + optional note)
   const handleSaveNewHighlight = useCallback(
-    async (noteContent: string, color?: string) => {
+    async (noteContent: string, color?: string, codeId?: string, codeName?: string) => {
       if (!pendingHighlight) return;
 
       const highlight = await createHighlight({
@@ -86,9 +89,10 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
         rects: pendingHighlight.rects,
         color: color || "#FFD700",
         pdfDisplayName,
+        codeId,
+        codeName,
       });
 
-      // If a note was written, save it too
       if (highlight && noteContent) {
         await createAnnotation({
           pdfId,
@@ -241,8 +245,20 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
         />
       </div>
 
-      {/* Annotation sidebar */}
-      <AnnotationSidebar
+      {/* Right panel: Code System + Annotation sidebar */}
+      <div className="w-72 border-l border-gray-200 bg-white flex flex-col h-full overflow-y-auto">
+        {/* Code System panel */}
+        <div className="p-3 border-b border-gray-200">
+          <CodeSystemPanel
+            codes={codes}
+            onCreateCode={createCode}
+            onUpdateCode={updateCode}
+            onDeleteCode={deleteCode}
+          />
+        </div>
+
+        {/* Annotations */}
+        <AnnotationSidebar
         highlights={highlights}
         annotations={annotations}
         currentPage={currentPage}
@@ -251,14 +267,17 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
         onAddNote={handleAddNote}
         onReadHighlight={handleReadHighlight}
       />
+      </div>
 
-      {/* Modal for NEW highlight — shows color picker + note field */}
+      {/* Modal for NEW highlight — shows color picker, code selector + note field */}
       {pendingHighlight && (
         <NoteModal
           onSave={handleSaveNewHighlight}
           onClose={() => setPendingHighlight(null)}
           highlightText={pendingHighlight.text}
           showColorPicker
+          showCodeSelector
+          codes={codes}
         />
       )}
 

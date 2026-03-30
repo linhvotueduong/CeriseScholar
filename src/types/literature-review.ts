@@ -10,5 +10,6 @@ export interface LiteratureReviewEntry {
   highlighted_text: string;
   theme_category: string;
   user_notes: string;
+  code_name: string;
   date_added: string;
 }

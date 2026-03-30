@@ -30,7 +30,7 @@ export function useLiteratureReview() {
       fields: Partial<
         Pick<
           LiteratureReviewEntry,
-          "authors" | "year" | "theme_category" | "user_notes"
+          "authors" | "year" | "theme_category" | "user_notes" | "code_name"
         >
       >
     ) => {

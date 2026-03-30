@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Code } from "@/types/code";
 
 const HIGHLIGHT_COLORS = [
   { name: "Yellow", value: "#FFD700" },
@@ -12,10 +13,12 @@ const HIGHLIGHT_COLORS = [
 ];
 
 interface NoteModalProps {
-  onSave: (content: string, color?: string) => void;
+  onSave: (content: string, color?: string, codeId?: string, codeName?: string) => void;
   onClose: () => void;
   highlightText?: string;
   showColorPicker?: boolean;
+  showCodeSelector?: boolean;
+  codes?: Code[];
   defaultColor?: string;
 }
 
@@ -24,19 +27,33 @@ export default function NoteModal({
   onClose,
   highlightText,
   showColorPicker = false,
+  showCodeSelector = false,
+  codes = [],
   defaultColor = "#FFD700",
 }: NoteModalProps) {
   const [content, setContent] = useState("");
   const [selectedColor, setSelectedColor] = useState(defaultColor);
+  const [selectedCodeId, setSelectedCodeId] = useState<string>("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSave(content.trim(), showColorPicker ? selectedColor : undefined);
+    const code = codes.find((c) => c.id === selectedCodeId);
+    onSave(
+      content.trim(),
+      showColorPicker ? selectedColor : undefined,
+      selectedCodeId || undefined,
+      code?.name || undefined
+    );
   }
 
   function handleSkip() {
-    // Save with no note but still pass the color
-    onSave("", showColorPicker ? selectedColor : undefined);
+    const code = codes.find((c) => c.id === selectedCodeId);
+    onSave(
+      "",
+      showColorPicker ? selectedColor : undefined,
+      selectedCodeId || undefined,
+      code?.name || undefined
+    );
   }
 
   return (
@@ -50,7 +67,7 @@ export default function NoteModal({
         </h3>
 
         {highlightText && (
-          <p className="text-sm text-gray-500 mb-3 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400 line-clamp-3">
+          <p className="text-sm text-gray-600 mb-3 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400 line-clamp-3">
             &ldquo;{highlightText}&rdquo;
           </p>
         )}
@@ -75,6 +92,46 @@ export default function NoteModal({
                   style={{ backgroundColor: color.value }}
                   title={color.name}
                 />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Code/Section selector */}
+        {showCodeSelector && codes.length > 0 && (
+          <div className="mb-3">
+            <label className="text-xs text-gray-500 mb-1 block">
+              Assign to paper section:
+            </label>
+            <div className="flex gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setSelectedCodeId("")}
+                className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
+                  selectedCodeId === ""
+                    ? "border-gray-800 bg-gray-100 font-medium"
+                    : "border-gray-200 text-gray-500 hover:border-gray-400"
+                }`}
+              >
+                None
+              </button>
+              {codes.map((code) => (
+                <button
+                  key={code.id}
+                  type="button"
+                  onClick={() => setSelectedCodeId(code.id)}
+                  className={`px-2.5 py-1 text-xs rounded-full border transition-all flex items-center gap-1 ${
+                    selectedCodeId === code.id
+                      ? "border-gray-800 font-medium"
+                      : "border-gray-200 text-gray-600 hover:border-gray-400"
+                  }`}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full inline-block"
+                    style={{ backgroundColor: code.color }}
+                  />
+                  {code.name}
+                </button>
               ))}
             </div>
           </div>

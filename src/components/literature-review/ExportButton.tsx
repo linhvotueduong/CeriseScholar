@@ -17,6 +17,7 @@ export default function ExportButton({ entries }: ExportButtonProps) {
       Year: e.year,
       Page: e.page_number,
       "Highlighted Text": e.highlighted_text,
+      Section: e.code_name,
       "Theme/Category": e.theme_category,
       "My Notes": e.user_notes,
       "Date Added": new Date(e.date_added).toLocaleDateString(),

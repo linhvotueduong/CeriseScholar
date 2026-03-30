@@ -30,7 +30,7 @@ export default function AnnotationSidebar({
       : highlights;
 
   return (
-    <div className="w-72 border-l border-gray-200 bg-white flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Header */}
       <div className="p-3 border-b border-gray-200">
         <h3 className="text-sm font-semibold text-gray-800">

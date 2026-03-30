@@ -11,6 +11,8 @@ interface CreateHighlightParams {
   rects: { x: number; y: number; width: number; height: number }[];
   color?: string;
   pdfDisplayName: string;
+  codeId?: string;
+  codeName?: string;
 }
 
 export function useHighlights(pdfId: string) {
@@ -41,7 +43,7 @@ export function useHighlights(pdfId: string) {
       } = await supabase.auth.getUser();
       if (!user) return null;
 
-      // 1. Insert the highlight
+      // 1. Insert the highlight (with optional code_id)
       const { data: highlight, error: highlightError } = await supabase
         .from("highlights")
         .insert({
@@ -51,13 +53,14 @@ export function useHighlights(pdfId: string) {
           highlighted_text: params.highlightedText,
           rects: params.rects,
           color: params.color || "#FFD700",
+          code_id: params.codeId || null,
         })
         .select()
         .single();
 
       if (highlightError || !highlight) return null;
 
-      // 2. Simultaneously create a literature review entry
+      // 2. Create a literature review entry (with code_name for display)
       await supabase.from("literature_review_entries").insert({
         user_id: user.id,
         pdf_id: params.pdfId,
@@ -65,6 +68,7 @@ export function useHighlights(pdfId: string) {
         source: params.pdfDisplayName,
         page_number: params.pageNumber,
         highlighted_text: params.highlightedText,
+        code_name: params.codeName || "",
       });
 
       // 3. Update local state
@@ -76,16 +80,11 @@ export function useHighlights(pdfId: string) {
 
   const deleteHighlight = useCallback(async (highlightId: string) => {
     const supabase = createClient();
-
-    // Delete the literature review entry first (it references the highlight)
     await supabase
       .from("literature_review_entries")
       .delete()
       .eq("highlight_id", highlightId);
-
-    // Delete the highlight
     await supabase.from("highlights").delete().eq("id", highlightId);
-
     setHighlights((prev) => prev.filter((h) => h.id !== highlightId));
   }, []);
 

@@ -10,7 +10,7 @@ interface ReviewTableProps {
     fields: Partial<
       Pick<
         LiteratureReviewEntry,
-        "authors" | "year" | "theme_category" | "user_notes"
+        "authors" | "year" | "theme_category" | "user_notes" | "code_name"
       >
     >
   ) => void;
@@ -52,6 +52,9 @@ export default function ReviewTable({
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Highlighted Text
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Section
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Theme

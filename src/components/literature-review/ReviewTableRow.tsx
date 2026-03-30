@@ -10,7 +10,7 @@ interface ReviewTableRowProps {
     fields: Partial<
       Pick<
         LiteratureReviewEntry,
-        "authors" | "year" | "theme_category" | "user_notes"
+        "authors" | "year" | "theme_category" | "user_notes" | "code_name"
       >
     >
   ) => void;
@@ -26,7 +26,7 @@ function EditableCell({
   multiline = false,
 }: {
   value: string;
-  field: "authors" | "year" | "theme_category" | "user_notes";
+  field: "authors" | "year" | "theme_category" | "user_notes" | "code_name";
   entryId: string;
   onUpdate: ReviewTableRowProps["onUpdate"];
   multiline?: boolean;
@@ -146,6 +146,16 @@ export default function ReviewTableRow({
         <p className="line-clamp-3" title={entry.highlighted_text}>
           &ldquo;{entry.highlighted_text}&rdquo;
         </p>
+      </td>
+
+      {/* Section/Code — editable */}
+      <td className="px-1 py-1 max-w-[110px]">
+        <EditableCell
+          value={entry.code_name}
+          field="code_name"
+          entryId={entry.id}
+          onUpdate={onUpdate}
+        />
       </td>
 
       {/* Theme/Category — editable */}
