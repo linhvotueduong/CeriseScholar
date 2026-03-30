@@ -2,7 +2,7 @@
 
 > This file is kept up to date as the project evolves. It describes every folder and file so you always know what's where.
 
-**Last updated:** 2026-03-29 (Phase 3 — PDF Viewer)
+**Last updated:** 2026-03-30 (Phase 4 — Highlighting + Annotations)
 
 ---
 
@@ -71,13 +71,20 @@ CeriseScholar/
 │   │
 │   │
 │   ├── components/pdf/
-│   │   ├── PdfViewer.tsx              # Main viewer — combines toolbar + page
-│   │   ├── PdfPage.tsx                # Renders one PDF page (canvas + text layer)
-│   │   └── PdfToolbar.tsx             # Page navigation and zoom controls
+│   │   ├── PdfViewer.tsx              # Main viewer — toolbar + page + sidebar
+│   │   ├── PdfPage.tsx                # Renders one PDF page (canvas + text + highlights)
+│   │   ├── PdfToolbar.tsx             # Page nav, zoom, highlight mode toggle
+│   │   └── HighlightLayer.tsx         # Detects text selection, renders highlight rects
+│   │
+│   ├── components/annotations/
+│   │   ├── AnnotationSidebar.tsx      # Right panel showing all highlights + notes
+│   │   └── NoteModal.tsx              # Modal for adding notes to highlights
 │   │
 │   ├── hooks/
 │   │   ├── useUser.ts                 # Hook to get the logged-in user
-│   │   └── usePdf.ts                  # Hook for PDF loading, page nav, zoom
+│   │   ├── usePdf.ts                  # Hook for PDF loading, page nav, zoom
+│   │   ├── useHighlights.ts           # CRUD for highlights + auto-creates lit review entry
+│   │   └── useAnnotations.ts          # CRUD for sticky notes/comments
 │   │
 │   ├── lib/pdf/
 │   │   └── loadPdf.ts                 # Loads a PDF document using PDF.js
@@ -138,7 +145,7 @@ CeriseScholar/
 - [x] Phase 1: Supabase Auth (Sign Up / Log In / Log Out)
 - [x] Phase 2: Database + PDF Upload
 - [x] Phase 3: PDF Viewer
-- [ ] Phase 4: Highlighting + Annotations
+- [x] Phase 4: Highlighting + Annotations
 - [ ] Phase 5: Literature Review Table
 - [ ] Phase 6: OCR
 - [ ] Phase 7: Text-to-Speech

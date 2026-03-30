@@ -4,11 +4,12 @@ import PdfViewer from "@/components/pdf/PdfViewer";
 import Link from "next/link";
 
 interface ViewerClientProps {
+  pdfId: string;
   pdfName: string;
   pdfUrl: string;
 }
 
-export default function ViewerClient({ pdfName, pdfUrl }: ViewerClientProps) {
+export default function ViewerClient({ pdfId, pdfName, pdfUrl }: ViewerClientProps) {
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
       {/* Header bar with PDF name and back button */}
@@ -26,7 +27,7 @@ export default function ViewerClient({ pdfName, pdfUrl }: ViewerClientProps) {
 
       {/* PDF Viewer */}
       <div className="flex-1 overflow-hidden">
-        <PdfViewer url={pdfUrl} />
+        <PdfViewer url={pdfUrl} pdfId={pdfId} pdfDisplayName={pdfName} />
       </div>
     </div>
   );

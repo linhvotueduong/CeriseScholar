@@ -38,6 +38,7 @@ export default async function ViewerPage({ params }: Props) {
   return (
     <div className="-mx-8 -my-8">
       <ViewerClient
+        pdfId={pdf.id}
         pdfName={pdf.display_name}
         pdfUrl={signedUrlData.signedUrl}
       />

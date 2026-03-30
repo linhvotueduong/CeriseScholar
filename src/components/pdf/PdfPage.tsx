@@ -1,19 +1,35 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import * as pdfjs from "pdfjs-dist";
 import type { PDFDocumentProxy } from "@/lib/pdf/loadPdf";
+import HighlightLayer from "./HighlightLayer";
+import type { Highlight } from "@/types/annotation";
 
 interface PdfPageProps {
   document: PDFDocumentProxy;
   pageNumber: number;
   zoom: number;
+  highlights: Highlight[];
+  highlightMode: boolean;
+  onCreateHighlight: (
+    text: string,
+    rects: { x: number; y: number; width: number; height: number }[]
+  ) => void;
 }
 
-export default function PdfPage({ document, pageNumber, zoom }: PdfPageProps) {
+export default function PdfPage({
+  document,
+  pageNumber,
+  zoom,
+  highlights,
+  highlightMode,
+  onCreateHighlight,
+}: PdfPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [pageDimensions, setPageDimensions] = useState({ width: 0, height: 0 });
 
   const renderPage = useCallback(async () => {
     const canvas = canvasRef.current;
@@ -22,6 +38,8 @@ export default function PdfPage({ document, pageNumber, zoom }: PdfPageProps) {
 
     const page = await document.getPage(pageNumber);
     const viewport = page.getViewport({ scale: zoom });
+
+    setPageDimensions({ width: viewport.width, height: viewport.height });
 
     // Set canvas dimensions
     const dpr = window.devicePixelRatio || 1;
@@ -66,6 +84,16 @@ export default function PdfPage({ document, pageNumber, zoom }: PdfPageProps) {
       <div
         ref={textLayerRef}
         className="absolute top-0 left-0 textLayer"
+      />
+
+      {/* Layer 3: Highlight layer — colored highlight rectangles */}
+      <HighlightLayer
+        highlights={highlights}
+        pageNumber={pageNumber}
+        highlightMode={highlightMode}
+        containerWidth={pageDimensions.width}
+        containerHeight={pageDimensions.height}
+        onCreateHighlight={onCreateHighlight}
       />
     </div>
   );

@@ -6,22 +6,26 @@ interface PdfToolbarProps {
   currentPage: number;
   totalPages: number;
   zoom: number;
+  highlightMode: boolean;
   onPrevPage: () => void;
   onNextPage: () => void;
   onGoToPage: (page: number) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
+  onToggleHighlightMode: () => void;
 }
 
 export default function PdfToolbar({
   currentPage,
   totalPages,
   zoom,
+  highlightMode,
   onPrevPage,
   onNextPage,
   onGoToPage,
   onZoomIn,
   onZoomOut,
+  onToggleHighlightMode,
 }: PdfToolbarProps) {
   const [pageInput, setPageInput] = useState("");
 
@@ -77,8 +81,20 @@ export default function PdfToolbar({
         </form>
       </div>
 
-      {/* Zoom controls */}
-      <div className="flex items-center gap-2">
+      {/* Highlight toggle + Zoom controls */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onToggleHighlightMode}
+          className={`px-3 py-1 text-sm rounded font-medium transition-colors ${
+            highlightMode
+              ? "bg-[#DE3163] text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          {highlightMode ? "Highlighting ON" : "Highlight"}
+        </button>
+
+        <div className="w-px h-5 bg-gray-300" />
         <button
           onClick={onZoomOut}
           className="px-2 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
