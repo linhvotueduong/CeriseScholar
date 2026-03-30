@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { TextLayer } from "pdfjs-dist/webpack.mjs";
+import * as pdfjs from "pdfjs-dist";
 import type { PDFDocumentProxy } from "@/lib/pdf/loadPdf";
 import HighlightLayer from "./HighlightLayer";
 import type { Highlight } from "@/types/annotation";
@@ -52,8 +52,7 @@ export default function PdfPage({
     const ctx = canvas.getContext("2d")!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (page as any).render({
+    await page.render({
       canvasContext: ctx,
       viewport,
     }).promise;
@@ -65,12 +64,11 @@ export default function PdfPage({
 
     // Build the text layer (invisible but selectable text over the canvas)
     const textContent = await page.getTextContent();
-    const textLayer = new TextLayer({
+    pdfjs.renderTextLayer({
       textContentSource: textContent,
       container: textLayerDiv,
       viewport,
     });
-    await textLayer.render();
   }, [document, pageNumber, zoom]);
 
   useEffect(() => {
