@@ -19,6 +19,13 @@ interface PdfViewerProps {
   pdfDisplayName: string;
 }
 
+// Pending highlight data before color/note is chosen
+interface PendingHighlight {
+  pageNumber: number;
+  text: string;
+  rects: { x: number; y: number; width: number; height: number }[];
+}
+
 export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps) {
   const {
     document,
@@ -40,47 +47,69 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
   const tts = useTts();
 
   const [highlightMode, setHighlightMode] = useState(false);
-  const [noteModal, setNoteModal] = useState<{
+
+  // For new highlights: store selection data, show modal to pick color & add note
+  const [pendingHighlight, setPendingHighlight] = useState<PendingHighlight | null>(null);
+
+  // For adding notes to existing highlights from the sidebar
+  const [existingNoteModal, setExistingNoteModal] = useState<{
     highlightId: string;
     pageNumber: number;
     highlightText?: string;
   } | null>(null);
 
-  // For the "highlight then immediately add note" flow
-  const [pendingNoteHighlightId, setPendingNoteHighlightId] = useState<string | null>(null);
-
   useEffect(() => {
     load(url);
   }, [url, load]);
 
-  // When a new highlight is created, immediately show the note popup
-  const handleCreateHighlight = useCallback(
-    async (
+  // When user selects text on a page — DON'T create highlight yet, show modal first
+  const handleTextSelected = useCallback(
+    (
       pageNumber: number,
       text: string,
       rects: { x: number; y: number; width: number; height: number }[]
     ) => {
+      setPendingHighlight({ pageNumber, text, rects });
+    },
+    []
+  );
+
+  // When user saves from the new-highlight modal (with color + optional note)
+  const handleSaveNewHighlight = useCallback(
+    async (noteContent: string, color?: string) => {
+      if (!pendingHighlight) return;
+
       const highlight = await createHighlight({
         pdfId,
-        pageNumber,
-        highlightedText: text,
-        rects,
+        pageNumber: pendingHighlight.pageNumber,
+        highlightedText: pendingHighlight.text,
+        rects: pendingHighlight.rects,
+        color: color || "#FFD700",
         pdfDisplayName,
       });
 
-      if (highlight) {
-        // Immediately show the note modal for this highlight
-        setPendingNoteHighlightId(highlight.id);
-        setNoteModal({ highlightId: highlight.id, pageNumber, highlightText: text });
+      // If a note was written, save it too
+      if (highlight && noteContent) {
+        await createAnnotation({
+          pdfId,
+          pageNumber: pendingHighlight.pageNumber,
+          content: noteContent,
+          positionX: 0,
+          positionY: 0,
+          highlightId: highlight.id,
+        });
       }
+
+      setPendingHighlight(null);
     },
-    [pdfId, pdfDisplayName, createHighlight]
+    [pdfId, pdfDisplayName, pendingHighlight, createHighlight, createAnnotation]
   );
 
+  // Add note to an existing highlight from sidebar
   const handleAddNote = useCallback(
     (highlightId: string, pageNumber: number) => {
       const hl = highlights.find((h) => h.id === highlightId);
-      setNoteModal({
+      setExistingNoteModal({
         highlightId,
         pageNumber,
         highlightText: hl?.highlighted_text,
@@ -89,27 +118,21 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
     [highlights]
   );
 
-  const handleSaveNote = useCallback(
+  const handleSaveExistingNote = useCallback(
     async (content: string) => {
-      if (!noteModal) return;
+      if (!existingNoteModal || !content) return;
       await createAnnotation({
         pdfId,
-        pageNumber: noteModal.pageNumber,
+        pageNumber: existingNoteModal.pageNumber,
         content,
         positionX: 0,
         positionY: 0,
-        highlightId: noteModal.highlightId,
+        highlightId: existingNoteModal.highlightId,
       });
-      setNoteModal(null);
-      setPendingNoteHighlightId(null);
+      setExistingNoteModal(null);
     },
-    [pdfId, noteModal, createAnnotation]
+    [pdfId, existingNoteModal, createAnnotation]
   );
-
-  const handleCloseNote = useCallback(() => {
-    setNoteModal(null);
-    setPendingNoteHighlightId(null);
-  }, []);
 
   // TTS handlers
   const handleReadPage = useCallback(async () => {
@@ -129,18 +152,16 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
     [tts]
   );
 
-  // Generate array of page numbers to render
+  // All page numbers
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }, [totalPages]);
 
-  // Scroll to a specific page
   const scrollToPage = useCallback((page: number) => {
     const el = window.document.querySelector(`[data-page-number="${page}"]`);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  // Override goToPage to scroll instead of re-render
   const handleGoToPage = useCallback(
     (page: number) => {
       goToPage(page);
@@ -188,7 +209,6 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
           onReadSelection={handleReadSelection}
         />
 
-        {/* Scrollable container with ALL pages */}
         <div
           className={`flex-1 overflow-auto bg-gray-100 flex flex-col items-center py-6 px-4 ${
             highlightMode ? "cursor-text" : ""
@@ -202,12 +222,11 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
               zoom={zoom}
               highlights={highlights}
               highlightMode={highlightMode}
-              onCreateHighlight={handleCreateHighlight}
+              onCreateHighlight={handleTextSelected}
             />
           ))}
         </div>
 
-        {/* TTS controls */}
         <TtsControls
           isSpeaking={tts.isSpeaking}
           isPaused={tts.isPaused}
@@ -233,12 +252,22 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
         onReadHighlight={handleReadHighlight}
       />
 
-      {/* Note modal — pops up immediately after highlighting */}
-      {noteModal && (
+      {/* Modal for NEW highlight — shows color picker + note field */}
+      {pendingHighlight && (
         <NoteModal
-          onSave={handleSaveNote}
-          onClose={handleCloseNote}
-          highlightText={noteModal.highlightText}
+          onSave={handleSaveNewHighlight}
+          onClose={() => setPendingHighlight(null)}
+          highlightText={pendingHighlight.text}
+          showColorPicker
+        />
+      )}
+
+      {/* Modal for adding note to EXISTING highlight from sidebar */}
+      {existingNoteModal && (
+        <NoteModal
+          onSave={(content) => handleSaveExistingNote(content)}
+          onClose={() => setExistingNoteModal(null)}
+          highlightText={existingNoteModal.highlightText}
         />
       )}
     </div>
