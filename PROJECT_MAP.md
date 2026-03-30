@@ -2,7 +2,7 @@
 
 > This file is kept up to date as the project evolves. It describes every folder and file so you always know what's where.
 
-**Last updated:** 2026-03-29 (Phase 1 — Supabase Auth)
+**Last updated:** 2026-03-29 (Phase 2 — Database + PDF Upload)
 
 ---
 
@@ -50,18 +50,28 @@ CeriseScholar/
 │   │   │       └── route.ts           # Handles email confirmation redirect
 │   │   │
 │   │   └── dashboard/
-│   │       ├── layout.tsx             # Dashboard layout (Navbar + content area)
-│   │       └── page.tsx               # Dashboard home (shows welcome message)
+│   │       ├── layout.tsx             # Dashboard layout (Navbar + Sidebar + content)
+│   │       ├── page.tsx               # Dashboard home (grid of uploaded PDFs)
+│   │       └── upload/
+│   │           └── page.tsx           # PDF upload page (drag & drop)
 │   │
 │   ├── components/
 │   │   ├── auth/
 │   │   │   ├── LoginForm.tsx          # Email/password login form
 │   │   │   └── SignupForm.tsx         # Email/password signup form
-│   │   └── layout/
-│   │       └── Navbar.tsx             # Top navigation bar with logout
+│   │   ├── layout/
+│   │   │   ├── Navbar.tsx             # Top navigation bar with logout
+│   │   │   └── Sidebar.tsx            # Left sidebar (My PDFs, Upload, Lit Review)
+│   │   └── ui/
+│   │       └── Spinner.tsx            # Loading spinner component
 │   │
 │   ├── hooks/
 │   │   └── useUser.ts                 # Hook to get the logged-in user
+│   │
+│   ├── types/
+│   │   ├── pdf.ts                     # PDF type definition
+│   │   ├── annotation.ts             # Highlight & Annotation type definitions
+│   │   └── literature-review.ts      # Literature review entry type definition
 │   │
 │   ├── lib/
 │   │   ├── supabase/
@@ -112,7 +122,7 @@ CeriseScholar/
 
 - [x] Phase 0: Project Setup + GitHub Repository
 - [x] Phase 1: Supabase Auth (Sign Up / Log In / Log Out)
-- [ ] Phase 2: Database + PDF Upload
+- [x] Phase 2: Database + PDF Upload
 - [ ] Phase 3: PDF Viewer
 - [ ] Phase 4: Highlighting + Annotations
 - [ ] Phase 5: Literature Review Table

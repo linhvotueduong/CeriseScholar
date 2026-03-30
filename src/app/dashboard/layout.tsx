@@ -1,9 +1,6 @@
 import Navbar from "@/components/layout/Navbar";
+import Sidebar from "@/components/layout/Sidebar";
 
-/**
- * Layout for all /dashboard pages.
- * Includes the top navigation bar and wraps the page content.
- */
 export default function DashboardLayout({
   children,
 }: {
@@ -12,9 +9,10 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {children}
-      </main>
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 px-8 py-8">{children}</main>
+      </div>
     </div>
   );
 }
