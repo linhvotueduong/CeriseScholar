@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import * as pdfjs from "pdfjs-dist";
-import { TextLayer } from "pdfjs-dist";
+import { TextLayer } from "pdfjs-dist/webpack.mjs";
 import type { PDFDocumentProxy } from "@/lib/pdf/loadPdf";
 import HighlightLayer from "./HighlightLayer";
 import type { Highlight } from "@/types/annotation";
