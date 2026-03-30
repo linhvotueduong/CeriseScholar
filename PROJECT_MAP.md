@@ -2,7 +2,7 @@
 
 > This file is kept up to date as the project evolves. It describes every folder and file so you always know what's where.
 
-**Last updated:** 2026-03-29 (Phase 0 — Project Setup)
+**Last updated:** 2026-03-29 (Phase 1 — Supabase Auth)
 
 ---
 
@@ -22,31 +22,55 @@
 
 ```
 CeriseScholar/
-├── .git/                       # Git version control (don't touch)
-├── .gitignore                  # Files Git should ignore (node_modules, .env, etc.)
-├── node_modules/               # Installed packages (don't touch, auto-managed by npm)
+├── .env.local                          # Supabase keys (NOT in Git — kept secret)
+├── .gitignore                          # Files Git should ignore
+├── package.json                        # Dependencies and scripts
+├── package-lock.json                   # Exact dependency versions
+├── tsconfig.json                       # TypeScript configuration
+├── next.config.ts                      # Next.js configuration
+├── postcss.config.mjs                  # PostCSS config (for Tailwind)
+├── eslint.config.mjs                   # Code linting rules
+├── PROJECT_MAP.md                      # THIS FILE
 │
-├── package.json                # Project config — lists dependencies and scripts
-├── package-lock.json           # Exact dependency versions (auto-generated)
-├── tsconfig.json               # TypeScript configuration
-├── next.config.ts              # Next.js configuration
-├── postcss.config.mjs          # PostCSS config (needed by Tailwind)
-├── eslint.config.mjs           # Code linting rules
+├── public/                             # Static files (images, icons)
 │
-├── public/                     # Static files served directly (images, icons)
-│   └── (empty for now)
-│
-├── src/                        # All source code lives here
-│   └── app/                    # Pages and layouts (Next.js App Router)
-│       ├── layout.tsx          # Root layout — wraps every page (<html>, <body>)
-│       ├── page.tsx            # Home page (currently shows default Next.js content)
-│       ├── globals.css         # Global CSS styles (Tailwind imports)
-│       └── favicon.ico         # Browser tab icon
-│
-├── PROJECT_MAP.md              # THIS FILE — project structure reference
-├── CLAUDE.md                   # AI assistant instructions (auto-generated)
-├── AGENTS.md                   # Agent configuration (auto-generated)
-└── README.md                   # Project description for GitHub
+├── src/
+│   ├── app/                            # Pages (Next.js App Router)
+│   │   ├── layout.tsx                  # Root layout — wraps every page
+│   │   ├── page.tsx                    # Home page — landing with Login/Signup links
+│   │   ├── globals.css                 # Global Tailwind CSS
+│   │   ├── favicon.ico                 # Browser tab icon
+│   │   │
+│   │   ├── login/
+│   │   │   └── page.tsx               # Login page
+│   │   ├── signup/
+│   │   │   └── page.tsx               # Signup page
+│   │   ├── auth/
+│   │   │   └── callback/
+│   │   │       └── route.ts           # Handles email confirmation redirect
+│   │   │
+│   │   └── dashboard/
+│   │       ├── layout.tsx             # Dashboard layout (Navbar + content area)
+│   │       └── page.tsx               # Dashboard home (shows welcome message)
+│   │
+│   ├── components/
+│   │   ├── auth/
+│   │   │   ├── LoginForm.tsx          # Email/password login form
+│   │   │   └── SignupForm.tsx         # Email/password signup form
+│   │   └── layout/
+│   │       └── Navbar.tsx             # Top navigation bar with logout
+│   │
+│   ├── hooks/
+│   │   └── useUser.ts                 # Hook to get the logged-in user
+│   │
+│   ├── lib/
+│   │   ├── supabase/
+│   │   │   ├── client.ts             # Browser-side Supabase client
+│   │   │   └── server.ts             # Server-side Supabase client
+│   │   └── utils/
+│   │       └── cn.ts                  # Tailwind class merge utility
+│   │
+│   └── middleware.ts                   # Auth middleware (protects /dashboard, redirects)
 ```
 
 ---
@@ -55,13 +79,15 @@ CeriseScholar/
 
 | File | What it does |
 |------|-------------|
-| `package.json` | Lists all libraries the project uses, and defines commands like `npm run dev` |
-| `src/app/layout.tsx` | The "shell" of every page — contains the `<html>` and `<body>` tags |
-| `src/app/page.tsx` | The home page — what you see at http://localhost:3000 |
-| `src/app/globals.css` | Global styles — currently just Tailwind CSS imports |
-| `next.config.ts` | Settings for Next.js (we'll modify this for PDF.js later) |
-| `.gitignore` | Tells Git to skip files like `node_modules/` and `.env` |
-| `.env.local` | (Will be created in Phase 1) — stores secret keys like Supabase credentials |
+| `.env.local` | Stores Supabase URL and anon key (never uploaded to GitHub) |
+| `src/middleware.ts` | Runs on every request — redirects unauthenticated users to /login |
+| `src/lib/supabase/client.ts` | Creates a Supabase connection for browser-side code |
+| `src/lib/supabase/server.ts` | Creates a Supabase connection for server-side code |
+| `src/hooks/useUser.ts` | React hook that returns the currently logged-in user |
+| `src/components/auth/LoginForm.tsx` | The login form with email and password fields |
+| `src/components/auth/SignupForm.tsx` | The signup form — shows "check your email" after success |
+| `src/components/layout/Navbar.tsx` | Top bar showing "Cerise Scholar", user email, and logout |
+| `src/app/auth/callback/route.ts` | Handles the redirect when a user clicks their email confirmation link |
 
 ---
 
@@ -85,7 +111,7 @@ CeriseScholar/
 ## Build Phases Progress
 
 - [x] Phase 0: Project Setup + GitHub Repository
-- [ ] Phase 1: Supabase Auth (Sign Up / Log In / Log Out)
+- [x] Phase 1: Supabase Auth (Sign Up / Log In / Log Out)
 - [ ] Phase 2: Database + PDF Upload
 - [ ] Phase 3: PDF Viewer
 - [ ] Phase 4: Highlighting + Annotations
