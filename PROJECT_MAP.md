@@ -2,7 +2,7 @@
 
 > This file is kept up to date as the project evolves. It describes every folder and file so you always know what's where.
 
-**Last updated:** 2026-03-29 (Phase 2 — Database + PDF Upload)
+**Last updated:** 2026-03-29 (Phase 3 — PDF Viewer)
 
 ---
 
@@ -52,8 +52,12 @@ CeriseScholar/
 │   │   └── dashboard/
 │   │       ├── layout.tsx             # Dashboard layout (Navbar + Sidebar + content)
 │   │       ├── page.tsx               # Dashboard home (grid of uploaded PDFs)
-│   │       └── upload/
-│   │           └── page.tsx           # PDF upload page (drag & drop)
+│   │       ├── upload/
+│   │       │   └── page.tsx           # PDF upload page (drag & drop)
+│   │       └── viewer/
+│   │           └── [id]/
+│   │               ├── page.tsx       # PDF viewer page (server — fetches PDF data)
+│   │               └── ViewerClient.tsx # PDF viewer client wrapper
 │   │
 │   ├── components/
 │   │   ├── auth/
@@ -65,8 +69,18 @@ CeriseScholar/
 │   │   └── ui/
 │   │       └── Spinner.tsx            # Loading spinner component
 │   │
+│   │
+│   ├── components/pdf/
+│   │   ├── PdfViewer.tsx              # Main viewer — combines toolbar + page
+│   │   ├── PdfPage.tsx                # Renders one PDF page (canvas + text layer)
+│   │   └── PdfToolbar.tsx             # Page navigation and zoom controls
+│   │
 │   ├── hooks/
-│   │   └── useUser.ts                 # Hook to get the logged-in user
+│   │   ├── useUser.ts                 # Hook to get the logged-in user
+│   │   └── usePdf.ts                  # Hook for PDF loading, page nav, zoom
+│   │
+│   ├── lib/pdf/
+│   │   └── loadPdf.ts                 # Loads a PDF document using PDF.js
 │   │
 │   ├── types/
 │   │   ├── pdf.ts                     # PDF type definition
@@ -123,7 +137,7 @@ CeriseScholar/
 - [x] Phase 0: Project Setup + GitHub Repository
 - [x] Phase 1: Supabase Auth (Sign Up / Log In / Log Out)
 - [x] Phase 2: Database + PDF Upload
-- [ ] Phase 3: PDF Viewer
+- [x] Phase 3: PDF Viewer
 - [ ] Phase 4: Highlighting + Annotations
 - [ ] Phase 5: Literature Review Table
 - [ ] Phase 6: OCR
