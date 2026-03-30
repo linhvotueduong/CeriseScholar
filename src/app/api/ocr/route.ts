@@ -81,9 +81,9 @@ export async function POST(request: Request) {
           const ctx = canvas.getContext("2d");
 
           // Render PDF page to canvas
-          await page.render({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            canvasContext: ctx as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (page.render as any)({
+            canvasContext: ctx,
             viewport,
           }).promise;
 
