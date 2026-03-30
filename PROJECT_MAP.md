@@ -2,7 +2,7 @@
 
 > This file is kept up to date as the project evolves. It describes every folder and file so you always know what's where.
 
-**Last updated:** 2026-03-30 (Phase 4 — Highlighting + Annotations)
+**Last updated:** 2026-03-30 (Phase 5 — Literature Review Table)
 
 ---
 
@@ -54,10 +54,12 @@ CeriseScholar/
 │   │       ├── page.tsx               # Dashboard home (grid of uploaded PDFs)
 │   │       ├── upload/
 │   │       │   └── page.tsx           # PDF upload page (drag & drop)
-│   │       └── viewer/
-│   │           └── [id]/
-│   │               ├── page.tsx       # PDF viewer page (server — fetches PDF data)
-│   │               └── ViewerClient.tsx # PDF viewer client wrapper
+│   │       ├── viewer/
+│   │       │   └── [id]/
+│   │       │       ├── page.tsx       # PDF viewer page (server — fetches PDF data)
+│   │       │       └── ViewerClient.tsx # PDF viewer client wrapper
+│   │       └── literature-review/
+│   │           └── page.tsx           # Literature review table page
 │   │
 │   ├── components/
 │   │   ├── auth/
@@ -80,11 +82,18 @@ CeriseScholar/
 │   │   ├── AnnotationSidebar.tsx      # Right panel showing all highlights + notes
 │   │   └── NoteModal.tsx              # Modal for adding notes to highlights
 │   │
+│   ├── components/literature-review/
+│   │   ├── ReviewTable.tsx            # Main table with all columns
+│   │   ├── ReviewTableRow.tsx         # Single row with inline-editable cells
+│   │   ├── ReviewTableFilters.tsx     # Filter by source PDF, search by theme/text
+│   │   └── ExportButton.tsx           # Export table to CSV file
+│   │
 │   ├── hooks/
 │   │   ├── useUser.ts                 # Hook to get the logged-in user
 │   │   ├── usePdf.ts                  # Hook for PDF loading, page nav, zoom
 │   │   ├── useHighlights.ts           # CRUD for highlights + auto-creates lit review entry
-│   │   └── useAnnotations.ts          # CRUD for sticky notes/comments
+│   │   ├── useAnnotations.ts          # CRUD for sticky notes/comments
+│   │   └── useLiteratureReview.ts     # Fetch, update, delete lit review entries
 │   │
 │   ├── lib/pdf/
 │   │   └── loadPdf.ts                 # Loads a PDF document using PDF.js
@@ -146,7 +155,7 @@ CeriseScholar/
 - [x] Phase 2: Database + PDF Upload
 - [x] Phase 3: PDF Viewer
 - [x] Phase 4: Highlighting + Annotations
-- [ ] Phase 5: Literature Review Table
+- [x] Phase 5: Literature Review Table
 - [ ] Phase 6: OCR
 - [ ] Phase 7: Text-to-Speech
 - [ ] Phase 8: Polish + Landing Page + Cloudflare Deployment
