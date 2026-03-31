@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Highlight, Annotation } from "@/types/annotation";
 
 interface AnnotationSidebarProps {
@@ -10,7 +10,60 @@ interface AnnotationSidebarProps {
   onGoToPage: (page: number) => void;
   onDeleteHighlight: (id: string) => void;
   onAddNote: (highlightId: string, pageNumber: number) => void;
+  onUpdateNote?: (annotationId: string, content: string) => void;
   onReadHighlight?: (text: string) => void;
+}
+
+function EditableNote({
+  content,
+  onSave,
+}: {
+  content: string;
+  onSave: (content: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(content);
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (editing && ref.current) {
+      ref.current.focus();
+      ref.current.selectionStart = ref.current.value.length;
+    }
+  }, [editing]);
+
+  function save() {
+    setEditing(false);
+    if (draft !== content) {
+      onSave(draft);
+    }
+  }
+
+  if (editing) {
+    return (
+      <textarea
+        ref={ref}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") { setDraft(content); setEditing(false); }
+        }}
+        rows={3}
+        className="w-full text-xs text-gray-600 mt-2 bg-yellow-50 p-2 rounded border border-[#DE3163] focus:outline-none resize-y"
+      />
+    );
+  }
+
+  return (
+    <p
+      onClick={() => setEditing(true)}
+      className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded cursor-pointer hover:bg-yellow-100 transition-colors"
+      title="Click to edit note"
+    >
+      {content}
+    </p>
+  );
 }
 
 export default function AnnotationSidebar({
@@ -20,6 +73,7 @@ export default function AnnotationSidebar({
   onGoToPage,
   onDeleteHighlight,
   onAddNote,
+  onUpdateNote,
   onReadHighlight,
 }: AnnotationSidebarProps) {
   const [filter, setFilter] = useState<"all" | "page">("all");
@@ -112,11 +166,14 @@ export default function AnnotationSidebar({
                     &ldquo;{highlight.highlighted_text}&rdquo;
                   </p>
 
-                  {/* Note attached to this highlight */}
+                  {/* Note — editable inline */}
                   {note ? (
-                    <p className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded">
-                      {note.content}
-                    </p>
+                    <EditableNote
+                      content={note.content}
+                      onSave={(newContent) =>
+                        onUpdateNote?.(note.id, newContent)
+                      }
+                    />
                   ) : (
                     <button
                       onClick={() =>

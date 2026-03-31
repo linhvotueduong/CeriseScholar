@@ -47,7 +47,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   } = usePdf();
 
   const { highlights, createHighlight, deleteHighlight } = useHighlights(pdfId);
-  const { annotations, createAnnotation } = useAnnotations(pdfId);
+  const { annotations, createAnnotation, updateAnnotation } = useAnnotations(pdfId);
   const { codes, createCode, updateCode, deleteCode } = useCodes();
   const tts = useTts();
 
@@ -271,6 +271,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         onDeleteHighlight={deleteHighlight}
         onAddNote={handleAddNote}
         onReadHighlight={handleReadHighlight}
+        onUpdateNote={updateAnnotation}
       />
       </div>
 
