@@ -27,12 +27,13 @@ export function useCodes(projectId?: string) {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: existing } = await supabase
-      .from("codes")
-      .select("id")
-      .limit(1);
+    let checkQuery = supabase.from("codes").select("id").limit(1);
+    if (projectId) {
+      checkQuery = checkQuery.eq("project_id", projectId);
+    }
+    const { data: existing } = await checkQuery;
 
-    if (existing && existing.length > 0) return; // Already has codes
+    if (existing && existing.length > 0) return; // Already has codes for this project
 
     // Create default codes
     const inserts = DEFAULT_CODES.map((code, i) => ({
