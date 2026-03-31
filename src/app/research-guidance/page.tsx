@@ -18,6 +18,7 @@ const steps = [
       "Make sure your hypothesis is testable — can you measure the variables?",
     ],
     ceriseTool: null,
+    links: [] as { label: string; href: string }[],
   },
   {
     number: 2,
@@ -41,6 +42,10 @@ const steps = [
       "Your notes should explain the significance, not just summarize — ask 'So what?'",
     ],
     ceriseTool: "ScholarAsk → Workspace (PDF viewer with highlighting, notes, and Code System)",
+    links: [
+      { label: "Open Workspace", href: "/dashboard" },
+      { label: "What is ScholarAsk?", href: "/about" },
+    ],
   },
   {
     number: 3,
@@ -65,6 +70,10 @@ const steps = [
       "Include confidence intervals in your results — they're more informative than p-values alone",
     ],
     ceriseTool: "Meta-Analysis (Methodology Guide → Data Upload → Analyze Data → Effect Sizes → Forest Plot)",
+    links: [
+      { label: "Open Workspace", href: "/dashboard" },
+      { label: "ICPSR Data", href: "https://www.icpsr.umich.edu/" },
+    ],
   },
   {
     number: 4,
@@ -88,6 +97,9 @@ const steps = [
       "Your synthesis paragraphs become the first draft of your literature review",
     ],
     ceriseTool: "Literature Review Table (filter by section → write synthesis paragraphs → export CSV)",
+    links: [
+      { label: "Open Workspace", href: "/dashboard" },
+    ],
   },
   {
     number: 5,
@@ -112,6 +124,9 @@ const steps = [
       "Have someone else read your paper before submitting — fresh eyes catch mistakes",
     ],
     ceriseTool: "All tools combined: Workspace highlights → Lit Review synthesis → Meta-Analysis results → Final paper",
+    links: [
+      { label: "Open Workspace", href: "/dashboard" },
+    ],
   },
 ];
 
@@ -168,9 +183,20 @@ export default function ResearchGuidancePage() {
                 {/* Cerise Scholar tool */}
                 {step.ceriseTool && (
                   <div className="bg-pink-50 border border-pink-200 rounded-lg p-3">
-                    <p className="text-sm text-[#DE3163] font-medium">
+                    <p className="text-sm text-[#DE3163] font-medium mb-2">
                       Cerise Scholar tool: {step.ceriseTool}
                     </p>
+                    {step.links && step.links.length > 0 && (
+                      <div className="flex gap-2 flex-wrap">
+                        {step.links.map((link, i) => (
+                          <Link key={i} href={link.href}
+                            target={link.href.startsWith("http") ? "_blank" : undefined}
+                            className="px-3 py-1.5 text-xs bg-[#DE3163] text-white rounded-lg hover:bg-[#c4294f] transition-colors font-medium">
+                            {link.label} {link.href.startsWith("http") ? "↗" : "→"}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
