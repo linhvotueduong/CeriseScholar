@@ -16,6 +16,7 @@ interface CreateHighlightParams {
   codeId?: string;
   codeName?: string;
   noteContent?: string;
+  projectId?: string;
 }
 
 export function useHighlights(pdfId: string) {
@@ -84,6 +85,7 @@ export function useHighlights(pdfId: string) {
         code_name: params.codeName || "",
         user_notes: params.noteContent || "",
         apa_reference: apaRef,
+        project_id: params.projectId || null,
       });
 
       // 3. Update local state

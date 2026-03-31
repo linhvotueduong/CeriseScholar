@@ -5,16 +5,15 @@ import { createClient } from "@/lib/supabase/client";
 import type { Code } from "@/types/code";
 import { DEFAULT_CODES } from "@/types/code";
 
-export function useCodes() {
+export function useCodes(projectId?: string) {
   const [codes, setCodes] = useState<Code[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchCodes = useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase
-      .from("codes")
-      .select("*")
-      .order("sort_order", { ascending: true });
+    let query = supabase.from("codes").select("*");
+    if (projectId) query = query.eq("project_id", projectId);
+    const { data } = await query.order("sort_order", { ascending: true });
 
     if (data) setCodes(data as Code[]);
     setLoading(false);
@@ -41,6 +40,7 @@ export function useCodes() {
       name: code.name,
       color: code.color,
       sort_order: i,
+      project_id: projectId || null,
     }));
 
     await supabase.from("codes").insert(inserts);
@@ -66,6 +66,7 @@ export function useCodes() {
           name,
           color,
           sort_order: codes.length,
+          project_id: projectId || null,
         })
         .select()
         .single();

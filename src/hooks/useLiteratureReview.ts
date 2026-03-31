@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { LiteratureReviewEntry } from "@/types/literature-review";
 
-export function useLiteratureReview() {
+export function useLiteratureReview(projectId?: string) {
   const [entries, setEntries] = useState<LiteratureReviewEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,10 +12,15 @@ export function useLiteratureReview() {
     setLoading(true);
     const supabase = createClient();
 
-    const { data } = await supabase
+    let query = supabase
       .from("literature_review_entries")
-      .select("*")
-      .order("date_added", { ascending: false });
+      .select("*");
+
+    if (projectId) {
+      query = query.eq("project_id", projectId);
+    }
+
+    const { data } = await query.order("date_added", { ascending: false });
 
     if (!data) {
       setLoading(false);

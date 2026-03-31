@@ -8,9 +8,10 @@ import type { Pdf } from "@/types/pdf";
 
 interface DocumentPanelProps {
   currentPdfId: string;
+  projectId?: string;
 }
 
-export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
+export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanelProps) {
   const [pdfs, setPdfs] = useState<Pdf[]>([]);
   const [uploading, setUploading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -22,10 +23,9 @@ export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
   useEffect(() => {
     async function fetchPdfs() {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("pdfs")
-        .select("*")
-        .order("created_at", { ascending: false });
+      let query = supabase.from("pdfs").select("*");
+      if (projectId) query = query.eq("project_id", projectId);
+      const { data } = await query.order("created_at", { ascending: false });
       if (data) setPdfs(data as Pdf[]);
     }
     fetchPdfs();
@@ -50,6 +50,7 @@ export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
       .insert({
         id: fileId,
         user_id: user.id,
+        project_id: projectId || null,
         filename: file.name,
         display_name: file.name.replace(/\.pdf$/i, ""),
         storage_path: storagePath,
@@ -146,7 +147,7 @@ export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
               className={`group relative ${isDragging ? "opacity-40" : ""} ${isDragOver ? "border-t-2 border-t-[#DE3163]" : ""}`}
             >
               <button
-                onClick={() => router.push(`/dashboard/viewer/${pdf.id}`)}
+                onClick={() => router.push(projectId ? `/dashboard/project/${projectId}/viewer/${pdf.id}` : `/dashboard/viewer/${pdf.id}`)}
                 className={`w-full text-left px-3 py-2 border-b border-gray-50 transition-colors ${
                   isActive ? "bg-pink-50 border-l-2 border-l-[#DE3163]" : "hover:bg-gray-50 border-l-2 border-l-transparent"
                 }`}

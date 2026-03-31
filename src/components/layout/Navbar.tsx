@@ -30,13 +30,7 @@ export default function Navbar() {
                 href="/dashboard"
                 className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
               >
-                My PDFs
-              </Link>
-              <Link
-                href="/dashboard/literature-review"
-                className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
-              >
-                Literature Review
+                My Projects
               </Link>
             </div>
           )}

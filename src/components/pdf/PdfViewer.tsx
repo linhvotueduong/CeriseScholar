@@ -24,6 +24,7 @@ interface PdfViewerProps {
   pdfDisplayName: string;
   pdfAuthor?: string;
   pdfTitle?: string;
+  projectId?: string;
 }
 
 // Pending highlight data before color/note is chosen
@@ -33,7 +34,7 @@ interface PendingHighlight {
   rects: { x: number; y: number; width: number; height: number }[];
 }
 
-export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTitle }: PdfViewerProps) {
+export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTitle, projectId }: PdfViewerProps) {
   const {
     document,
     currentPage,
@@ -51,7 +52,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
 
   const { highlights, createHighlight, deleteHighlight } = useHighlights(pdfId);
   const { annotations, createAnnotation, updateAnnotation } = useAnnotations(pdfId);
-  const { codes, createCode, updateCode, deleteCode } = useCodes();
+  const { codes, createCode, updateCode, deleteCode } = useCodes(projectId);
   const tts = useTts();
 
   const [highlightMode, setHighlightMode] = useState(false);
@@ -124,6 +125,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         codeId,
         codeName,
         noteContent,
+        projectId,
       });
 
       if (highlight && noteContent) {
@@ -236,7 +238,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
             <span className="text-[10px] text-gray-400">{totalPages}p</span>
           }
         >
-          <DocumentPanel currentPdfId={pdfId} />
+          <DocumentPanel currentPdfId={pdfId} projectId={projectId} />
         </CollapsibleSection>
 
         <CollapsibleSection
