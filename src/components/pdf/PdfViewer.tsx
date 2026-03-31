@@ -242,12 +242,11 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         <CollapsibleSection
           title="Code System"
           actions={
-            <button
-              onClick={() => {}}
+            <span
               className="text-xs text-[#DE3163]"
             >
               +
-            </button>
+            </span>
           }
         >
           <div className="p-2">

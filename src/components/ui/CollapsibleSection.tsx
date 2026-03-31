@@ -19,9 +19,9 @@ export default function CollapsibleSection({
 
   return (
     <div className="border-b border-gray-200">
-      <button
+      <div
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer select-none"
       >
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] text-gray-400">
@@ -36,7 +36,7 @@ export default function CollapsibleSection({
             {actions}
           </div>
         )}
-      </button>
+      </div>
       {open && <div>{children}</div>}
     </div>
   );
