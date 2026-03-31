@@ -1,7 +1,6 @@
 "use client";
 
 import PdfViewer from "@/components/pdf/PdfViewer";
-import DocumentPanel from "@/components/pdf/DocumentPanel";
 import Link from "next/link";
 
 interface ViewerClientProps {
@@ -27,17 +26,14 @@ export default function ViewerClient({ pdfId, pdfName, pdfUrl, pdfAuthor, pdfTit
         </h2>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        <DocumentPanel currentPdfId={pdfId} />
-        <div className="flex-1 overflow-hidden">
-          <PdfViewer
-            url={pdfUrl}
-            pdfId={pdfId}
-            pdfDisplayName={pdfName}
-            pdfAuthor={pdfAuthor}
-            pdfTitle={pdfTitle}
-          />
-        </div>
+      <div className="flex-1 overflow-hidden">
+        <PdfViewer
+          url={pdfUrl}
+          pdfId={pdfId}
+          pdfDisplayName={pdfName}
+          pdfAuthor={pdfAuthor}
+          pdfTitle={pdfTitle}
+        />
       </div>
     </div>
   );

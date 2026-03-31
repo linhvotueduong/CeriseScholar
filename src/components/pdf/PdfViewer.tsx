@@ -12,7 +12,10 @@ import PdfToolbar from "./PdfToolbar";
 import TtsControls from "@/components/tts/TtsControls";
 import AnnotationSidebar from "@/components/annotations/AnnotationSidebar";
 import CodeSystemPanel from "@/components/codes/CodeSystemPanel";
+import DocumentPanel from "@/components/pdf/DocumentPanel";
 import NoteModal from "@/components/annotations/NoteModal";
+import ResizablePanel from "@/components/ui/ResizablePanel";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import Spinner from "@/components/ui/Spinner";
 
 interface PdfViewerProps {
@@ -225,7 +228,40 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
 
   return (
     <div className="flex h-full">
-      {/* Main viewer area */}
+      {/* LEFT PANEL: Documents + Code System (resizable) */}
+      <ResizablePanel title="Documents" defaultWidth={220} minWidth={160} maxWidth={400} side="left">
+        <CollapsibleSection
+          title="Documents"
+          actions={
+            <span className="text-[10px] text-gray-400">{totalPages}p</span>
+          }
+        >
+          <DocumentPanel currentPdfId={pdfId} />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Code System"
+          actions={
+            <button
+              onClick={() => {}}
+              className="text-xs text-[#DE3163]"
+            >
+              +
+            </button>
+          }
+        >
+          <div className="p-2">
+            <CodeSystemPanel
+              codes={codes}
+              onCreateCode={createCode}
+              onUpdateCode={updateCode}
+              onDeleteCode={deleteCode}
+            />
+          </div>
+        </CollapsibleSection>
+      </ResizablePanel>
+
+      {/* CENTER: PDF Viewer */}
       <div className="flex-1 flex flex-col min-w-0">
         <PdfToolbar
           currentPage={currentPage}
@@ -287,34 +323,23 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         />
       </div>
 
-      {/* Right panel: Code System + Annotation sidebar */}
-      <div className="w-72 border-l border-gray-200 bg-white flex flex-col h-full overflow-y-auto">
-        {/* Code System panel */}
-        <div className="p-3 border-b border-gray-200">
-          <CodeSystemPanel
-            codes={codes}
-            onCreateCode={createCode}
-            onUpdateCode={updateCode}
-            onDeleteCode={deleteCode}
-          />
-        </div>
-
-        {/* Annotations */}
+      {/* RIGHT PANEL: Highlights (resizable) */}
+      <ResizablePanel title="Highlights" defaultWidth={280} minWidth={200} maxWidth={450} side="right">
         <AnnotationSidebar
-        highlights={highlights}
-        annotations={annotations}
-        currentPage={currentPage}
-        onGoToPage={handleGoToPage}
-        onDeleteHighlight={deleteHighlight}
-        onAddNote={handleAddNote}
-        onReadHighlight={handleReadHighlight}
-        onUpdateNote={updateAnnotation}
-        onReHighlight={(highlightId: string) => {
-          setReHighlightId(highlightId);
-          setHighlightMode(true);
-        }}
-      />
-      </div>
+          highlights={highlights}
+          annotations={annotations}
+          currentPage={currentPage}
+          onGoToPage={handleGoToPage}
+          onDeleteHighlight={deleteHighlight}
+          onAddNote={handleAddNote}
+          onReadHighlight={handleReadHighlight}
+          onUpdateNote={updateAnnotation}
+          onReHighlight={(highlightId: string) => {
+            setReHighlightId(highlightId);
+            setHighlightMode(true);
+          }}
+        />
+      </ResizablePanel>
 
       {/* Modal for NEW highlight — shows color picker, code selector + note field */}
       {pendingHighlight && (

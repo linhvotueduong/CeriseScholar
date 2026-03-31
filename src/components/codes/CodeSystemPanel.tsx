@@ -49,11 +49,8 @@ export default function CodeSystemPanel({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-800">
-          Code System
-        </h3>
+    <div>
+      <div className="flex items-center justify-end mb-2">
         <button
           onClick={() => setAdding(!adding)}
           className="text-xs text-[#DE3163] hover:underline"

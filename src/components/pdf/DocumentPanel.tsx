@@ -12,7 +12,6 @@ interface DocumentPanelProps {
 
 export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
   const [pdfs, setPdfs] = useState<Pdf[]>([]);
-  const [collapsed, setCollapsed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -44,10 +43,7 @@ export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
       .from("pdfs")
       .upload(storagePath, file);
 
-    if (uploadError) {
-      setUploading(false);
-      return;
-    }
+    if (uploadError) { setUploading(false); return; }
 
     const { data: newPdf } = await supabase
       .from("pdfs")
@@ -63,9 +59,7 @@ export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
       .select()
       .single();
 
-    if (newPdf) {
-      setPdfs((prev) => [newPdf as Pdf, ...prev]);
-    }
+    if (newPdf) setPdfs((prev) => [newPdf as Pdf, ...prev]);
     setUploading(false);
   }
 
@@ -77,44 +71,26 @@ export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
       const supabase = createClient();
       const pdf = pdfs.find((p) => p.id === pdfId);
 
-      // Delete related data
       await supabase.from("literature_review_entries").delete().eq("pdf_id", pdfId);
       await supabase.from("annotations").delete().eq("pdf_id", pdfId);
       await supabase.from("highlights").delete().eq("pdf_id", pdfId);
       await supabase.from("pdfs").delete().eq("id", pdfId);
 
-      // Delete file from storage
       if (pdf?.storage_path) {
         await supabase.storage.from("pdfs").remove([pdf.storage_path]);
       }
 
       setPdfs((prev) => prev.filter((p) => p.id !== pdfId));
 
-      // If we deleted the current PDF, navigate to dashboard
-      if (pdfId === currentPdfId) {
-        router.push("/dashboard");
-      }
+      if (pdfId === currentPdfId) router.push("/dashboard");
     },
     [pdfs, currentPdfId, router]
   );
 
-  // Drag and drop to reorder
-  function handleDragStart(index: number) {
-    setDraggedIndex(index);
-  }
-
-  function handleDragOver(e: React.DragEvent, index: number) {
-    e.preventDefault();
-    setDragOverIndex(index);
-  }
-
+  function handleDragStart(index: number) { setDraggedIndex(index); }
+  function handleDragOver(e: React.DragEvent, index: number) { e.preventDefault(); setDragOverIndex(index); }
   function handleDrop(index: number) {
-    if (draggedIndex === null || draggedIndex === index) {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-
+    if (draggedIndex === null || draggedIndex === index) { setDraggedIndex(null); setDragOverIndex(null); return; }
     const newPdfs = [...pdfs];
     const [dragged] = newPdfs.splice(draggedIndex, 1);
     newPdfs.splice(index, 0, dragged);
@@ -122,52 +98,20 @@ export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
     setDraggedIndex(null);
     setDragOverIndex(null);
   }
-
-  function handleDragEnd() {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  }
-
-  if (collapsed) {
-    return (
-      <div className="w-10 border-r border-gray-200 bg-white flex flex-col items-center pt-3">
-        <button
-          onClick={() => setCollapsed(false)}
-          className="text-gray-400 hover:text-[#DE3163] text-lg"
-          title="Show documents"
-        >
-          &rsaquo;
-        </button>
-      </div>
-    );
-  }
+  function handleDragEnd() { setDraggedIndex(null); setDragOverIndex(null); }
 
   return (
-    <div className="w-56 border-r border-gray-200 bg-white flex flex-col h-full">
-      {/* Header */}
-      <div className="p-3 border-b border-gray-200 flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Documents
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="text-xs text-[#DE3163] hover:underline font-medium"
-            title="Upload PDF"
-          >
-            +
-          </button>
-          <button
-            onClick={() => setCollapsed(true)}
-            className="text-gray-400 hover:text-gray-600 text-sm ml-1"
-            title="Collapse"
-          >
-            &lsaquo;
-          </button>
-        </div>
+    <div className="flex flex-col">
+      {/* Upload button */}
+      <div className="px-2 py-1.5 border-b border-gray-100">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full text-xs text-[#DE3163] hover:bg-pink-50 py-1 rounded transition-colors"
+        >
+          + Upload PDF
+        </button>
       </div>
 
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -181,13 +125,11 @@ export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
       />
 
       {uploading && (
-        <div className="px-3 py-2 text-xs text-blue-600 bg-blue-50 border-b border-gray-100">
-          Uploading...
-        </div>
+        <div className="px-3 py-1.5 text-xs text-blue-600 bg-blue-50">Uploading...</div>
       )}
 
-      {/* PDF list — draggable */}
-      <div className="flex-1 overflow-y-auto">
+      {/* PDF list */}
+      <div className="overflow-y-auto">
         {pdfs.map((pdf, index) => {
           const isActive = pdf.id === currentPdfId;
           const isDragging = draggedIndex === index;
@@ -201,44 +143,26 @@ export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
               onDragOver={(e) => handleDragOver(e, index)}
               onDrop={() => handleDrop(index)}
               onDragEnd={handleDragEnd}
-              className={`group relative transition-all ${
-                isDragging ? "opacity-40" : ""
-              } ${isDragOver ? "border-t-2 border-t-[#DE3163]" : ""}`}
+              className={`group relative ${isDragging ? "opacity-40" : ""} ${isDragOver ? "border-t-2 border-t-[#DE3163]" : ""}`}
             >
               <button
                 onClick={() => router.push(`/dashboard/viewer/${pdf.id}`)}
-                className={`w-full text-left px-3 py-2.5 border-b border-gray-50 transition-colors ${
-                  isActive
-                    ? "bg-pink-50 border-l-2 border-l-[#DE3163]"
-                    : "hover:bg-gray-50 border-l-2 border-l-transparent"
+                className={`w-full text-left px-3 py-2 border-b border-gray-50 transition-colors ${
+                  isActive ? "bg-pink-50 border-l-2 border-l-[#DE3163]" : "hover:bg-gray-50 border-l-2 border-l-transparent"
                 }`}
               >
-                {/* Drag handle */}
-                <span className="absolute left-0.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab select-none">
-                  ⠿
-                </span>
-
-                <p
-                  className={`text-sm truncate pr-4 ${
-                    isActive ? "font-medium text-[#DE3163]" : "text-gray-700"
-                  }`}
-                >
+                <p className={`text-xs truncate pr-4 ${isActive ? "font-medium text-[#DE3163]" : "text-gray-700"}`}>
                   {pdf.display_name}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-0.5">
-                  {pdf.file_size
-                    ? `${(pdf.file_size / 1024 / 1024).toFixed(1)} MB`
-                    : ""}
-                  {" · "}
-                  {new Date(pdf.created_at).toLocaleDateString()}
+                <p className="text-[9px] text-gray-400 mt-0.5">
+                  {pdf.file_size ? `${(pdf.file_size / 1024 / 1024).toFixed(1)} MB` : ""} · {new Date(pdf.created_at).toLocaleDateString()}
                 </p>
               </button>
 
-              {/* Delete button — appears on hover */}
               <button
                 onClick={(e) => handleDelete(e, pdf.id)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-sm"
-                title="Delete PDF"
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 text-xs"
+                title="Delete"
               >
                 &times;
               </button>
@@ -247,8 +171,7 @@ export default function DocumentPanel({ currentPdfId }: DocumentPanelProps) {
         })}
       </div>
 
-      {/* Count */}
-      <div className="px-3 py-2 border-t border-gray-200 text-[10px] text-gray-400">
+      <div className="px-3 py-1.5 text-[9px] text-gray-400 border-t border-gray-100">
         {pdfs.length} document{pdfs.length !== 1 ? "s" : ""}
       </div>
     </div>
