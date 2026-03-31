@@ -4,11 +4,17 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white">
       <nav className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-        <Link href="/" className="text-xl font-bold text-[#DE3163]">Cerise Scholar</Link>
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium">Workspace</Link>
-          <Link href="/" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium">Home</Link>
-          <Link href="/about" className="text-sm text-[#DE3163] font-medium">About</Link>
+        <div className="flex items-center gap-6">
+          <Link href="/" className="text-xl font-bold text-[#DE3163]">Cerise Scholar</Link>
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium">Workspace</Link>
+            <Link href="/" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium">Home</Link>
+            <Link href="/about" className="text-sm text-[#DE3163] font-medium">About</Link>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/login" className="px-4 py-2 text-sm text-gray-600 hover:text-[#DE3163]">Log In</Link>
+          <Link href="/signup" className="px-4 py-2 text-sm bg-[#DE3163] text-white rounded-lg hover:bg-[#c4294f]">Sign Up Free</Link>
         </div>
       </nav>
 
