@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Papa from "papaparse";
 import { parseSavFile } from "@/lib/data/parseSav";
+import MethodologyGuide from "@/components/meta/MethodologyGuide";
 import Link from "next/link";
 
 interface DataRow { [key: string]: string | number | null; }
@@ -59,14 +60,14 @@ function getNumericValues(rows: DataRow[], col: string): number[] {
   return rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v !== null);
 }
 
-type Tab = "upload" | "analyze" | "calculator" | "results";
+type Tab = "guide" | "upload" | "analyze" | "calculator" | "results";
 
 export default function MetaAnalysisPage() {
   const params = useParams();
   const projectId = params.projectId as string;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [tab, setTab] = useState<Tab>("upload");
+  const [tab, setTab] = useState<Tab>("guide");
   const [datasets, setDatasets] = useState<StudyData[]>([]);
   const [selectedDataset, setSelectedDataset] = useState<number | null>(null);
 
@@ -188,13 +189,24 @@ export default function MetaAnalysisPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-gray-200">
-        {([["upload", "Data Upload"], ["analyze", "Analyze Data"], ["calculator", "Effect Sizes"], ["results", "Results & Forest Plot"]] as [Tab, string][]).map(([t, label]) => (
+        {([["guide", "Methodology Guide"], ["upload", "Data Upload"], ["analyze", "Analyze Data"], ["calculator", "Effect Sizes"], ["results", "Results & Forest Plot"]] as [Tab, string][]).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === t ? "border-[#DE3163] text-[#DE3163]" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
             {label}
           </button>
         ))}
       </div>
+
+      {/* ===== TAB: METHODOLOGY GUIDE ===== */}
+      {tab === "guide" && (
+        <MethodologyGuide
+          datasets={datasets}
+          selectedDataset={selectedDataset}
+          numericCols={numericCols}
+          onRunTTest={() => { setTab("analyze"); }}
+          onRunCorrelation={() => { setTab("analyze"); }}
+        />
+      )}
 
       {/* ===== TAB: DATA UPLOAD ===== */}
       {tab === "upload" && (
