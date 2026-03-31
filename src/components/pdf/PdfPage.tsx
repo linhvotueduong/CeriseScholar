@@ -19,6 +19,102 @@ interface PdfPageProps {
   ) => void;
 }
 
+/**
+ * Global selection manager — mirrors the official PDF.js TextLayerBuilder.
+ * Tracks all text layers on the page and repositions their endOfContent
+ * divs during selection to constrain the browser's selection algorithm.
+ */
+const textLayers = new Map<HTMLDivElement, HTMLDivElement>();
+let selectionListenerActive = false;
+let isPointerDown = false;
+let prevRange: Range | null = null;
+
+function resetEndOfContent(endDiv: HTMLDivElement, textLayer: HTMLDivElement) {
+  textLayer.append(endDiv);
+  endDiv.style.width = "";
+  endDiv.style.height = "";
+  textLayer.classList.remove("selecting");
+}
+
+function enableGlobalSelectionListener() {
+  if (selectionListenerActive) return;
+  selectionListenerActive = true;
+
+  const controller = new AbortController();
+  const { signal } = controller;
+
+  document.addEventListener("pointerdown", () => { isPointerDown = true; }, { signal });
+
+  document.addEventListener("pointerup", () => {
+    isPointerDown = false;
+    textLayers.forEach(resetEndOfContent);
+  }, { signal });
+
+  window.addEventListener("blur", () => {
+    isPointerDown = false;
+    textLayers.forEach(resetEndOfContent);
+  }, { signal });
+
+  document.addEventListener("selectionchange", () => {
+    const selection = document.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      textLayers.forEach(resetEndOfContent);
+      return;
+    }
+
+    // Find which text layers are actively being selected
+    const activeTextLayers = new Set<HTMLDivElement>();
+    for (let i = 0; i < selection.rangeCount; i++) {
+      const range = selection.getRangeAt(i);
+      for (const textLayerDiv of textLayers.keys()) {
+        if (!activeTextLayers.has(textLayerDiv) && range.intersectsNode(textLayerDiv)) {
+          activeTextLayers.add(textLayerDiv);
+        }
+      }
+    }
+
+    // Toggle selecting class
+    for (const [textLayerDiv, endDiv] of textLayers) {
+      if (activeTextLayers.has(textLayerDiv)) {
+        textLayerDiv.classList.add("selecting");
+      } else {
+        resetEndOfContent(endDiv, textLayerDiv);
+      }
+    }
+
+    // The key fix: reposition the endOfContent div based on selection direction
+    const range = selection.getRangeAt(0);
+
+    // Detect if user is extending from the start or end of the selection
+    const modifyStart = prevRange && (
+      range.compareBoundaryPoints(Range.END_TO_END, prevRange) === 0 ||
+      range.compareBoundaryPoints(Range.START_TO_END, prevRange) === 0
+    );
+
+    // Find the anchor element (the end the user is dragging)
+    let anchor: Node = modifyStart ? range.startContainer : range.endContainer;
+    if (anchor.nodeType === Node.TEXT_NODE) {
+      anchor = anchor.parentNode!;
+    }
+
+    const parentTextLayer = (anchor as HTMLElement).parentElement?.closest(".textLayer") as HTMLDivElement | null;
+    const endDiv = parentTextLayer ? textLayers.get(parentTextLayer) : undefined;
+
+    if (endDiv && parentTextLayer) {
+      // Size the fence to cover the text layer
+      endDiv.style.width = parentTextLayer.style.width;
+      endDiv.style.height = parentTextLayer.style.height;
+      // Insert it right after (or before) the anchor to constrain selection
+      (anchor as HTMLElement).parentElement!.insertBefore(
+        endDiv,
+        modifyStart ? anchor : (anchor as HTMLElement).nextSibling
+      );
+    }
+
+    prevRange = range.cloneRange();
+  }, { signal });
+}
+
 export default function PdfPage({
   document,
   pageNumber,
@@ -31,6 +127,7 @@ export default function PdfPage({
   const textLayerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
   const [pageDimensions, setPageDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -47,13 +144,18 @@ export default function PdfPage({
         renderTaskRef.current = null;
       }
 
+      // Clean up previous text layer registration
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      }
+
       const page = await document.getPage(pageNumber);
       if (cancelled) return;
 
       const viewport = page.getViewport({ scale: zoom });
       setPageDimensions({ width: viewport.width, height: viewport.height });
 
-      // Set --scale-factor on the container — PDF.js uses this for text positioning
       container.style.setProperty("--scale-factor", String(viewport.scale));
 
       const dpr = window.devicePixelRatio || 1;
@@ -71,13 +173,7 @@ export default function PdfPage({
       try {
         await renderTask.promise;
       } catch (err: unknown) {
-        if (
-          err &&
-          typeof err === "object" &&
-          "name" in err &&
-          (err as { name: string }).name === "RenderingCancelledException"
-        )
-          return;
+        if (err && typeof err === "object" && "name" in err && (err as { name: string }).name === "RenderingCancelledException") return;
         throw err;
       }
 
@@ -97,35 +193,20 @@ export default function PdfPage({
       });
       await textLayer.render();
 
-      // Add the "endOfContent" selection fence div — this is how PDF.js
-      // prevents the browser from selecting entire paragraphs at once
+      if (cancelled) return;
+
+      // Add endOfContent selection fence
       const endOfContent = window.document.createElement("div");
       endOfContent.className = "endOfContent";
       textLayerDiv.append(endOfContent);
 
-      // Selection management: toggle "selecting" class during mouse selection
-      function onMouseDown() {
-        textLayerDiv.classList.add("selecting");
-      }
+      // Register with the global selection manager
+      textLayers.set(textLayerDiv, endOfContent);
+      enableGlobalSelectionListener();
 
-      function onMouseUp() {
-        textLayerDiv.classList.remove("selecting");
-        endOfContent.style.top = "";
-      }
-
-      textLayerDiv.addEventListener("mousedown", onMouseDown);
-      document.addEventListener("mouseup", onMouseUp);
-
-      // Clean up listeners on next render
-      const cleanup = () => {
-        textLayerDiv.removeEventListener("mousedown", onMouseDown);
-        document.removeEventListener("mouseup", onMouseUp);
+      cleanupRef.current = () => {
+        textLayers.delete(textLayerDiv);
       };
-
-      // Store cleanup for the effect's return
-      if (!cancelled) {
-        cleanupRef.current = cleanup;
-      }
     }
 
     renderPage();
@@ -143,8 +224,6 @@ export default function PdfPage({
     };
   }, [document, pageNumber, zoom]);
 
-  const cleanupRef = useRef<(() => void) | null>(null);
-
   const handleCreateHighlight = (
     text: string,
     rects: { x: number; y: number; width: number; height: number }[]
@@ -159,9 +238,7 @@ export default function PdfPage({
       data-page-number={pageNumber}
     >
       <canvas ref={canvasRef} className="block" />
-
       <div ref={textLayerRef} className="textLayer" />
-
       <HighlightLayer
         highlights={highlights}
         pageNumber={pageNumber}
@@ -170,7 +247,6 @@ export default function PdfPage({
         containerHeight={pageDimensions.height}
         onCreateHighlight={handleCreateHighlight}
       />
-
       <div className="text-center text-xs text-gray-400 py-1">
         Page {pageNumber}
       </div>
