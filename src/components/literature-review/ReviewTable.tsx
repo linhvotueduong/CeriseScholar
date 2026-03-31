@@ -10,18 +10,14 @@ interface ReviewTableProps {
     fields: Partial<
       Pick<
         LiteratureReviewEntry,
-        "authors" | "year" | "theme_category" | "user_notes" | "code_name"
+        "authors" | "year" | "theme_category" | "user_notes" | "code_name" | "synthesis_paragraph"
       >
     >
   ) => void;
   onDelete: (id: string) => void;
 }
 
-export default function ReviewTable({
-  entries,
-  onUpdate,
-  onDelete,
-}: ReviewTableProps) {
+export default function ReviewTable({ entries, onUpdate, onDelete }: ReviewTableProps) {
   if (entries.length === 0) {
     return (
       <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
@@ -38,34 +34,22 @@ export default function ReviewTable({
       <table className="w-full">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Source
+            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[140px]">
+              Document Name
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Author(s)
+            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">
+              Section / Code
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Year
+            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[200px]">
+              Quotes from Sources
             </th>
-            <th className="px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Page
+            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[200px]">
+              My Insights / Notes
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Highlighted Text
+            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[200px]">
+              Synthesis Paragraph
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Section
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Theme
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              My Notes
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Date
-            </th>
-            <th className="px-3 py-3 w-[40px]"></th>
+            <th className="px-3 py-3 w-[30px]"></th>
           </tr>
         </thead>
         <tbody>

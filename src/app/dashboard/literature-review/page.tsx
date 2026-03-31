@@ -10,20 +10,28 @@ import Spinner from "@/components/ui/Spinner";
 export default function LiteratureReviewPage() {
   const { entries, loading, updateEntry, deleteEntry } = useLiteratureReview();
   const [selectedSource, setSelectedSource] = useState("");
+  const [selectedSection, setSelectedSection] = useState("");
   const [searchText, setSearchText] = useState("");
 
-  // Get unique source names for the filter dropdown
   const sources = useMemo(() => {
     const unique = [...new Set(entries.map((e) => e.source))];
     return unique.sort();
   }, [entries]);
 
-  // Apply filters
+  const sections = useMemo(() => {
+    const unique = [...new Set(entries.map((e) => e.code_name).filter(Boolean))];
+    return unique.sort();
+  }, [entries]);
+
   const filtered = useMemo(() => {
     let result = entries;
 
     if (selectedSource) {
       result = result.filter((e) => e.source === selectedSource);
+    }
+
+    if (selectedSection) {
+      result = result.filter((e) => e.code_name === selectedSection);
     }
 
     if (searchText.trim()) {
@@ -33,13 +41,15 @@ export default function LiteratureReviewPage() {
           e.highlighted_text.toLowerCase().includes(lower) ||
           e.theme_category.toLowerCase().includes(lower) ||
           e.user_notes.toLowerCase().includes(lower) ||
+          e.synthesis_paragraph.toLowerCase().includes(lower) ||
           e.authors.toLowerCase().includes(lower) ||
-          e.source.toLowerCase().includes(lower)
+          e.source.toLowerCase().includes(lower) ||
+          e.code_name.toLowerCase().includes(lower)
       );
     }
 
     return result;
-  }, [entries, selectedSource, searchText]);
+  }, [entries, selectedSource, selectedSection, searchText]);
 
   if (loading) {
     return (
@@ -61,9 +71,12 @@ export default function LiteratureReviewPage() {
       <div className="mb-4">
         <ReviewTableFilters
           sources={sources}
+          sections={sections}
           selectedSource={selectedSource}
+          selectedSection={selectedSection}
           searchText={searchText}
           onSourceChange={setSelectedSource}
+          onSectionChange={setSelectedSection}
           onSearchChange={setSearchText}
           totalCount={entries.length}
           filteredCount={filtered.length}

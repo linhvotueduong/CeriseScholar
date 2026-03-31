@@ -12,14 +12,15 @@ export default function ExportButton({ entries }: ExportButtonProps) {
     if (entries.length === 0) return;
 
     const rows = entries.map((e) => ({
-      Source: e.source,
+      "Document Name": e.source,
       "Author(s)": e.authors,
       Year: e.year,
-      Page: e.page_number,
-      "Highlighted Text": e.highlighted_text,
-      Section: e.code_name,
+      "Section / Code": e.code_name,
       "Theme/Category": e.theme_category,
-      "My Notes": e.user_notes,
+      Page: e.page_number,
+      "Quotes from Sources": e.highlighted_text,
+      "My Insights / Notes": e.user_notes,
+      "Synthesis Paragraph": e.synthesis_paragraph,
       "Date Added": new Date(e.date_added).toLocaleDateString(),
     }));
 
