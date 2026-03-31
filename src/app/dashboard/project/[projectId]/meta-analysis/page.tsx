@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Papa from "papaparse";
+import { parseSavFile } from "@/lib/data/parseSav";
 import Link from "next/link";
 
 interface DataRow { [key: string]: string | number | null; }
@@ -95,20 +96,54 @@ export default function MetaAnalysisPage() {
     });
   }, [activeDataset]);
 
-  // Upload
-  const handleFileUpload = useCallback((file: File) => {
-    Papa.parse(file, {
-      header: true, dynamicTyping: true, skipEmptyLines: true,
-      delimiter: "", // auto-detect
-      complete: (result) => {
-        if (result.data?.length > 0) {
-          const columns = Object.keys(result.data[0] as object);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Upload — handles CSV, TSV, and SPSS .sav files
+  const handleFileUpload = useCallback(async (file: File) => {
+    setUploadError(null);
+    setUploading(true);
+
+    try {
+      if (file.name.endsWith(".sav")) {
+        // SPSS .sav file
+        const result = await parseSavFile(file);
+        if (result.rows.length > 0) {
           const newIdx = datasets.length;
-          setDatasets(prev => [...prev, { columns, rows: result.data as DataRow[], filename: file.name }]);
+          setDatasets(prev => [...prev, { columns: result.columns, rows: result.rows, filename: file.name }]);
           setSelectedDataset(newIdx);
+        } else {
+          setUploadError("No data found in the SPSS file.");
         }
-      },
-    });
+      } else {
+        // CSV / TSV
+        await new Promise<void>((resolve) => {
+          Papa.parse(file, {
+            header: true, dynamicTyping: true, skipEmptyLines: true,
+            delimiter: "", // auto-detect
+            complete: (result) => {
+              if (result.data?.length > 0) {
+                const columns = Object.keys(result.data[0] as object);
+                const newIdx = datasets.length;
+                setDatasets(prev => [...prev, { columns, rows: result.data as DataRow[], filename: file.name }]);
+                setSelectedDataset(newIdx);
+              } else {
+                setUploadError("No data found in the file.");
+              }
+              resolve();
+            },
+            error: (err) => {
+              setUploadError(`Parse error: ${err.message}`);
+              resolve();
+            },
+          });
+        });
+      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Failed to parse file.");
+    }
+
+    setUploading(false);
   }, [datasets.length]);
 
   // Column stats
@@ -166,13 +201,24 @@ export default function MetaAnalysisPage() {
         <div>
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
             <h2 className="font-semibold text-gray-800 mb-2">Upload Dataset</h2>
-            <p className="text-sm text-gray-500 mb-1">Upload CSV or TSV files. For ICPSR data, download the SPSS format and convert to CSV using <a href="https://www.jamovi.org/" target="_blank" className="text-[#DE3163] hover:underline">jamovi</a> (free).</p>
+            <p className="text-sm text-gray-500 mb-1">
+              Upload <strong>CSV</strong>, <strong>TSV</strong>, or <strong>SPSS (.sav)</strong> files.
+              For ICPSR data, download the <strong>SPSS</strong> format and upload the .sav file directly.
+            </p>
             <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-[#DE3163] transition-colors"
               onClick={() => fileInputRef.current?.click()}>
-              <p className="text-gray-500">Drop a CSV/TSV file here or click to browse</p>
+              {uploading ? (
+                <p className="text-[#DE3163] font-medium">Parsing file...</p>
+              ) : (
+                <>
+                  <p className="text-gray-500">Drop a file here or click to browse</p>
+                  <p className="text-xs text-gray-400 mt-1">.csv, .tsv, .txt, .sav (SPSS)</p>
+                </>
+              )}
             </div>
-            <input ref={fileInputRef} type="file" accept=".csv,.tsv,.txt" className="hidden"
+            <input ref={fileInputRef} type="file" accept=".csv,.tsv,.txt,.sav" className="hidden"
               onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} />
+            {uploadError && <p className="text-red-600 text-sm mt-2">{uploadError}</p>}
           </div>
 
           {datasets.length > 0 && (
