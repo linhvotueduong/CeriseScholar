@@ -1,19 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import OcrStatusBadge from "@/components/ocr/OcrStatusBadge";
-import { runOcr } from "@/lib/ocr/runOcr";
+import Spinner from "@/components/ui/Spinner";
 import type { Pdf } from "@/types/pdf";
 
 export default function PdfCard({ pdf }: { pdf: Pdf }) {
-  function handleRunOcr(e: React.MouseEvent) {
-    e.preventDefault(); // Don't navigate to viewer
-    e.stopPropagation();
-    runOcr(pdf.id);
-    // Force a page refresh after a short delay to see status change
-    setTimeout(() => window.location.reload(), 2000);
-  }
-
   return (
     <Link
       href={`/dashboard/viewer/${pdf.id}`}
@@ -27,17 +18,12 @@ export default function PdfCard({ pdf }: { pdf: Pdf }) {
         <span className="text-xs text-gray-400">
           {pdf.file_size ? `${(pdf.file_size / 1024 / 1024).toFixed(1)} MB` : ""}
         </span>
-        <div className="flex items-center gap-2">
-          {(pdf.ocr_status === "pending" || pdf.ocr_status === "failed") && (
-            <button
-              onClick={handleRunOcr}
-              className="text-xs text-[#DE3163] hover:underline"
-            >
-              Run OCR
-            </button>
-          )}
-          <OcrStatusBadge status={pdf.ocr_status} />
-        </div>
+        {pdf.ocr_status === "processing" && (
+          <div className="flex items-center gap-1.5">
+            <Spinner size="sm" />
+            <span className="text-xs text-blue-600">Processing...</span>
+          </div>
+        )}
       </div>
       <p className="text-xs text-gray-400 mt-2">
         {new Date(pdf.created_at).toLocaleDateString()}
