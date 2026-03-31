@@ -23,12 +23,15 @@ export default function ResizablePanel({
 }: ResizablePanelProps) {
   const [width, setWidth] = useState(defaultWidth);
   const [open, setOpen] = useState(defaultOpen);
+  const [dragging, setDragging] = useState(false);
   const isResizing = useRef(false);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       isResizing.current = true;
+      setDragging(true);
       const startX = e.clientX;
       const startWidth = width;
 
@@ -41,10 +44,15 @@ export default function ResizablePanel({
 
       function onMouseUp() {
         isResizing.current = false;
+        setDragging(false);
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
       }
 
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
       document.addEventListener("mousemove", onMouseMove);
       document.addEventListener("mouseup", onMouseUp);
     },
@@ -72,22 +80,37 @@ export default function ResizablePanel({
 
   return (
     <div
-      className={`relative flex ${side === "left" ? "border-r" : "border-l"} border-gray-200 bg-white`}
+      className={`relative ${side === "left" ? "border-r" : "border-l"} border-gray-200 bg-white`}
       style={{ width, minWidth, maxWidth, flexShrink: 0 }}
     >
       {/* Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex flex-col h-full min-w-0 overflow-hidden">
         {children}
       </div>
 
-      {/* Resize handle — wider hit area with visible indicator */}
+      {/* Resize handle — thick grab area on the edge */}
       <div
         onMouseDown={handleMouseDown}
-        className={`absolute top-0 bottom-0 w-2 cursor-col-resize z-10 group ${
-          side === "left" ? "-right-1" : "-left-1"
+        className={`absolute top-0 bottom-0 z-50 cursor-col-resize ${
+          side === "left" ? "-right-[6px]" : "-left-[6px]"
         }`}
+        style={{ width: 12 }}
       >
-        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1 bg-gray-200 group-hover:bg-[#DE3163] group-active:bg-[#DE3163] transition-colors" />
+        {/* Visible line */}
+        <div
+          className={`absolute top-0 bottom-0 transition-all ${
+            dragging
+              ? "w-1 bg-[#DE3163]"
+              : "w-[2px] bg-transparent hover:bg-[#DE3163]"
+          }`}
+          style={{ left: "50%", transform: "translateX(-50%)" }}
+        />
+        {/* Drag dots indicator in the middle */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-[2px] opacity-0 hover:opacity-100 transition-opacity">
+          <div className="w-1 h-1 rounded-full bg-gray-400" />
+          <div className="w-1 h-1 rounded-full bg-gray-400" />
+          <div className="w-1 h-1 rounded-full bg-gray-400" />
+        </div>
       </div>
 
       {/* Collapse button */}
