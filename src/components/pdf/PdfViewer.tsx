@@ -14,7 +14,6 @@ import AnnotationSidebar from "@/components/annotations/AnnotationSidebar";
 import CodeSystemPanel from "@/components/codes/CodeSystemPanel";
 import DocumentPanel from "@/components/pdf/DocumentPanel";
 import NoteModal from "@/components/annotations/NoteModal";
-import ResizablePanel from "@/components/ui/ResizablePanel";
 import Spinner from "@/components/ui/Spinner";
 
 interface PdfViewerProps {
@@ -128,6 +127,54 @@ function LeftPanels({
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Code System</span>
         </div>
       )}
+    </div>
+  );
+}
+
+// Right panel — Highlights, independently open/closeable
+function RightPanel(props: {
+  highlights: import("@/types/annotation").Highlight[];
+  annotations: import("@/types/annotation").Annotation[];
+  currentPage: number;
+  onGoToPage: (page: number) => void;
+  onDeleteHighlight: (id: string) => void;
+  onAddNote: (highlightId: string, pageNumber: number) => void;
+  onReadHighlight?: (text: string) => void;
+  onUpdateNote?: (annotationId: string, content: string) => void;
+  onReHighlight?: (highlightId: string) => void;
+}) {
+  const [open, setOpen] = useState(true);
+
+  if (!open) {
+    return (
+      <div
+        className="w-8 bg-white border-l border-gray-200 flex flex-col items-center pt-2 shrink-0 cursor-pointer hover:bg-gray-50"
+        onClick={() => setOpen(true)}
+      >
+        <span
+          className="text-gray-400 text-[10px]"
+          style={{ writingMode: "vertical-rl" }}
+        >
+          Highlights ({props.highlights.length})
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col border-l border-gray-200 bg-white shrink-0" style={{ width: 280 }}>
+      <div
+        onClick={() => setOpen(false)}
+        className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 cursor-pointer select-none border-b border-gray-200 shrink-0"
+      >
+        <span className="text-[10px] text-gray-400">▼</span>
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Highlights ({props.highlights.length})
+        </span>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        <AnnotationSidebar {...props} />
+      </div>
     </div>
   );
 }
@@ -415,23 +462,21 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         />
       </div>
 
-      {/* RIGHT PANEL: Highlights (resizable) */}
-      <ResizablePanel title="Highlights" defaultWidth={280} minWidth={200} maxWidth={450} side="right">
-        <AnnotationSidebar
-          highlights={highlights}
-          annotations={annotations}
-          currentPage={currentPage}
-          onGoToPage={handleGoToPage}
-          onDeleteHighlight={deleteHighlight}
-          onAddNote={handleAddNote}
-          onReadHighlight={handleReadHighlight}
-          onUpdateNote={updateAnnotation}
-          onReHighlight={(highlightId: string) => {
-            setReHighlightId(highlightId);
-            setHighlightMode(true);
-          }}
-        />
-      </ResizablePanel>
+      {/* RIGHT PANEL: Highlights — open/close */}
+      <RightPanel
+        highlights={highlights}
+        annotations={annotations}
+        currentPage={currentPage}
+        onGoToPage={handleGoToPage}
+        onDeleteHighlight={deleteHighlight}
+        onAddNote={handleAddNote}
+        onReadHighlight={handleReadHighlight}
+        onUpdateNote={updateAnnotation}
+        onReHighlight={(highlightId: string) => {
+          setReHighlightId(highlightId);
+          setHighlightMode(true);
+        }}
+      />
 
       {/* Modal for NEW highlight — shows color picker, code selector + note field */}
       {pendingHighlight && (
