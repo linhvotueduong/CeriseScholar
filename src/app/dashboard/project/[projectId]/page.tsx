@@ -85,7 +85,13 @@ export default function ProjectWorkspacePage() {
               </h2>
             </>
           )}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-4">
+            <Link
+              href={`/dashboard/project/${projectId}/meta-analysis`}
+              className="text-xs text-[#DE3163] hover:underline font-medium"
+            >
+              Meta-Analysis
+            </Link>
             <Link
               href={`/dashboard/project/${projectId}/literature-review`}
               className="text-xs text-[#DE3163] hover:underline font-medium"
