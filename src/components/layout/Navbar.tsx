@@ -18,10 +18,29 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-3">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
-        <Link href="/dashboard" className="text-xl font-bold text-[#DE3163]">
-          Cerise Scholar
-        </Link>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <Link href="/dashboard" className="text-xl font-bold text-[#DE3163]">
+            Cerise Scholar
+          </Link>
+
+          {user && (
+            <div className="flex items-center gap-4">
+              <Link
+                href="/dashboard"
+                className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
+              >
+                My PDFs
+              </Link>
+              <Link
+                href="/dashboard/literature-review"
+                className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
+              >
+                Literature Review
+              </Link>
+            </div>
+          )}
+        </div>
 
         {user && (
           <div className="flex items-center gap-4">
