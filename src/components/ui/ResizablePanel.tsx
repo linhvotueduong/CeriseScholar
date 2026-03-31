@@ -80,13 +80,15 @@ export default function ResizablePanel({
         {children}
       </div>
 
-      {/* Resize handle */}
+      {/* Resize handle — wider hit area with visible indicator */}
       <div
         onMouseDown={handleMouseDown}
-        className={`absolute top-0 bottom-0 w-1 cursor-col-resize hover:bg-[#DE3163] active:bg-[#DE3163] transition-colors z-10 ${
-          side === "left" ? "right-0" : "left-0"
+        className={`absolute top-0 bottom-0 w-2 cursor-col-resize z-10 group ${
+          side === "left" ? "-right-1" : "-left-1"
         }`}
-      />
+      >
+        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1 bg-gray-200 group-hover:bg-[#DE3163] group-active:bg-[#DE3163] transition-colors" />
+      </div>
 
       {/* Collapse button */}
       <button
