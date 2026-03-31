@@ -19,6 +19,8 @@ interface PdfViewerProps {
   url: string;
   pdfId: string;
   pdfDisplayName: string;
+  pdfAuthor?: string;
+  pdfTitle?: string;
 }
 
 // Pending highlight data before color/note is chosen
@@ -28,7 +30,7 @@ interface PendingHighlight {
   rects: { x: number; y: number; width: number; height: number }[];
 }
 
-export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps) {
+export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTitle }: PdfViewerProps) {
   const {
     document,
     currentPage,
@@ -89,6 +91,8 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
         rects: pendingHighlight.rects,
         color: color || "#FFD700",
         pdfDisplayName,
+        pdfAuthor,
+        pdfTitle,
         codeId,
         codeName,
         noteContent,

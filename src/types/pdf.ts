@@ -8,6 +8,9 @@ export interface Pdf {
   ocr_status: "pending" | "processing" | "completed" | "failed";
   ocr_text: string | null;
   file_size: number | null;
+  pdf_author: string;
+  pdf_title: string;
+  pdf_subject: string;
   created_at: string;
   updated_at: string;
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import { runOcr } from "@/lib/ocr/runOcr";
+import { extractPdfMetadata } from "@/lib/pdf/extractMetadata";
 import Spinner from "@/components/ui/Spinner";
 
 export default function UploadPage() {
@@ -46,14 +47,26 @@ export default function UploadPage() {
       return;
     }
 
-    // 2. Insert metadata into the pdfs table
+    // 2. Extract PDF metadata (title, author, page count)
+    let pdfMeta = { title: "", author: "", subject: "", pageCount: 0 };
+    try {
+      pdfMeta = await extractPdfMetadata(file);
+    } catch {
+      // Metadata extraction failed — not critical, continue
+    }
+
+    // 3. Insert metadata into the pdfs table
     const { error: dbError } = await supabase.from("pdfs").insert({
       id: fileId,
       user_id: user.id,
       filename: file.name,
-      display_name: file.name.replace(/\.pdf$/i, ""),
+      display_name: pdfMeta.title || file.name.replace(/\.pdf$/i, ""),
       storage_path: storagePath,
       file_size: file.size,
+      page_count: pdfMeta.pageCount || null,
+      pdf_author: pdfMeta.author,
+      pdf_title: pdfMeta.title,
+      pdf_subject: pdfMeta.subject,
       ocr_status: "pending",
     });
 

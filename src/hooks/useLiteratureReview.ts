@@ -11,12 +11,58 @@ export function useLiteratureReview() {
   const fetchEntries = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
+
+    // Fetch lit review entries
     const { data } = await supabase
       .from("literature_review_entries")
       .select("*")
       .order("date_added", { ascending: false });
 
-    if (data) setEntries(data as LiteratureReviewEntry[]);
+    if (!data) {
+      setLoading(false);
+      return;
+    }
+
+    // Find entries with empty notes that have annotations
+    const emptyNoteEntries = data.filter(
+      (e) => (!e.user_notes || e.user_notes === "") && e.highlight_id
+    );
+
+    if (emptyNoteEntries.length > 0) {
+      // Fetch annotations for these highlights
+      const highlightIds = emptyNoteEntries.map((e) => e.highlight_id).filter(Boolean);
+      const { data: annotations } = await supabase
+        .from("annotations")
+        .select("highlight_id, content")
+        .in("highlight_id", highlightIds);
+
+      if (annotations && annotations.length > 0) {
+        // Sync notes from annotations into lit review entries
+        for (const ann of annotations) {
+          if (ann.content) {
+            await supabase
+              .from("literature_review_entries")
+              .update({ user_notes: ann.content })
+              .eq("highlight_id", ann.highlight_id)
+              .eq("user_notes", "");
+          }
+        }
+
+        // Re-fetch with updated notes
+        const { data: updated } = await supabase
+          .from("literature_review_entries")
+          .select("*")
+          .order("date_added", { ascending: false });
+
+        if (updated) {
+          setEntries(updated as LiteratureReviewEntry[]);
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
+    setEntries(data as LiteratureReviewEntry[]);
     setLoading(false);
   }, []);
 

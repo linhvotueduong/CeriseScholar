@@ -41,6 +41,8 @@ export default async function ViewerPage({ params }: Props) {
         pdfId={pdf.id}
         pdfName={pdf.display_name}
         pdfUrl={signedUrlData.signedUrl}
+        pdfAuthor={pdf.pdf_author || ""}
+        pdfTitle={pdf.pdf_title || ""}
       />
     </div>
   );

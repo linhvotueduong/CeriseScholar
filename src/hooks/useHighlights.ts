@@ -11,6 +11,8 @@ interface CreateHighlightParams {
   rects: { x: number; y: number; width: number; height: number }[];
   color?: string;
   pdfDisplayName: string;
+  pdfAuthor?: string;
+  pdfTitle?: string;
   codeId?: string;
   codeName?: string;
   noteContent?: string;
@@ -61,16 +63,27 @@ export function useHighlights(pdfId: string) {
 
       if (highlightError || !highlight) return null;
 
-      // 2. Create a literature review entry (with code_name + note)
+      // 2. Build APA reference from PDF metadata if available
+      let apaRef = "";
+      if (params.pdfAuthor || params.pdfTitle) {
+        const parts: string[] = [];
+        if (params.pdfAuthor) parts.push(params.pdfAuthor);
+        if (params.pdfTitle) parts.push(`"${params.pdfTitle}"`);
+        apaRef = parts.join(". ") + ".";
+      }
+
+      // 3. Create a literature review entry
       await supabase.from("literature_review_entries").insert({
         user_id: user.id,
         pdf_id: params.pdfId,
         highlight_id: highlight.id,
         source: params.pdfDisplayName,
+        authors: params.pdfAuthor || "",
         page_number: params.pageNumber,
         highlighted_text: params.highlightedText,
         code_name: params.codeName || "",
         user_notes: params.noteContent || "",
+        apa_reference: apaRef,
       });
 
       // 3. Update local state
