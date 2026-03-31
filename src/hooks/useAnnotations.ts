@@ -64,16 +64,27 @@ export function useAnnotations(pdfId: string) {
   const updateAnnotation = useCallback(
     async (annotationId: string, content: string) => {
       const supabase = createClient();
+
+      // Update the annotation
       await supabase
         .from("annotations")
         .update({ content, updated_at: new Date().toISOString() })
         .eq("id", annotationId);
 
+      // Sync to lit review entry (keep them in sync both ways)
+      const annotation = annotations.find((a) => a.id === annotationId);
+      if (annotation?.highlight_id) {
+        await supabase
+          .from("literature_review_entries")
+          .update({ user_notes: content })
+          .eq("highlight_id", annotation.highlight_id);
+      }
+
       setAnnotations((prev) =>
         prev.map((a) => (a.id === annotationId ? { ...a, content } : a))
       );
     },
-    []
+    [annotations]
   );
 
   const deleteAnnotation = useCallback(async (annotationId: string) => {
