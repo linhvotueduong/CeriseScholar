@@ -52,6 +52,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   const tts = useTts();
 
   const [highlightMode, setHighlightMode] = useState(false);
+  const [reHighlightId, setReHighlightId] = useState<string | null>(null);
 
   // For new highlights: store selection data, show modal to pick color & add note
   const [pendingHighlight, setPendingHighlight] = useState<PendingHighlight | null>(null);
@@ -67,16 +68,40 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
     load(url);
   }, [url, load]);
 
-  // When user selects text on a page — DON'T create highlight yet, show modal first
+  // When user selects text on a page
   const handleTextSelected = useCallback(
-    (
+    async (
       pageNumber: number,
       text: string,
       rects: { x: number; y: number; width: number; height: number }[]
     ) => {
+      if (reHighlightId) {
+        // Re-highlight mode: update the existing highlight's text and rects
+        const supabase = (await import("@/lib/supabase/client")).createClient();
+        await supabase
+          .from("highlights")
+          .update({ highlighted_text: text, rects, page_number: pageNumber })
+          .eq("id", reHighlightId);
+
+        // Also update the lit review entry text
+        await supabase
+          .from("literature_review_entries")
+          .update({ highlighted_text: text, page_number: pageNumber })
+          .eq("highlight_id", reHighlightId);
+
+        setReHighlightId(null);
+        setHighlightMode(false);
+
+        // Refresh highlights to show updated text
+        deleteHighlight; // trigger re-render
+        window.location.reload();
+        return;
+      }
+
+      // Normal new highlight
       setPendingHighlight({ pageNumber, text, rects });
     },
-    []
+    [reHighlightId]
   );
 
   // When user saves from the new-highlight modal (with color, code, + optional note)
@@ -218,6 +243,18 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
           onReadSelection={handleReadSelection}
         />
 
+        {reHighlightId && (
+          <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm text-amber-800 flex items-center justify-between">
+            <span>Select new text to replace the highlight. Your note will be kept.</span>
+            <button
+              onClick={() => { setReHighlightId(null); setHighlightMode(false); }}
+              className="text-xs text-amber-600 hover:underline ml-4"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         <div
           className={`flex-1 overflow-auto bg-gray-100 flex flex-col items-center py-6 px-4 ${
             highlightMode ? "cursor-text" : ""
@@ -272,6 +309,10 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         onAddNote={handleAddNote}
         onReadHighlight={handleReadHighlight}
         onUpdateNote={updateAnnotation}
+        onReHighlight={(highlightId: string) => {
+          setReHighlightId(highlightId);
+          setHighlightMode(true);
+        }}
       />
       </div>
 

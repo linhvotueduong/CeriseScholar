@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { Highlight, Annotation } from "@/types/annotation";
+import HighlightDetailModal from "./HighlightDetailModal";
 
 interface AnnotationSidebarProps {
   highlights: Highlight[];
@@ -12,6 +13,7 @@ interface AnnotationSidebarProps {
   onAddNote: (highlightId: string, pageNumber: number) => void;
   onUpdateNote?: (annotationId: string, content: string) => void;
   onReadHighlight?: (text: string) => void;
+  onReHighlight?: (highlightId: string) => void;
 }
 
 function EditableNote({
@@ -26,6 +28,10 @@ function EditableNote({
   const ref = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    setDraft(content);
+  }, [content]);
+
+  useEffect(() => {
     if (editing && ref.current) {
       ref.current.focus();
       ref.current.selectionStart = ref.current.value.length;
@@ -34,9 +40,7 @@ function EditableNote({
 
   function save() {
     setEditing(false);
-    if (draft !== content) {
-      onSave(draft);
-    }
+    if (draft !== content) onSave(draft);
   }
 
   if (editing) {
@@ -57,7 +61,7 @@ function EditableNote({
 
   return (
     <p
-      onClick={() => setEditing(true)}
+      onClick={(e) => { e.stopPropagation(); setEditing(true); }}
       className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded cursor-pointer hover:bg-yellow-100 transition-colors"
       title="Click to edit note"
     >
@@ -75,13 +79,19 @@ export default function AnnotationSidebar({
   onAddNote,
   onUpdateNote,
   onReadHighlight,
+  onReHighlight,
 }: AnnotationSidebarProps) {
   const [filter, setFilter] = useState<"all" | "page">("all");
+  const [detailHighlight, setDetailHighlight] = useState<Highlight | null>(null);
 
   const filtered =
     filter === "page"
       ? highlights.filter((h) => h.page_number === currentPage)
       : highlights;
+
+  const detailNote = detailHighlight
+    ? annotations.find((a) => a.highlight_id === detailHighlight.id)
+    : null;
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -131,20 +141,22 @@ export default function AnnotationSidebar({
               return (
                 <div
                   key={highlight.id}
-                  className="p-3 hover:bg-gray-50 transition-colors"
+                  className="p-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => setDetailHighlight(highlight)}
+                  title="Click to view full highlight"
                 >
                   {/* Page badge + read aloud + delete */}
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => onGoToPage(highlight.page_number)}
+                        onClick={(e) => { e.stopPropagation(); onGoToPage(highlight.page_number); }}
                         className="text-xs text-[#DE3163] font-medium hover:underline"
                       >
                         Page {highlight.page_number}
                       </button>
                       {onReadHighlight && (
                         <button
-                          onClick={() => onReadHighlight(highlight.highlighted_text)}
+                          onClick={(e) => { e.stopPropagation(); onReadHighlight(highlight.highlighted_text); }}
                           className="text-xs text-gray-400 hover:text-[#DE3163]"
                           title="Read this highlight aloud"
                         >
@@ -153,7 +165,7 @@ export default function AnnotationSidebar({
                       )}
                     </div>
                     <button
-                      onClick={() => onDeleteHighlight(highlight.id)}
+                      onClick={(e) => { e.stopPropagation(); onDeleteHighlight(highlight.id); }}
                       className="text-xs text-gray-400 hover:text-red-500"
                       title="Delete highlight"
                     >
@@ -176,9 +188,10 @@ export default function AnnotationSidebar({
                     />
                   ) : (
                     <button
-                      onClick={() =>
-                        onAddNote(highlight.id, highlight.page_number)
-                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddNote(highlight.id, highlight.page_number);
+                      }}
                       className="text-xs text-gray-400 hover:text-[#DE3163] mt-2"
                     >
                       + Add note
@@ -194,6 +207,29 @@ export default function AnnotationSidebar({
           </div>
         )}
       </div>
+
+      {/* Detail modal */}
+      {detailHighlight && (
+        <HighlightDetailModal
+          highlightedText={detailHighlight.highlighted_text}
+          noteContent={detailNote?.content || ""}
+          pageNumber={detailHighlight.page_number}
+          color={detailHighlight.color || "#FFD700"}
+          createdAt={detailHighlight.created_at}
+          onClose={() => setDetailHighlight(null)}
+          onUpdateNote={(content) => {
+            if (detailNote) {
+              onUpdateNote?.(detailNote.id, content);
+            } else {
+              onAddNote(detailHighlight.id, detailHighlight.page_number);
+            }
+          }}
+          onReHighlight={() => {
+            onReHighlight?.(detailHighlight.id);
+            setDetailHighlight(null);
+          }}
+        />
+      )}
     </div>
   );
 }
