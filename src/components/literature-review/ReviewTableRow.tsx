@@ -137,8 +137,8 @@ export default function ReviewTableRow({ entry, onUpdate, onDelete }: ReviewTabl
 
       {/* C: Quotes from sources (highlighted text) — read-only */}
       <td className="px-3 py-2 text-sm text-gray-700 min-w-[200px] max-w-[350px]">
-        <p className="whitespace-pre-wrap leading-relaxed">
-          {entry.highlighted_text}
+        <p className="leading-relaxed">
+          {entry.highlighted_text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim()}
         </p>
         <p className="text-[10px] text-gray-400 mt-1">
           p. {entry.page_number}

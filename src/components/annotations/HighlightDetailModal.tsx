@@ -69,7 +69,7 @@ export default function HighlightDetailModal({
               className="p-4 rounded-lg text-gray-800 leading-relaxed"
               style={{ backgroundColor: color + "30" }}
             >
-              <p className="text-base whitespace-pre-wrap">{highlightedText}</p>
+              <p className="text-base leading-relaxed">{highlightedText.replace(/\n+/g, " ").replace(/\s+/g, " ").trim()}</p>
             </div>
             <button
               onClick={() => {

@@ -175,7 +175,7 @@ export default function AnnotationSidebar({
 
                   {/* Highlighted text preview */}
                   <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed">
-                    &ldquo;{highlight.highlighted_text}&rdquo;
+                    &ldquo;{highlight.highlighted_text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim()}&rdquo;
                   </p>
 
                   {/* Note — editable inline */}

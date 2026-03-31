@@ -68,7 +68,7 @@ export default function NoteModal({
 
         {highlightText && (
           <p className="text-sm text-gray-600 mb-3 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400 line-clamp-3">
-            &ldquo;{highlightText}&rdquo;
+            &ldquo;{highlightText.replace(/\n+/g, " ").replace(/\s+/g, " ").trim()}&rdquo;
           </p>
         )}
 
