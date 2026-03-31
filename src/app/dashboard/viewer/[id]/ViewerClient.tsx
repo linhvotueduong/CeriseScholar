@@ -1,6 +1,7 @@
 "use client";
 
 import PdfViewer from "@/components/pdf/PdfViewer";
+import DocumentPanel from "@/components/pdf/DocumentPanel";
 import Link from "next/link";
 
 interface ViewerClientProps {
@@ -12,7 +13,7 @@ interface ViewerClientProps {
 export default function ViewerClient({ pdfId, pdfName, pdfUrl }: ViewerClientProps) {
   return (
     <div className="flex flex-col h-[calc(100vh-57px)]">
-      {/* Header bar with PDF name and back button */}
+      {/* Header bar */}
       <div className="flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-2">
         <Link
           href="/dashboard"
@@ -25,9 +26,12 @@ export default function ViewerClient({ pdfId, pdfName, pdfUrl }: ViewerClientPro
         </h2>
       </div>
 
-      {/* PDF Viewer */}
-      <div className="flex-1 overflow-hidden">
-        <PdfViewer url={pdfUrl} pdfId={pdfId} pdfDisplayName={pdfName} />
+      {/* Main area: Document panel (left) + PDF Viewer (center + right) */}
+      <div className="flex-1 flex overflow-hidden">
+        <DocumentPanel currentPdfId={pdfId} />
+        <div className="flex-1 overflow-hidden">
+          <PdfViewer url={pdfUrl} pdfId={pdfId} pdfDisplayName={pdfName} />
+        </div>
       </div>
     </div>
   );
