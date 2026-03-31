@@ -228,36 +228,42 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
 
   return (
     <div className="flex h-full">
-      {/* LEFT PANEL: Documents + Code System (resizable) */}
+      {/* LEFT PANEL: Documents + Code System (resizable, equal split) */}
       <ResizablePanel title="Documents" defaultWidth={220} minWidth={160} maxWidth={400} side="left">
-        <CollapsibleSection
-          title="Documents"
-          actions={
-            <span className="text-[10px] text-gray-400">{totalPages}p</span>
-          }
-        >
-          <DocumentPanel currentPdfId={pdfId} projectId={projectId} />
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title="Code System"
-          actions={
-            <span
-              className="text-xs text-[#DE3163]"
+        <div className="flex flex-col h-full">
+          {/* Documents — top half */}
+          <div className="flex-1 min-h-0 flex flex-col border-b border-gray-200">
+            <CollapsibleSection
+              title="Documents"
+              actions={
+                <span className="text-[10px] text-gray-400">{totalPages}p</span>
+              }
             >
-              +
-            </span>
-          }
-        >
-          <div className="p-2">
-            <CodeSystemPanel
-              codes={codes}
-              onCreateCode={createCode}
-              onUpdateCode={updateCode}
-              onDeleteCode={deleteCode}
-            />
+              <div className="overflow-y-auto" style={{ maxHeight: "calc(50vh - 80px)" }}>
+                <DocumentPanel currentPdfId={pdfId} projectId={projectId} />
+              </div>
+            </CollapsibleSection>
           </div>
-        </CollapsibleSection>
+
+          {/* Code System — bottom half */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            <CollapsibleSection
+              title="Code System"
+              actions={
+                <span className="text-xs text-[#DE3163]">+</span>
+              }
+            >
+              <div className="overflow-y-auto p-2" style={{ maxHeight: "calc(50vh - 80px)" }}>
+                <CodeSystemPanel
+                  codes={codes}
+                  onCreateCode={createCode}
+                  onUpdateCode={updateCode}
+                  onDeleteCode={deleteCode}
+                />
+              </div>
+            </CollapsibleSection>
+          </div>
+        </div>
       </ResizablePanel>
 
       {/* CENTER: PDF Viewer */}
