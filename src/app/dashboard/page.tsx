@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import type { Pdf } from "@/types/pdf";
-import OcrStatusBadge from "@/components/ocr/OcrStatusBadge";
+import PdfCard from "@/components/pdf/PdfCard";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -39,29 +39,7 @@ export default async function DashboardPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {pdfs.map((pdf) => (
-            <Link
-              key={pdf.id}
-              href={`/dashboard/viewer/${pdf.id}`}
-              className="block bg-white rounded-xl border border-gray-200 p-5 hover:border-[#DE3163] hover:shadow-sm transition-all"
-            >
-              <h3 className="font-semibold text-gray-900 truncate">
-                {pdf.display_name}
-              </h3>
-              <p className="text-sm text-gray-500 mt-1 truncate">
-                {pdf.filename}
-              </p>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-xs text-gray-400">
-                  {pdf.file_size
-                    ? `${(pdf.file_size / 1024 / 1024).toFixed(1)} MB`
-                    : ""}
-                </span>
-                <OcrStatusBadge status={pdf.ocr_status} />
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                {new Date(pdf.created_at).toLocaleDateString()}
-              </p>
-            </Link>
+            <PdfCard key={pdf.id} pdf={pdf} />
           ))}
         </div>
       )}

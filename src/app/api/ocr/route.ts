@@ -1,8 +1,32 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-export const maxDuration = 300; // Allow up to 5 minutes for large PDFs
+export const maxDuration = 300;
+
+async function getSupabase() {
+  const cookieStore = await cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Ignore — cookies can't be set in API routes after streaming starts
+          }
+        },
+      },
+    }
+  );
+}
 
 export async function POST(request: Request) {
   try {
@@ -11,9 +35,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "pdfId is required" }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = await getSupabase();
 
-    // Verify user owns this PDF
+    // Verify user is authenticated and owns this PDF
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
     const { data: pdf, error: fetchError } = await supabase
       .from("pdfs")
       .select("*")
@@ -36,20 +65,15 @@ export async function POST(request: Request) {
       .download(pdf.storage_path);
 
     if (downloadError || !fileData) {
-      await supabase
-        .from("pdfs")
-        .update({ ocr_status: "failed" })
-        .eq("id", pdfId);
-      return NextResponse.json(
-        { error: "Failed to download PDF" },
-        { status: 500 }
-      );
+      await supabase.from("pdfs").update({ ocr_status: "failed" }).eq("id", pdfId);
+      return NextResponse.json({ error: "Failed to download PDF" }, { status: 500 });
     }
 
     const arrayBuffer = await fileData.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Load the PDF with PDF.js
+    // Load the PDF with PDF.js (server-side legacy build)
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
     const doc = await pdfjs.getDocument({ data: uint8Array }).promise;
     const pageCount = doc.numPages;
     const allPageTexts: string[] = [];
@@ -60,18 +84,17 @@ export async function POST(request: Request) {
       const textContent = await page.getTextContent();
 
       // Combine all text items on this page
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const pageText = textContent.items
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((item: any) => item.str || "")
         .join(" ")
         .trim();
 
       if (pageText.length > 20) {
-        // Page has embedded text — use it directly, no OCR needed
+        // Page has embedded text — no OCR needed
         allPageTexts.push(pageText);
       } else {
-        // Page has little or no text — likely a scanned image
-        // For now, run Tesseract.js on this page
+        // Page might be scanned — try OCR
         try {
           const { createWorker } = await import("tesseract.js");
           const { createCanvas } = await import("canvas");
@@ -80,21 +103,16 @@ export async function POST(request: Request) {
           const canvas = createCanvas(viewport.width, viewport.height);
           const ctx = canvas.getContext("2d");
 
-          // Render PDF page to canvas
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (page.render as any)({
             canvasContext: ctx,
             viewport,
           }).promise;
 
-          // Convert canvas to PNG buffer for Tesseract
           const pngBuffer = canvas.toBuffer("image/png");
 
-          // Run OCR
           const worker = await createWorker("eng");
-          const {
-            data: { text },
-          } = await worker.recognize(pngBuffer);
+          const { data: { text } } = await worker.recognize(pngBuffer);
           await worker.terminate();
 
           allPageTexts.push(text.trim());
@@ -107,7 +125,7 @@ export async function POST(request: Request) {
 
     const fullText = allPageTexts.join("\n\n--- Page Break ---\n\n");
 
-    // Save the OCR result
+    // Save the result
     await supabase
       .from("pdfs")
       .update({
@@ -126,23 +144,16 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("OCR route error:", error);
 
-    // Try to mark as failed
     try {
-      const { pdfId } = await request.clone().json();
-      if (pdfId) {
-        const supabase = await createClient();
-        await supabase
-          .from("pdfs")
-          .update({ ocr_status: "failed" })
-          .eq("id", pdfId);
+      const body = await request.clone().json();
+      if (body.pdfId) {
+        const supabase = await getSupabase();
+        await supabase.from("pdfs").update({ ocr_status: "failed" }).eq("id", body.pdfId);
       }
     } catch {
       // Ignore cleanup errors
     }
 
-    return NextResponse.json(
-      { error: "OCR processing failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "OCR processing failed" }, { status: 500 });
   }
 }
