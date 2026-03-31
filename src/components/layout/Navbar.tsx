@@ -25,7 +25,7 @@ export default function Navbar() {
     <nav className="bg-white border-b border-gray-200 px-6 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="text-xl font-bold text-[#DE3163]">
+          <Link href="/" className="text-xl font-bold text-[#DE3163]">
             Cerise Scholar
           </Link>
 
