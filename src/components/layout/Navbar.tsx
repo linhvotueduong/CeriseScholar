@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import Link from "next/link";
@@ -8,6 +8,11 @@ import Link from "next/link";
 export default function Navbar() {
   const { user } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Extract projectId from the URL if we're inside a project
+  const projectMatch = pathname.match(/\/dashboard\/project\/([^/]+)/);
+  const currentProjectId = projectMatch ? projectMatch[1] : null;
 
   async function handleLogout() {
     const supabase = createClient();
@@ -32,6 +37,14 @@ export default function Navbar() {
               >
                 My Projects
               </Link>
+              {currentProjectId && (
+                <Link
+                  href={`/dashboard/project/${currentProjectId}/literature-review`}
+                  className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
+                >
+                  Literature Review
+                </Link>
+              )}
             </div>
           )}
         </div>

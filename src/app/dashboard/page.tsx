@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import Link from "next/link";
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [newDesc, setNewDesc] = useState("");
   const [newColor, setNewColor] = useState("#DE3163");
   const [creating, setCreating] = useState(false);
+  const router = useRouter();
   const { user } = useUser();
 
   const fetchProjects = useCallback(async () => {
@@ -54,7 +56,9 @@ export default function DashboardPage() {
       .single();
 
     if (data) {
-      setProjects((prev) => [data as Project, ...prev]);
+      // Navigate straight to the project workspace
+      router.push(`/dashboard/project/${data.id}`);
+      return;
     }
 
     setNewName("");

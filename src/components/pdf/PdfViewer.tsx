@@ -69,7 +69,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   } | null>(null);
 
   useEffect(() => {
-    load(url);
+    if (url) load(url);
   }, [url, load]);
 
   // When user selects text on a page
@@ -226,8 +226,6 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
     );
   }
 
-  if (!document) return null;
-
   return (
     <div className="flex h-full">
       {/* LEFT PANEL: Documents + Code System (resizable) */}
@@ -298,17 +296,26 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
             highlightMode ? "cursor-text" : ""
           }`}
         >
-          {pageNumbers.map((num) => (
-            <PdfPage
-              key={num}
-              document={document}
-              pageNumber={num}
-              zoom={zoom}
-              highlights={highlights}
-              highlightMode={highlightMode}
-              onCreateHighlight={handleTextSelected}
-            />
-          ))}
+          {document ? (
+            pageNumbers.map((num) => (
+              <PdfPage
+                key={num}
+                document={document}
+                pageNumber={num}
+                zoom={zoom}
+                highlights={highlights}
+                highlightMode={highlightMode}
+                onCreateHighlight={handleTextSelected}
+              />
+            ))
+          ) : !loading && (
+            <div className="text-center py-20">
+              <p className="text-gray-500 text-lg">No PDF open</p>
+              <p className="text-gray-400 text-sm mt-1">
+                Upload a PDF using the Documents panel on the left, then click it to open
+              </p>
+            </div>
+          )}
         </div>
 
         <TtsControls
