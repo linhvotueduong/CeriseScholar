@@ -33,7 +33,9 @@ export default function HighlightLayer({
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !selection.toString().trim()) return;
 
-    const text = selection.toString().trim();
+    // Clean up the text: PDF.js puts each line in a separate span,
+    // so selection adds newlines between them. Replace with spaces.
+    const text = selection.toString().replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
     if (text.length < 2) return;
 
     const layer = layerRef.current;
