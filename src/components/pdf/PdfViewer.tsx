@@ -15,7 +15,6 @@ import CodeSystemPanel from "@/components/codes/CodeSystemPanel";
 import DocumentPanel from "@/components/pdf/DocumentPanel";
 import NoteModal from "@/components/annotations/NoteModal";
 import ResizablePanel from "@/components/ui/ResizablePanel";
-import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import Spinner from "@/components/ui/Spinner";
 
 interface PdfViewerProps {
@@ -25,6 +24,112 @@ interface PdfViewerProps {
   pdfAuthor?: string;
   pdfTitle?: string;
   projectId?: string;
+}
+
+// Left panels — Documents and Code System, independently open/closeable
+function LeftPanels({
+  pdfId,
+  projectId,
+  totalPages,
+  codes,
+  onCreateCode,
+  onUpdateCode,
+  onDeleteCode,
+}: {
+  pdfId: string;
+  projectId?: string;
+  totalPages: number;
+  codes: import("@/types/code").Code[];
+  onCreateCode: (name: string, color: string) => void;
+  onUpdateCode: (id: string, fields: Partial<Pick<import("@/types/code").Code, "name" | "color">>) => void;
+  onDeleteCode: (id: string) => void;
+}) {
+  const [docsOpen, setDocsOpen] = useState(true);
+  const [codesOpen, setCodesOpen] = useState(true);
+
+  // If both closed, show thin collapsed bar
+  if (!docsOpen && !codesOpen) {
+    return (
+      <div className="w-8 bg-white border-r border-gray-200 flex flex-col items-center pt-2 gap-4 shrink-0">
+        <span
+          onClick={() => setDocsOpen(true)}
+          className="text-gray-400 text-[10px] cursor-pointer hover:text-[#DE3163]"
+          style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          Documents
+        </span>
+        <span
+          onClick={() => setCodesOpen(true)}
+          className="text-gray-400 text-[10px] cursor-pointer hover:text-[#DE3163]"
+          style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          Codes
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col border-r border-gray-200 bg-white shrink-0" style={{ width: 220 }}>
+      {/* Documents panel */}
+      {docsOpen ? (
+        <div className={`flex flex-col min-h-0 ${codesOpen ? "flex-1" : "flex-1"} border-b border-gray-200`}>
+          <div
+            onClick={() => setDocsOpen(false)}
+            className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer select-none shrink-0"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-400">▼</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Documents</span>
+            </div>
+            <span className="text-[10px] text-gray-400">{totalPages}p</span>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <DocumentPanel currentPdfId={pdfId} projectId={projectId} />
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={() => setDocsOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 cursor-pointer select-none border-b border-gray-200 shrink-0"
+        >
+          <span className="text-[10px] text-gray-400">▶</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Documents</span>
+        </div>
+      )}
+
+      {/* Code System panel */}
+      {codesOpen ? (
+        <div className="flex flex-col min-h-0 flex-1">
+          <div
+            onClick={() => setCodesOpen(false)}
+            className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer select-none shrink-0"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-400">▼</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Code System</span>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            <CodeSystemPanel
+              codes={codes}
+              onCreateCode={onCreateCode}
+              onUpdateCode={onUpdateCode}
+              onDeleteCode={onDeleteCode}
+            />
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={() => setCodesOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 cursor-pointer select-none shrink-0"
+        >
+          <span className="text-[10px] text-gray-400">▶</span>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Code System</span>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Pending highlight data before color/note is chosen
@@ -228,43 +333,16 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
 
   return (
     <div className="flex h-full">
-      {/* LEFT PANEL: Documents + Code System (resizable, equal split) */}
-      <ResizablePanel title="Documents" defaultWidth={220} minWidth={160} maxWidth={400} side="left">
-        <div className="flex flex-col h-full">
-          {/* Documents — top half */}
-          <div className="flex-1 min-h-0 flex flex-col border-b border-gray-200">
-            <CollapsibleSection
-              title="Documents"
-              actions={
-                <span className="text-[10px] text-gray-400">{totalPages}p</span>
-              }
-            >
-              <div className="overflow-y-auto" style={{ maxHeight: "calc(50vh - 80px)" }}>
-                <DocumentPanel currentPdfId={pdfId} projectId={projectId} />
-              </div>
-            </CollapsibleSection>
-          </div>
-
-          {/* Code System — bottom half */}
-          <div className="flex-1 min-h-0 flex flex-col">
-            <CollapsibleSection
-              title="Code System"
-              actions={
-                <span className="text-xs text-[#DE3163]">+</span>
-              }
-            >
-              <div className="overflow-y-auto p-2" style={{ maxHeight: "calc(50vh - 80px)" }}>
-                <CodeSystemPanel
-                  codes={codes}
-                  onCreateCode={createCode}
-                  onUpdateCode={updateCode}
-                  onDeleteCode={deleteCode}
-                />
-              </div>
-            </CollapsibleSection>
-          </div>
-        </div>
-      </ResizablePanel>
+      {/* LEFT PANELS: Documents and Code System — independent open/close */}
+      <LeftPanels
+        pdfId={pdfId}
+        projectId={projectId}
+        totalPages={totalPages}
+        codes={codes}
+        onCreateCode={createCode}
+        onUpdateCode={updateCode}
+        onDeleteCode={deleteCode}
+      />
 
       {/* CENTER: PDF Viewer */}
       <div className="flex-1 flex flex-col min-w-0">
