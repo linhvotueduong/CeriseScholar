@@ -91,6 +91,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName }: PdfViewerProps
         pdfDisplayName,
         codeId,
         codeName,
+        noteContent,
       });
 
       if (highlight && noteContent) {

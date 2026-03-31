@@ -10,7 +10,7 @@ interface ReviewTableProps {
     fields: Partial<
       Pick<
         LiteratureReviewEntry,
-        "authors" | "year" | "theme_category" | "user_notes" | "code_name" | "synthesis_paragraph"
+        "authors" | "year" | "theme_category" | "user_notes" | "code_name" | "apa_reference" | "synthesis_paragraph"
       >
     >
   ) => void;
@@ -36,6 +36,9 @@ export default function ReviewTable({ entries, onUpdate, onDelete }: ReviewTable
           <tr className="border-b border-gray-200 bg-gray-50">
             <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[140px]">
               Document Name
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[160px]">
+              APA Reference
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[120px]">
               Section / Code

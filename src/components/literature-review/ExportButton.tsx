@@ -15,6 +15,7 @@ export default function ExportButton({ entries }: ExportButtonProps) {
       "Document Name": e.source,
       "Author(s)": e.authors,
       Year: e.year,
+      "APA Reference": e.apa_reference,
       "Section / Code": e.code_name,
       "Theme/Category": e.theme_category,
       Page: e.page_number,

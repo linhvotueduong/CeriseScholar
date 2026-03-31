@@ -10,7 +10,7 @@ interface ReviewTableRowProps {
     fields: Partial<
       Pick<
         LiteratureReviewEntry,
-        "authors" | "year" | "theme_category" | "user_notes" | "code_name" | "synthesis_paragraph"
+        "authors" | "year" | "theme_category" | "user_notes" | "code_name" | "apa_reference" | "synthesis_paragraph"
       >
     >
   ) => void;
@@ -105,6 +105,18 @@ export default function ReviewTableRow({ entry, onUpdate, onDelete }: ReviewTabl
         {entry.authors && (
           <p className="text-[11px] text-gray-400 mt-0.5">{entry.authors}{entry.year ? `, ${entry.year}` : ""}</p>
         )}
+      </td>
+
+      {/* APA Reference — editable */}
+      <td className="px-1 py-1 min-w-[160px] max-w-[250px]">
+        <EditableCell
+          value={entry.apa_reference}
+          field="apa_reference"
+          entryId={entry.id}
+          onUpdate={onUpdate}
+          multiline
+          placeholder="Paste APA reference..."
+        />
       </td>
 
       {/* B: Code / Section — editable */}

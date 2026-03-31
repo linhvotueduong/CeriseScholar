@@ -13,6 +13,7 @@ interface CreateHighlightParams {
   pdfDisplayName: string;
   codeId?: string;
   codeName?: string;
+  noteContent?: string;
 }
 
 export function useHighlights(pdfId: string) {
@@ -60,7 +61,7 @@ export function useHighlights(pdfId: string) {
 
       if (highlightError || !highlight) return null;
 
-      // 2. Create a literature review entry (with code_name for display)
+      // 2. Create a literature review entry (with code_name + note)
       await supabase.from("literature_review_entries").insert({
         user_id: user.id,
         pdf_id: params.pdfId,
@@ -69,6 +70,7 @@ export function useHighlights(pdfId: string) {
         page_number: params.pageNumber,
         highlighted_text: params.highlightedText,
         code_name: params.codeName || "",
+        user_notes: params.noteContent || "",
       });
 
       // 3. Update local state

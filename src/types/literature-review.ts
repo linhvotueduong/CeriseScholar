@@ -11,6 +11,7 @@ export interface LiteratureReviewEntry {
   theme_category: string;
   user_notes: string;
   code_name: string;
+  apa_reference: string;
   synthesis_paragraph: string;
   date_added: string;
 }
