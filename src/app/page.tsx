@@ -56,6 +56,9 @@ export default function Home() {
             <Link href="/about" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors">
               About
             </Link>
+            <Link href="/research-guidance" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors">
+              Research Guidance
+            </Link>
           </div>
         </div>
         <div className="flex items-center gap-3">

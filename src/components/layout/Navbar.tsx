@@ -50,6 +50,12 @@ export default function Navbar() {
             >
               About
             </Link>
+            <Link
+              href="/research-guidance"
+              className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
+            >
+              Research Guidance
+            </Link>
             {user && currentProjectId && (
               <Link
                 href={`/dashboard/project/${currentProjectId}/literature-review`}

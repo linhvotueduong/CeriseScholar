@@ -10,6 +10,7 @@ export default function AboutPage() {
             <Link href="/dashboard" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium">Workspace</Link>
             <Link href="/" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium">Home</Link>
             <Link href="/about" className="text-sm text-[#DE3163] font-medium">About</Link>
+            <Link href="/research-guidance" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium">Research Guidance</Link>
           </div>
         </div>
         <div className="flex items-center gap-3">
