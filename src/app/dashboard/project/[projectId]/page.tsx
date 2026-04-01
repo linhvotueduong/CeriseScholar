@@ -20,30 +20,24 @@ export default function ProjectWorkspacePage() {
     async function load() {
       const supabase = createClient();
 
-      const { data: proj } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("id", projectId)
-        .single();
+      // Fetch project and first PDF in parallel (independent queries)
+      const [projectResult, pdfsResult] = await Promise.all([
+        supabase.from("projects").select("*").eq("id", projectId).single(),
+        supabase.from("pdfs").select("*").eq("project_id", projectId).order("created_at", { ascending: true }).limit(1),
+      ]);
 
-      if (proj) setProject(proj as Project);
+      if (projectResult.data) setProject(projectResult.data as Project);
 
-      // Get the first PDF in the project (if any)
-      const { data: pdfs } = await supabase
-        .from("pdfs")
-        .select("*")
-        .eq("project_id", projectId)
-        .order("created_at", { ascending: true })
-        .limit(1);
-
-      if (pdfs && pdfs.length > 0) {
-        const pdf = pdfs[0];
+      // Signed URL depends on the PDF result, so it runs after
+      if (pdfsResult.data && pdfsResult.data.length > 0) {
+        const pdf = pdfsResult.data[0];
         setFirstPdfId(pdf.id);
         setFirstPdfName(pdf.display_name);
 
+        // 8-hour expiry to cover long research sessions
         const { data: signedUrlData } = await supabase.storage
           .from("pdfs")
-          .createSignedUrl(pdf.storage_path, 3600);
+          .createSignedUrl(pdf.storage_path, 28800);
 
         if (signedUrlData?.signedUrl) {
           setFirstPdfUrl(signedUrlData.signedUrl);
@@ -102,7 +96,13 @@ export default function ProjectWorkspacePage() {
               href={`/dashboard/project/${projectId}/literature-review`}
               className="text-xs text-[#DE3163] hover:underline font-medium"
             >
-              Lit Review &rarr;
+              Lit Review
+            </Link>
+            <Link
+              href={`/dashboard/project/${projectId}/paper-writer`}
+              className="text-xs text-[#DE3163] hover:underline font-medium"
+            >
+              Paper Writer &rarr;
             </Link>
           </div>
         </div>

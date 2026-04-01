@@ -31,7 +31,9 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh the session — this keeps the user logged in
+  // Use getUser to validate the JWT against Supabase on every request.
+  // Slightly slower than getSession, but ensures revoked/expired tokens
+  // are caught immediately — important for a public-facing app.
   const {
     data: { user },
   } = await supabase.auth.getUser();

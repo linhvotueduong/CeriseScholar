@@ -1,33 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { LiteratureReviewEntry } from "@/types/literature-review";
+
+const PAGE_SIZE = 100;
 
 export function useLiteratureReview(projectId?: string) {
   const [entries, setEntries] = useState<LiteratureReviewEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const offsetRef = useRef(0);
 
-  const fetchEntries = useCallback(async () => {
-    setLoading(true);
+  const syncAnnotations = useCallback(async (data: LiteratureReviewEntry[]) => {
     const supabase = createClient();
-
-    let query = supabase
-      .from("literature_review_entries")
-      .select("*");
-
-    if (projectId) {
-      query = query.eq("project_id", projectId);
-    }
-
-    const { data } = await query.order("date_added", { ascending: false });
-
-    if (!data) {
-      setLoading(false);
-      return;
-    }
-
-    // Sync: fill empty notes from annotations
     const emptyNoteEntries = data.filter(
       (e) => (!e.user_notes || e.user_notes === "") && e.highlight_id
     );
@@ -48,17 +35,76 @@ export function useLiteratureReview(projectId?: string) {
               .eq("highlight_id", ann.highlight_id)
               .eq("user_notes", "");
 
-            // Update local data too
             const entry = data.find((e) => e.highlight_id === ann.highlight_id);
             if (entry) entry.user_notes = ann.content;
           }
         }
       }
     }
+  }, []);
+
+  const fetchEntries = useCallback(async () => {
+    setLoading(true);
+    offsetRef.current = 0;
+    const supabase = createClient();
+
+    let query = supabase
+      .from("literature_review_entries")
+      .select("*");
+
+    if (projectId) {
+      query = query.eq("project_id", projectId);
+    }
+
+    const { data } = await query
+      .order("date_added", { ascending: false })
+      .range(0, PAGE_SIZE - 1);
+
+    if (!data) {
+      setLoading(false);
+      return;
+    }
+
+    setHasMore(data.length === PAGE_SIZE);
+    offsetRef.current = data.length;
+
+    await syncAnnotations(data);
 
     setEntries(data as LiteratureReviewEntry[]);
     setLoading(false);
-  }, []);
+  }, [projectId, syncAnnotations]);
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    const supabase = createClient();
+
+    let query = supabase
+      .from("literature_review_entries")
+      .select("*");
+
+    if (projectId) {
+      query = query.eq("project_id", projectId);
+    }
+
+    const from = offsetRef.current;
+    const { data } = await query
+      .order("date_added", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (!data || data.length === 0) {
+      setHasMore(false);
+      setLoadingMore(false);
+      return;
+    }
+
+    setHasMore(data.length === PAGE_SIZE);
+    offsetRef.current += data.length;
+
+    await syncAnnotations(data);
+
+    setEntries((prev) => [...prev, ...(data as LiteratureReviewEntry[])]);
+    setLoadingMore(false);
+  }, [projectId, syncAnnotations]);
 
   useEffect(() => {
     fetchEntries();
@@ -129,5 +175,5 @@ export function useLiteratureReview(projectId?: string) {
     setEntries((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
-  return { entries, loading, updateEntry, deleteEntry, refetch: fetchEntries };
+  return { entries, loading, loadingMore, hasMore, loadMore, updateEntry, deleteEntry, refetch: fetchEntries };
 }

@@ -17,6 +17,9 @@ interface PdfPageProps {
     text: string,
     rects: { x: number; y: number; width: number; height: number }[]
   ) => void;
+  onSpeakFromHere?: (text: string) => void;
+  isSpeaking?: boolean;
+  onStopSpeaking?: () => void;
 }
 
 /**
@@ -122,6 +125,9 @@ export default function PdfPage({
   highlights,
   highlightMode,
   onCreateHighlight,
+  onSpeakFromHere,
+  isSpeaking,
+  onStopSpeaking,
 }: PdfPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
@@ -129,6 +135,8 @@ export default function PdfPage({
   const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const [pageDimensions, setPageDimensions] = useState({ width: 0, height: 0 });
+  const [playBtnPos, setPlayBtnPos] = useState<{ top: number; left: number } | null>(null);
+  const playTextRef = useRef<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -231,14 +239,90 @@ export default function PdfPage({
     onCreateHighlight(pageNumber, text, rects);
   };
 
+  // Show play button on paragraph hover (only when not in highlight mode)
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showPlayBtn = (span: HTMLElement) => {
+    if (!containerRef.current) return;
+    if (hideTimer.current) { clearTimeout(hideTimer.current); hideTimer.current = null; }
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const spanRect = span.getBoundingClientRect();
+
+    setPlayBtnPos({
+      top: spanRect.top - containerRect.top,
+      left: spanRect.left - containerRect.left,
+    });
+
+    // Collect text from this span and all following siblings on this page
+    let text = "";
+    let el: Element | null = span;
+    while (el) {
+      if (el.textContent) text += el.textContent + " ";
+      el = el.nextElementSibling;
+    }
+    playTextRef.current = text.trim();
+  };
+
+  const handleTextLayerMouseMove = (e: React.MouseEvent) => {
+    if (highlightMode || !onSpeakFromHere || !textLayerRef.current || !containerRef.current) {
+      return;
+    }
+    const target = e.target as HTMLElement;
+    // Check if hovering the play button itself — keep it visible
+    if (target.closest("[data-playbtn]")) return;
+
+    const span = target.closest(".textLayer > span") as HTMLElement | null;
+    if (span) {
+      showPlayBtn(span);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    // Delay hiding so user can move to the button
+    hideTimer.current = setTimeout(() => setPlayBtnPos(null), 500);
+  };
+
   return (
     <div
       ref={containerRef}
       className="relative inline-block shadow-lg bg-white mb-4"
       data-page-number={pageNumber}
+      onMouseMove={handleTextLayerMouseMove}
+      onMouseLeave={handleMouseLeave}
     >
       <canvas ref={canvasRef} className="block" />
       <div ref={textLayerRef} className="textLayer" />
+
+      {/* Play/Stop button — tiny, spaced from text like Speechify */}
+      {playBtnPos && !highlightMode && onSpeakFromHere && (
+        <button
+          data-playbtn="true"
+          onMouseEnter={() => { if (hideTimer.current) { clearTimeout(hideTimer.current); hideTimer.current = null; } }}
+          onMouseLeave={handleMouseLeave}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isSpeaking && onStopSpeaking) {
+              onStopSpeaking();
+            } else if (playTextRef.current) {
+              onSpeakFromHere(playTextRef.current);
+            }
+          }}
+          className="absolute z-20 flex items-center justify-center rounded-full hover:opacity-80 transition-opacity cursor-pointer"
+          style={{ top: playBtnPos.top + 1, left: playBtnPos.left - 32, width: 16, height: 16, backgroundColor: isSpeaking ? "#EF4444" : "#7B8EC2" }}
+        >
+          {isSpeaking ? (
+            <svg width="7" height="7" viewBox="0 0 10 10" fill="white">
+              <rect x="1" y="1" width="8" height="8" rx="1" />
+            </svg>
+          ) : (
+            <svg width="7" height="8" viewBox="0 0 10 12" fill="white">
+              <path d="M1 0.5v11l9-5.5z" />
+            </svg>
+          )}
+        </button>
+      )}
+
       <HighlightLayer
         highlights={highlights}
         pageNumber={pageNumber}

@@ -17,7 +17,7 @@ export function useCodes(projectId?: string) {
 
     if (data) setCodes(data as Code[]);
     setLoading(false);
-  }, []);
+  }, [projectId]);
 
   // Initialize default codes if user has none
   const initializeDefaults = useCallback(async () => {
@@ -46,7 +46,7 @@ export function useCodes(projectId?: string) {
 
     await supabase.from("codes").insert(inserts);
     await fetchCodes();
-  }, [fetchCodes]);
+  }, [fetchCodes, projectId]);
 
   useEffect(() => {
     fetchCodes().then(() => initializeDefaults());

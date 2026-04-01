@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Research Guidance — Cerise Scholar",
+  description: "Step-by-step guide for new researchers: from brainstorming a topic to writing your final paper. Free academic research guidance.",
+  openGraph: {
+    title: "Research Guidance — Cerise Scholar",
+    description: "Step-by-step guide for new researchers: from brainstorming a topic to writing your final paper.",
+  },
+};
 
 const steps = [
   {

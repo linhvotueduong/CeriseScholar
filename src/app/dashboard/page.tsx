@@ -74,22 +74,26 @@ export default function DashboardPage() {
     if (!confirm("Delete this project and ALL its PDFs, highlights, and notes?")) return;
 
     const supabase = createClient();
-    await supabase.from("literature_review_entries").delete().eq("project_id", projectId);
-    await supabase.from("codes").delete().eq("project_id", projectId);
 
-    // Get PDFs to delete their highlights, annotations, and storage files
-    const { data: pdfs } = await supabase.from("pdfs").select("id, storage_path").eq("project_id", projectId);
-    if (pdfs) {
-      for (const pdf of pdfs) {
-        await supabase.from("annotations").delete().eq("pdf_id", pdf.id);
-        await supabase.from("highlights").delete().eq("pdf_id", pdf.id);
-        if (pdf.storage_path) {
-          await supabase.storage.from("pdfs").remove([pdf.storage_path]);
-        }
-      }
+    // Step 1: Collect storage paths before deletion (CASCADE will remove DB rows)
+    const { data: pdfs } = await supabase
+      .from("pdfs")
+      .select("storage_path")
+      .eq("project_id", projectId);
+
+    const storagePaths = pdfs?.map((p) => p.storage_path).filter(Boolean) || [];
+
+    // Step 2: Delete the project — CASCADE handles all related DB rows atomically
+    const { error } = await supabase.from("projects").delete().eq("id", projectId);
+    if (error) {
+      alert("Failed to delete project. Please try again.");
+      return;
     }
-    await supabase.from("pdfs").delete().eq("project_id", projectId);
-    await supabase.from("projects").delete().eq("id", projectId);
+
+    // Step 3: Clean up storage files (best-effort — DB is already consistent)
+    if (storagePaths.length > 0) {
+      await supabase.storage.from("pdfs").remove(storagePaths);
+    }
 
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
   }

@@ -8,7 +8,7 @@ import ExportButton from "@/components/literature-review/ExportButton";
 import Spinner from "@/components/ui/Spinner";
 
 export default function LiteratureReviewPage() {
-  const { entries, loading, updateEntry, deleteEntry } = useLiteratureReview();
+  const { entries, loading, loadingMore, hasMore, loadMore, updateEntry, deleteEntry } = useLiteratureReview();
   const [selectedSource, setSelectedSource] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
   const [searchText, setSearchText] = useState("");
@@ -88,6 +88,17 @@ export default function LiteratureReviewPage() {
         onUpdate={updateEntry}
         onDelete={deleteEntry}
       />
+      {hasMore && (
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            {loadingMore ? "Loading..." : "Load more entries"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

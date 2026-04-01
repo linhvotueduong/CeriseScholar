@@ -17,10 +17,16 @@ export default function UploadPage() {
   const router = useRouter();
   const { user } = useUser();
 
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
   function handleFileSelect(selectedFile: File | null) {
     if (!selectedFile) return;
     if (selectedFile.type !== "application/pdf") {
       setError("Only PDF files are allowed.");
+      return;
+    }
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setError("File is too large. Maximum size is 50 MB.");
       return;
     }
     setError(null);

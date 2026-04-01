@@ -19,9 +19,10 @@ export default async function ProjectViewerPage({ params }: Props) {
 
   if (!pdf) notFound();
 
+  // 8-hour expiry to cover long research sessions
   const { data: signedUrlData } = await supabase.storage
     .from("pdfs")
-    .createSignedUrl(pdf.storage_path, 3600);
+    .createSignedUrl(pdf.storage_path, 28800);
 
   if (!signedUrlData?.signedUrl) {
     return (
@@ -38,8 +39,8 @@ export default async function ProjectViewerPage({ params }: Props) {
         pdfId={pdf.id}
         pdfName={pdf.display_name}
         pdfUrl={signedUrlData.signedUrl}
-        pdfAuthor={(pdf as Record<string, string>).pdf_author || ""}
-        pdfTitle={(pdf as Record<string, string>).pdf_title || ""}
+        pdfAuthor={(pdf as unknown as Record<string, string>).pdf_author || ""}
+        pdfTitle={(pdf as unknown as Record<string, string>).pdf_title || ""}
       />
     </div>
   );

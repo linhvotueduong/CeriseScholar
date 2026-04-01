@@ -16,6 +16,8 @@ interface PdfToolbarProps {
   onToggleHighlightMode: () => void;
   onReadPage: () => void;
   onReadSelection: () => void;
+  onToggleChat?: () => void;
+  chatOpen?: boolean;
 }
 
 export default function PdfToolbar({
@@ -32,6 +34,8 @@ export default function PdfToolbar({
   onToggleHighlightMode,
   onReadPage,
   onReadSelection,
+  onToggleChat,
+  chatOpen,
 }: PdfToolbarProps) {
   const [pageInput, setPageInput] = useState("");
 
@@ -116,6 +120,22 @@ export default function PdfToolbar({
       >
         Read Selection
       </button>
+
+      <div className="w-px h-4 bg-gray-200 shrink-0" />
+
+      {/* AI Chat */}
+      {onToggleChat && (
+        <button
+          onClick={onToggleChat}
+          className={`px-2 py-1 text-xs rounded font-medium transition-colors shrink-0 ${
+            chatOpen
+              ? "bg-[#DE3163] text-white"
+              : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+          }`}
+        >
+          AI Chat
+        </button>
+      )}
 
       <div className="w-px h-4 bg-gray-200 shrink-0" />
 

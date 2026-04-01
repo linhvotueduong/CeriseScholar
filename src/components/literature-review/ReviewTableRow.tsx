@@ -26,7 +26,7 @@ function EditableCell({
   placeholder = "Click to edit",
 }: {
   value: string;
-  field: "authors" | "year" | "theme_category" | "user_notes" | "code_name" | "synthesis_paragraph";
+  field: "authors" | "year" | "theme_category" | "user_notes" | "code_name" | "apa_reference" | "synthesis_paragraph";
   entryId: string;
   onUpdate: ReviewTableRowProps["onUpdate"];
   multiline?: boolean;

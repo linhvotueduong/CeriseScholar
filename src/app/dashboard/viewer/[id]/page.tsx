@@ -22,10 +22,10 @@ export default async function ViewerPage({ params }: Props) {
     notFound();
   }
 
-  // Get a signed URL for the PDF file (valid for 1 hour)
+  // 8-hour expiry to cover long research sessions
   const { data: signedUrlData } = await supabase.storage
     .from("pdfs")
-    .createSignedUrl(pdf.storage_path, 3600);
+    .createSignedUrl(pdf.storage_path, 28800);
 
   if (!signedUrlData?.signedUrl) {
     return (

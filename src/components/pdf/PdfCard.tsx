@@ -24,6 +24,12 @@ export default function PdfCard({ pdf }: { pdf: Pdf }) {
             <span className="text-xs text-blue-600">Processing...</span>
           </div>
         )}
+        {pdf.ocr_status === "failed" && (
+          <span className="text-xs text-red-500">OCR failed</span>
+        )}
+        {pdf.ocr_status === "pending" && (
+          <span className="text-xs text-amber-500">OCR pending</span>
+        )}
       </div>
       <p className="text-xs text-gray-400 mt-2">
         {new Date(pdf.created_at).toLocaleDateString()}

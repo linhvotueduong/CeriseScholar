@@ -11,7 +11,7 @@ export async function extractPageText(
   const textContent = await page.getTextContent();
 
   return textContent.items
-    .filter((item): item is { str: string } => "str" in item)
+    .filter((item): item is { str: string } & typeof item => "str" in item)
     .map((item) => item.str)
     .join(" ")
     .trim();

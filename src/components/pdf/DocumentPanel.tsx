@@ -23,16 +23,24 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
   useEffect(() => {
     async function fetchPdfs() {
       const supabase = createClient();
-      let query = supabase.from("pdfs").select("*");
+      let query = supabase
+        .from("pdfs")
+        .select("id, display_name, filename, file_size, created_at, ocr_status, storage_path");
       if (projectId) query = query.eq("project_id", projectId);
-      const { data } = await query.order("created_at", { ascending: false });
+      const { data } = await query.order("created_at", { ascending: false }).limit(100);
       if (data) setPdfs(data as Pdf[]);
     }
     fetchPdfs();
-  }, []);
+  }, [projectId]);
+
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
   async function handleUpload(file: File) {
     if (!user || file.type !== "application/pdf") return;
+    if (file.size > MAX_FILE_SIZE) {
+      alert("File is too large. Maximum size is 50 MB.");
+      return;
+    }
     setUploading(true);
 
     const supabase = createClient();
@@ -72,11 +80,14 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
       const supabase = createClient();
       const pdf = pdfs.find((p) => p.id === pdfId);
 
-      await supabase.from("literature_review_entries").delete().eq("pdf_id", pdfId);
-      await supabase.from("annotations").delete().eq("pdf_id", pdfId);
-      await supabase.from("highlights").delete().eq("pdf_id", pdfId);
-      await supabase.from("pdfs").delete().eq("id", pdfId);
+      // Delete the PDF row — CASCADE handles highlights, annotations, and lit review entries
+      const { error } = await supabase.from("pdfs").delete().eq("id", pdfId);
+      if (error) {
+        alert("Failed to delete PDF. Please try again.");
+        return;
+      }
 
+      // Clean up storage file (best-effort — DB is already consistent)
       if (pdf?.storage_path) {
         await supabase.storage.from("pdfs").remove([pdf.storage_path]);
       }
@@ -155,8 +166,17 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
                 <p className={`text-xs truncate pr-4 ${isActive ? "font-medium text-[#DE3163]" : "text-gray-700"}`}>
                   {pdf.display_name}
                 </p>
-                <p className="text-[9px] text-gray-400 mt-0.5">
+                <p className="text-[9px] text-gray-400 mt-0.5 flex items-center gap-1">
                   {pdf.file_size ? `${(pdf.file_size / 1024 / 1024).toFixed(1)} MB` : ""} · {new Date(pdf.created_at).toLocaleDateString()}
+                  {pdf.ocr_status === "processing" && (
+                    <span className="text-blue-500" title="OCR in progress">processing...</span>
+                  )}
+                  {pdf.ocr_status === "failed" && (
+                    <span className="text-red-500" title="OCR failed — text extraction unavailable">OCR failed</span>
+                  )}
+                  {pdf.ocr_status === "pending" && (
+                    <span className="text-amber-500" title="OCR pending">OCR pending</span>
+                  )}
                 </p>
               </button>
 

@@ -168,13 +168,18 @@ export default function MetaAnalysisPage() {
     setStudies(p => p.map((s, idx) => idx === i ? { ...s, [f]: v } : s));
   }
   function calculate() {
-    const valid = studies.filter(s => s.mean1 && s.sd1 && s.n1 && s.mean2 && s.sd2 && s.n2);
+    const valid = studies.filter(s => {
+      const sd1 = +s.sd1, sd2 = +s.sd2, n1 = +s.n1, n2 = +s.n2;
+      return s.mean1 && s.sd1 && s.n1 && s.mean2 && s.sd2 && s.n2
+        && sd1 > 0 && sd2 > 0 && n1 >= 2 && n2 >= 2
+        && isFinite(+s.mean1) && isFinite(+s.mean2);
+    });
     if (!valid.length) return;
     const effects = valid.map(s => {
       const cd = cohensD(+s.mean1, +s.mean2, +s.sd1, +s.sd2, +s.n1, +s.n2);
       const hg = hedgesG(cd.d, +s.n1, +s.n2);
       return { name: s.name, d: cd.d, g: hg.g, se: hg.se, ci: [hg.ci_lower, hg.ci_upper] as [number, number] };
-    });
+    }).filter(e => isFinite(e.d) && isFinite(e.se));
     const meta = effects.length >= 2 ? heterogeneity(effects.map(e => ({ effect: e.g, se: e.se }))) : null;
     setResults({ effects, meta });
     setTab("results");

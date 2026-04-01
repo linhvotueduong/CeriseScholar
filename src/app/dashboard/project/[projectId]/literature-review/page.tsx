@@ -12,7 +12,7 @@ import Link from "next/link";
 export default function ProjectLiteratureReviewPage() {
   const params = useParams();
   const projectId = params.projectId as string;
-  const { entries, loading, updateEntry, deleteEntry } = useLiteratureReview(projectId);
+  const { entries, loading, loadingMore, hasMore, loadMore, updateEntry, deleteEntry } = useLiteratureReview(projectId);
   const [selectedSource, setSelectedSource] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
   const [searchText, setSearchText] = useState("");
@@ -77,6 +77,17 @@ export default function ProjectLiteratureReviewPage() {
         />
       </div>
       <ReviewTable entries={filtered} onUpdate={updateEntry} onDelete={deleteEntry} />
+      {hasMore && (
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            {loadingMore ? "Loading..." : "Load more entries"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

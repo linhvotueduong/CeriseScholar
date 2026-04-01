@@ -57,12 +57,20 @@ export default function Navbar() {
               Research Guidance
             </Link>
             {user && currentProjectId && (
-              <Link
-                href={`/dashboard/project/${currentProjectId}/literature-review`}
-                className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
-              >
-                Literature Review
-              </Link>
+              <>
+                <Link
+                  href={`/dashboard/project/${currentProjectId}/literature-review`}
+                  className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
+                >
+                  Literature Review
+                </Link>
+                <Link
+                  href={`/dashboard/project/${currentProjectId}/paper-writer`}
+                  className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
+                >
+                  Paper Writer
+                </Link>
+              </>
             )}
           </div>
         </div>

@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "About — Cerise Scholar",
+  description: "Learn about Cerise Scholar, a free research tool for PDF reading, highlighting, literature reviews, and AI-powered academic search.",
+  openGraph: {
+    title: "About — Cerise Scholar",
+    description: "A free research tool for PDF reading, highlighting, literature reviews, and AI-powered academic search.",
+  },
+};
 
 export default function AboutPage() {
   return (

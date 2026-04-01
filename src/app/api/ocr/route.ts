@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { checkRateLimit } from "@/lib/utils/rateLimit";
 
 export const maxDuration = 300;
 
@@ -37,10 +38,15 @@ export async function POST(request: Request) {
 
     const supabase = await getSupabase();
 
-    // Verify user is authenticated and owns this PDF
+    // Verify user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Rate limit: 5 OCR requests per hour per user
+    if (!checkRateLimit(user.id, "ocr", 5, 3_600_000)) {
+      return NextResponse.json({ error: "Too many OCR requests. Please wait before processing more PDFs." }, { status: 429 });
     }
 
     const { data: pdf, error: fetchError } = await supabase
@@ -78,48 +84,59 @@ export async function POST(request: Request) {
     const pageCount = doc.numPages;
     const allPageTexts: string[] = [];
 
-    // Process each page
-    for (let i = 1; i <= pageCount; i++) {
-      const page = await doc.getPage(i);
-      const textContent = await page.getTextContent();
+    // Check which pages need OCR (scanned) vs have embedded text
+    const { createWorker } = await import("tesseract.js");
+    const { createCanvas } = await import("canvas");
 
-      // Combine all text items on this page
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const pageText = textContent.items
-        .map((item: any) => item.str || "")
-        .join(" ")
-        .trim();
+    // Create ONE reusable Tesseract worker for all scanned pages
+    let ocrWorker: Awaited<ReturnType<typeof createWorker>> | null = null;
 
-      if (pageText.length > 20) {
-        // Page has embedded text — no OCR needed
-        allPageTexts.push(pageText);
-      } else {
-        // Page might be scanned — try OCR
-        try {
-          const { createWorker } = await import("tesseract.js");
-          const { createCanvas } = await import("canvas");
+    try {
+      for (let i = 1; i <= pageCount; i++) {
+        const page = await doc.getPage(i);
+        const textContent = await page.getTextContent();
 
-          const viewport = page.getViewport({ scale: 2.0 });
-          const canvas = createCanvas(viewport.width, viewport.height);
-          const ctx = canvas.getContext("2d");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pageText = textContent.items
+          .map((item: any) => item.str || "")
+          .join(" ")
+          .trim();
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (page.render as any)({
-            canvasContext: ctx,
-            viewport,
-          }).promise;
+        if (pageText.length > 20) {
+          // Page has embedded text — no OCR needed
+          allPageTexts.push(pageText);
+        } else {
+          // Page might be scanned — use OCR
+          try {
+            // Lazily create worker on first scanned page, reuse for the rest
+            if (!ocrWorker) {
+              ocrWorker = await createWorker("eng");
+            }
 
-          const pngBuffer = canvas.toBuffer("image/png");
+            const viewport = page.getViewport({ scale: 2.0 });
+            const canvas = createCanvas(viewport.width, viewport.height);
+            const ctx = canvas.getContext("2d");
 
-          const worker = await createWorker("eng");
-          const { data: { text } } = await worker.recognize(pngBuffer);
-          await worker.terminate();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (page.render as any)({
+              canvasContext: ctx,
+              viewport,
+            }).promise;
 
-          allPageTexts.push(text.trim());
-        } catch (ocrError) {
-          console.error(`OCR failed on page ${i}:`, ocrError);
-          allPageTexts.push(`[OCR failed on page ${i}]`);
+            const pngBuffer = canvas.toBuffer("image/png");
+            const { data: { text } } = await ocrWorker.recognize(pngBuffer);
+
+            allPageTexts.push(text.trim());
+          } catch (ocrError) {
+            console.error(`OCR failed on page ${i}:`, ocrError);
+            allPageTexts.push(`[OCR failed on page ${i}]`);
+          }
         }
+      }
+    } finally {
+      // Always clean up the worker, even if an error occurs
+      if (ocrWorker) {
+        await ocrWorker.terminate();
       }
     }
 
