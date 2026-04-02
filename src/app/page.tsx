@@ -20,21 +20,21 @@ const features = [
     icon: "M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z",
   },
   {
-    title: "OCR Processing",
+    title: "AI-Powered ScholarAsk",
     description:
-      "Scanned PDFs are automatically OCR'd so you can select, highlight, and search text in any document.",
-    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+      "Ask research questions and get professor-level answers with citations from real academic papers.",
+    icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z",
   },
   {
     title: "Text-to-Speech",
     description:
-      "Listen to your PDFs read aloud. Choose from multiple voices and adjust speed to your preference.",
+      "Listen to your PDFs read aloud with AI voices. Hover any paragraph for instant playback.",
     icon: "M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z",
   },
   {
-    title: "CSV Export",
+    title: "Paper Writer",
     description:
-      "Export your entire literature review as a CSV file, ready for spreadsheets or reference managers.",
+      "Write your research paper section by section with auto-imported materials and writing guidance.",
     icon: "M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
   },
 ];
@@ -62,16 +62,10 @@ export default function Home() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="px-4 py-2 text-sm text-gray-600 hover:text-[#DE3163] transition-colors"
-          >
+          <Link href="/login" className="px-4 py-2 text-sm text-gray-600 hover:text-[#DE3163] transition-colors">
             Log In
           </Link>
-          <Link
-            href="/signup"
-            className="px-4 py-2 text-sm bg-[#DE3163] text-white rounded-lg hover:bg-[#c4294f] transition-colors"
-          >
+          <Link href="/signup" className="px-4 py-2 text-sm bg-[#DE3163] text-white rounded-lg hover:bg-[#c4294f] transition-colors">
             Sign Up Free
           </Link>
         </div>
@@ -89,16 +83,10 @@ export default function Home() {
           searchable, exportable source in your review table.
         </p>
         <div className="mt-10 flex gap-4 justify-center">
-          <Link
-            href="/dashboard"
-            className="px-8 py-3 bg-[#DE3163] text-white font-medium rounded-lg hover:bg-[#c4294f] transition-colors text-lg"
-          >
+          <Link href="/dashboard" className="px-8 py-3 bg-[#DE3163] text-white font-medium rounded-lg hover:bg-[#c4294f] transition-colors text-lg">
             Go to Workspace
           </Link>
-          <Link
-            href="/signup"
-            className="px-8 py-3 border border-[#DE3163] text-[#DE3163] font-medium rounded-lg hover:bg-[#DE3163] hover:text-white transition-colors text-lg"
-          >
+          <Link href="/signup" className="px-8 py-3 border border-[#DE3163] text-[#DE3163] font-medium rounded-lg hover:bg-[#DE3163] hover:text-white transition-colors text-lg">
             Sign Up Free
           </Link>
         </div>
@@ -116,31 +104,14 @@ export default function Home() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="bg-white rounded-xl p-6 border border-gray-200 hover:border-[#DE3163] hover:shadow-sm transition-all"
-              >
+              <div key={feature.title} className="bg-white rounded-xl p-6 border border-gray-200 hover:border-[#DE3163] hover:shadow-sm transition-all">
                 <div className="w-10 h-10 bg-pink-50 rounded-lg flex items-center justify-center mb-4">
-                  <svg
-                    className="w-5 h-5 text-[#DE3163]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d={feature.icon}
-                    />
+                  <svg className="w-5 h-5 text-[#DE3163]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={feature.icon} />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-gray-500 leading-relaxed">
-                  {feature.description}
-                </p>
+                <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -149,35 +120,19 @@ export default function Home() {
 
       {/* How it works */}
       <section className="px-6 py-20 max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
-          How it works
-        </h2>
+        <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">How it works</h2>
         <div className="space-y-8">
           {[
-            {
-              step: "1",
-              title: "Upload your PDF",
-              desc: "Drag and drop any research paper, article, or document. Scanned PDFs get OCR'd automatically.",
-            },
-            {
-              step: "2",
-              title: "Read and highlight",
-              desc: "Read your document in the browser. Toggle highlight mode and select the passages that matter.",
-            },
-            {
-              step: "3",
-              title: "Review and export",
-              desc: "Your highlights instantly appear in a structured table. Add authors, themes, and notes. Export as CSV.",
-            },
+            { step: "1", title: "Upload your PDF", desc: "Drag and drop any research paper, article, or document. Scanned PDFs get OCR'd automatically." },
+            { step: "2", title: "Read and highlight", desc: "Read your document in the browser. Toggle highlight mode and select the passages that matter." },
+            { step: "3", title: "Review and export", desc: "Your highlights instantly appear in a structured table. Add authors, themes, and notes. Export as CSV." },
           ].map((item) => (
             <div key={item.step} className="flex gap-6 items-start">
               <div className="w-10 h-10 rounded-full bg-[#DE3163] text-white flex items-center justify-center font-bold text-lg shrink-0">
                 {item.step}
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 text-lg">
-                  {item.title}
-                </h3>
+                <h3 className="font-semibold text-gray-900 text-lg">{item.title}</h3>
                 <p className="text-gray-500 mt-1">{item.desc}</p>
               </div>
             </div>
@@ -188,16 +143,9 @@ export default function Home() {
       {/* CTA */}
       <section className="px-6 py-20 bg-[#DE3163]">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Start your literature review today
-          </h2>
-          <p className="text-pink-100 mb-8">
-            Free to use. No credit card required.
-          </p>
-          <Link
-            href="/signup"
-            className="px-8 py-3 bg-white text-[#DE3163] font-medium rounded-lg hover:bg-pink-50 transition-colors text-lg inline-block"
-          >
+          <h2 className="text-3xl font-bold text-white mb-4">Start your literature review today</h2>
+          <p className="text-pink-100 mb-8">Free to use. No credit card required.</p>
+          <Link href="/signup" className="px-8 py-3 bg-white text-[#DE3163] font-medium rounded-lg hover:bg-pink-50 transition-colors text-lg inline-block">
             Create Free Account
           </Link>
         </div>
@@ -206,16 +154,10 @@ export default function Home() {
       {/* Footer */}
       <footer className="px-6 py-8 border-t border-gray-200">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span className="text-sm text-gray-400">
-            Cerise Scholar &mdash; Built for researchers
-          </span>
+          <span className="text-sm text-gray-400">Cerise Scholar &mdash; Built for researchers</span>
           <div className="flex gap-4 text-sm text-gray-400">
-            <Link href="/login" className="hover:text-[#DE3163]">
-              Log In
-            </Link>
-            <Link href="/signup" className="hover:text-[#DE3163]">
-              Sign Up
-            </Link>
+            <Link href="/login" className="hover:text-[#DE3163]">Log In</Link>
+            <Link href="/signup" className="hover:text-[#DE3163]">Sign Up</Link>
           </div>
         </div>
       </footer>
