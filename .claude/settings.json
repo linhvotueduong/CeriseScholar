@@ -134,7 +134,18 @@
       "Bash(grep -n \"UNIQUE\\\\|PRIMARY\" /Users/mrperfect/Documents/CeriseScholar/supabase/migrations/*.sql)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
       "Bash(curl -s http://localhost:3000/)",
-      "Bash(python3 -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\).split\\(''''__NEXT_DATA__ type=application/json>''''\\)[1].split\\(''''</script>''''\\)[0]\\); print\\(d[''''err''''][''''message''''][:500]\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\).split\\(''''__NEXT_DATA__ type=application/json>''''\\)[1].split\\(''''</script>''''\\)[0]\\); print\\(d[''''err''''][''''message''''][:500]\\)\")",
+      "Bash(rsync -av --delete --exclude='node_modules' --exclude='.next' /Users/mrperfect/Documents/CeriseScholar/ /Users/mrperfect/Documents/CeriseScholar-backup/)",
+      "Bash(ls /Users/mrperfect/Documents/CeriseScholar-backup/src/app/dashboard/project/[projectId]/)",
+      "WebFetch(domain:maximatherapy.com)",
+      "WebFetch(domain:www.maximatherapy.com)",
+      "WebFetch(domain:www.google.com)",
+      "Bash(curl -4 -s \"http://127.0.0.1:3000/\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/design-preview)",
+      "Bash(curl -4 -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://127.0.0.1:3000/\")",
+      "Bash(lsof -iTCP:3001 -sTCP:LISTEN)",
+      "Bash(vercel --version)",
+      "Bash(pkill -f \"next build\")"
     ],
     "additionalDirectories": [
       "/Users/mrperfect/Documents/CeriseScholar/src/app/dashboard/viewer",
