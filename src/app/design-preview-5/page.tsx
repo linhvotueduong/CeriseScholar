@@ -82,9 +82,11 @@ export default function DesignPreview5() {
           justifyContent: "center",
           overflow: "hidden",
           minHeight: 0,
+          padding: "24px 48px",
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={img} alt="Cerise Scholar" style={{
+            maxWidth: "90%",
             width: "100%",
             objectFit: "contain",
             display: "block",
