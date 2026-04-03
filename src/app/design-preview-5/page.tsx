@@ -30,110 +30,120 @@ export default function DesignPreview5() {
         </div>
       </nav>
 
-      {/* HERO — flex column, image centered, button below */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1.5vh", padding: "1vh 0" }}>
+      {/* HERO — 3-column grid, overflow hidden */}
+      <div style={{
+        flex: 1,
+        display: "grid",
+        gridTemplateColumns: "333px 1fr 333px",
+        overflow: "hidden",
+      }}>
 
-        {/* Image wrapper — image + overlapping side text */}
-        <div style={{ position: "relative", flexShrink: 1, minHeight: 0 }}>
-
-          {/* Image — takes up available height */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={img} alt="Cerise Scholar" style={{
-            display: "block",
-            height: "70vh",
-            width: "auto",
-            maxWidth: "65vw",
-            objectFit: "contain",
-          }} />
-
-          {/* LEFT text — positioned relative to image */}
-          <div style={{
-            position: "absolute",
-            right: "100%",
-            bottom: "8%",
-            marginRight: "-12vw",
-            zIndex: 10,
+        {/* LEFT COLUMN — fixed 333px */}
+        <div style={{
+          minWidth: 333,
+          maxWidth: 333,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          padding: "0 20px 0 40px",
+        }}>
+          <h2 style={{
+            fontFamily: display,
+            fontSize: 64,
+            fontWeight: 900,
+            lineHeight: 0.88,
+            letterSpacing: -2,
+            color: "#000",
+            margin: 0,
           }}>
-            <h2 style={{
-              fontFamily: display,
-              fontSize: "8.3vw",
-              fontWeight: 900,
-              lineHeight: 0.85,
-              letterSpacing: "-0.2vw",
-              color: "#000",
-              margin: 0,
-              whiteSpace: "nowrap",
-            }}>
-              AI<br />scholar<br />friend
-            </h2>
-            <p style={{
-              fontSize: "1.1vw",
-              fontWeight: 600,
-              letterSpacing: "0.13vw",
-              color: "#000",
-              textTransform: "uppercase",
-              lineHeight: 1.5,
-              fontFamily: body,
-              margin: 0,
-              marginTop: "0.8vh",
-            }}>
-              READ &middot; HIGHLIGHT &middot; REVIEW<br />ASK &middot; ANALYZE &middot; WRITE
-            </p>
-          </div>
-
-          {/* RIGHT text — positioned relative to image */}
-          <div style={{
-            position: "absolute",
-            left: "100%",
-            bottom: "8%",
-            marginLeft: "-10vw",
-            zIndex: 10,
-            textAlign: "right",
+            AI<br />scholar<br />friend
+          </h2>
+          <p style={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: 1.5,
+            color: "#000",
+            textTransform: "uppercase",
+            lineHeight: 1.5,
+            fontFamily: body,
+            margin: 0,
+            marginTop: 12,
           }}>
-            <h2 style={{
-              fontFamily: display,
-              fontSize: "6.7vw",
-              fontWeight: 900,
-              lineHeight: 0.85,
-              letterSpacing: "-0.2vw",
-              color: "#000",
-              margin: 0,
-              whiteSpace: "nowrap",
-            }}>
-              All<br />research<br />process
-            </h2>
-            <p style={{
-              fontSize: "0.93vw",
-              fontWeight: 700,
-              letterSpacing: "0.16vw",
-              color: "#000",
-              textTransform: "uppercase",
-              fontFamily: body,
-              margin: 0,
-              marginTop: "0.8vh",
-            }}>
-              IN ONE SIT
-            </p>
-          </div>
+            READ &middot; HIGHLIGHT &middot; REVIEW<br />ASK &middot; ANALYZE &middot; WRITE
+          </p>
         </div>
 
-        {/* BUTTON — in normal flow, below the image */}
-        <span style={{
-          display: "inline-block",
-          background: `linear-gradient(180deg, ${accent} 0%, #F5CC33 100%)`,
-          color: dark,
-          borderRadius: 9999,
-          padding: "1.5vh 3.5vw",
-          fontSize: "1vw",
-          fontWeight: 700,
-          letterSpacing: "0.2vw",
-          textTransform: "uppercase",
-          cursor: "pointer",
-          boxShadow: "0 6px 20px rgba(255,215,64,0.4), 0 2px 6px rgba(0,0,0,0.08)",
-          flexShrink: 0,
+        {/* CENTER COLUMN — image + button */}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          minHeight: 0,
         }}>
-          Begin Research
-        </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={img} alt="Cerise Scholar" style={{
+            width: "100%",
+            objectFit: "contain",
+            display: "block",
+          }} />
+          <span style={{
+            display: "block",
+            width: "fit-content",
+            margin: "24px auto 0",
+            background: `linear-gradient(180deg, ${accent} 0%, #F5CC33 100%)`,
+            color: dark,
+            borderRadius: 9999,
+            padding: "14px 44px",
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: 3,
+            textTransform: "uppercase",
+            cursor: "pointer",
+            boxShadow: "0 6px 20px rgba(255,215,64,0.4), 0 2px 6px rgba(0,0,0,0.08)",
+          }}>
+            Begin Research
+          </span>
+        </div>
+
+        {/* RIGHT COLUMN — fixed 333px */}
+        <div style={{
+          minWidth: 333,
+          maxWidth: 333,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "flex-end",
+          padding: "0 40px 0 20px",
+          textAlign: "right",
+        }}>
+          <h2 style={{
+            fontFamily: display,
+            fontSize: 64,
+            fontWeight: 900,
+            lineHeight: 0.88,
+            letterSpacing: -2,
+            color: "#000",
+            margin: 0,
+          }}>
+            All<br />research<br />process
+          </h2>
+          <p style={{
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: 2.5,
+            color: "#000",
+            textTransform: "uppercase",
+            fontFamily: body,
+            margin: 0,
+            marginTop: 12,
+          }}>
+            IN ONE SIT
+          </p>
+        </div>
       </div>
     </div>
   );
