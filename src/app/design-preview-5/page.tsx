@@ -4,8 +4,7 @@ export default function DesignPreview5() {
   const bg = "#E8E8E8";
   const accent = "#FFD740";
   const dark = "#1E1B4B";
-  const muted = "#555";
-  const imgUrl = "https://res.cloudinary.com/dbc0ygwsm/image/upload/f_auto,q_auto/ế-3_dokblv";
+  const imgUrl = "https://res.cloudinary.com/dbc0ygwsm/image/upload/f_auto,q_auto/ế_fnxqsd";
 
   return (
     <div style={{ background: bg, fontFamily: body, color: "#111", minHeight: "100vh", overflow: "hidden" }}>
@@ -24,49 +23,45 @@ export default function DesignPreview5() {
         </div>
       </nav>
 
-      {/* ═══ HERO — single unified section with overlapping layout ═══ */}
-      <section style={{ position: "relative", minHeight: "calc(100vh - 60px)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "40px 32px 0", maxWidth: 1400, margin: "0 auto" }}>
+      {/* ═══ HERO — one unified composition ═══ */}
+      <section style={{ position: "relative", width: "100%", maxWidth: 1440, margin: "0 auto", minHeight: "calc(100vh - 60px)" }}>
 
-        {/* Three-column overlay: text + illustration + text all on same plane */}
-        <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-
-          {/* Left text — positioned to overlap with illustration */}
-          <div style={{ position: "absolute", left: 0, bottom: 0, zIndex: 20, textAlign: "left", maxWidth: 380 }}>
-            <h2 style={{ fontFamily: display, fontSize: "clamp(3.5rem,7vw,7rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-3px", color: "#000" }}>
-              AI<br />scholar<br />friend
-            </h2>
-            <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: "2px", color: "#000", marginTop: 16, textTransform: "uppercase", lineHeight: 1.8 }}>
-              READ &middot; HIGHLIGHT &middot; REVIEW<br />ASK &middot; ANALYZE &middot; WRITE
-            </p>
-          </div>
-
-          {/* Center illustration */}
-          <div style={{ position: "relative", zIndex: 10, maxWidth: 700, width: "60%" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imgUrl} alt="Cerise Scholar" style={{ width: "100%", height: "auto", display: "block" }} />
-          </div>
-
-          {/* Right text — positioned to overlap with illustration */}
-          <div style={{ position: "absolute", right: 0, bottom: 0, zIndex: 20, textAlign: "right", maxWidth: 380 }}>
-            <h2 style={{ fontFamily: display, fontSize: "clamp(3.5rem,7vw,7rem)", fontWeight: 900, lineHeight: 0.9, letterSpacing: "-3px", color: "#000" }}>
-              All<br />research<br />process
-            </h2>
-            <p style={{ fontSize: 14, fontWeight: 700, letterSpacing: "3px", color: "#000", marginTop: 16, textTransform: "uppercase" }}>
-              IN ONE SIT
-            </p>
-          </div>
+        {/* Background illustration — full width */}
+        <div style={{ position: "relative", width: "100%", display: "flex", justifyContent: "center", paddingTop: 20 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={imgUrl} alt="Cerise Scholar" style={{ width: "100%", maxWidth: 1440, height: "auto", display: "block" }} />
         </div>
 
-        {/* CTA below illustration — overlapping slightly */}
-        <div style={{ position: "relative", zIndex: 30, marginTop: -20, textAlign: "center" }}>
-          <span style={{ display: "inline-block", background: accent, color: dark, borderRadius: 9999, padding: "18px 56px", fontSize: 14, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", cursor: "pointer" }}>
+        {/* Left text — absolute, overlapping illustration */}
+        <div style={{ position: "absolute", left: "3%", bottom: "12%", zIndex: 20, textAlign: "left" }}>
+          <h2 style={{ fontFamily: display, fontSize: "clamp(2.5rem,5.5vw,6.5rem)", fontWeight: 900, lineHeight: 0.88, letterSpacing: "-3px", color: "#000" }}>
+            AI<br />scholar<br />friend
+          </h2>
+          <p style={{ fontSize: "clamp(10px,1vw,13px)", fontWeight: 600, letterSpacing: "2px", color: "#000", marginTop: 14, textTransform: "uppercase", lineHeight: 1.8 }}>
+            SCHOLARASK, LIT REVIEW,<br />META-ANALYSIS
+          </p>
+        </div>
+
+        {/* Right text — absolute, overlapping illustration */}
+        <div style={{ position: "absolute", right: "3%", bottom: "12%", zIndex: 20, textAlign: "right" }}>
+          <h2 style={{ fontFamily: display, fontSize: "clamp(2.5rem,5.5vw,6.5rem)", fontWeight: 900, lineHeight: 0.88, letterSpacing: "-3px", color: "#000" }}>
+            All<br />research<br />process
+          </h2>
+          <p style={{ fontSize: "clamp(10px,1vw,14px)", fontWeight: 700, letterSpacing: "3px", color: "#000", marginTop: 14, textTransform: "uppercase" }}>
+            IN ONE SIT
+          </p>
+        </div>
+
+        {/* CTA — centered at bottom, overlapping illustration */}
+        <div style={{ position: "absolute", bottom: "3%", left: "50%", transform: "translateX(-50%)", zIndex: 30 }}>
+          <span style={{ display: "inline-block", background: accent, color: dark, borderRadius: 9999, padding: "16px 48px", fontSize: "clamp(11px,1vw,14px)", fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", cursor: "pointer", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
             Begin Research
           </span>
         </div>
       </section>
 
       {/* ═══ FEATURE TICKER ═══ */}
-      <div style={{ background: "#000", padding: "18px 0", marginTop: 40, overflow: "hidden" }}>
+      <div style={{ background: "#000", padding: "18px 0", overflow: "hidden" }}>
         <div style={{ display: "flex", gap: 60, whiteSpace: "nowrap" }}>
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} style={{ display: "flex", gap: 60 }}>
