@@ -23,17 +23,15 @@ export default function DesignPreview5() {
         </div>
       </nav>
 
-      {/* HERO */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+      {/* HERO — everything overlapping on one plane */}
+      <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
 
-        {/* Image — 55% width, centered vertically and horizontally */}
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", paddingBottom: 40 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={img} alt="Cerise Scholar" style={{ width: "55%", height: "auto", display: "block", objectFit: "contain" }} />
-        </div>
+        {/* Image — centered, sized to fill ~60% width */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={img} alt="Cerise Scholar" style={{ width: "55%", height: "auto", display: "block", position: "relative", zIndex: 5 }} />
 
-        {/* Left text — big, overlapping bottom-left of illustration */}
-        <div style={{ position: "absolute", left: 28, bottom: "8%", zIndex: 10 }}>
+        {/* Left text — vertically centered with image, overlapping its left edge */}
+        <div style={{ position: "absolute", left: 28, top: "50%", transform: "translateY(-30%)", zIndex: 10 }}>
           <h2 style={{ fontFamily: display, fontSize: "clamp(3rem,5.5vw,5.5rem)", fontWeight: 900, lineHeight: 0.88, letterSpacing: "-2px", color: "#000" }}>
             AI<br />scholar<br />friend
           </h2>
@@ -42,8 +40,8 @@ export default function DesignPreview5() {
           </p>
         </div>
 
-        {/* Right text — big, overlapping bottom-right of illustration */}
-        <div style={{ position: "absolute", right: 28, bottom: "8%", zIndex: 10, textAlign: "right" }}>
+        {/* Right text — vertically centered with image, overlapping its right edge */}
+        <div style={{ position: "absolute", right: 28, top: "50%", transform: "translateY(-30%)", zIndex: 10, textAlign: "right" }}>
           <h2 style={{ fontFamily: display, fontSize: "clamp(3rem,5.5vw,5.5rem)", fontWeight: 900, lineHeight: 0.88, letterSpacing: "-2px", color: "#000" }}>
             All<br />research<br />process
           </h2>
@@ -52,8 +50,8 @@ export default function DesignPreview5() {
           </p>
         </div>
 
-        {/* CTA */}
-        <div style={{ position: "absolute", bottom: "2%", left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
+        {/* CTA — centered below image */}
+        <div style={{ position: "absolute", bottom: "4%", left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
           <span style={{ display: "inline-block", background: accent, color: dark, borderRadius: 9999, padding: "14px 44px", fontSize: 12, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", cursor: "pointer" }}>
             Begin Research
           </span>
