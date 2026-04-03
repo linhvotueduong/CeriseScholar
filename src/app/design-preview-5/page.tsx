@@ -26,35 +26,35 @@ export default function DesignPreview5() {
       {/* HERO */}
       <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
 
-        {/* Image — wide, centered */}
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Image — 55% width, centered vertically and horizontally */}
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", paddingBottom: 40 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={img} alt="Cerise Scholar" style={{ width: "80%", maxWidth: 1100, height: "auto", display: "block", objectFit: "contain" }} />
+          <img src={img} alt="Cerise Scholar" style={{ width: "55%", height: "auto", display: "block", objectFit: "contain" }} />
         </div>
 
-        {/* Left text */}
-        <div style={{ position: "absolute", left: 24, bottom: 48, zIndex: 10 }}>
-          <h2 style={{ fontFamily: display, fontSize: "clamp(2rem,4vw,4.5rem)", fontWeight: 900, lineHeight: 0.88, letterSpacing: "-2px", color: "#000" }}>
+        {/* Left text — big, overlapping bottom-left of illustration */}
+        <div style={{ position: "absolute", left: 28, bottom: "8%", zIndex: 10 }}>
+          <h2 style={{ fontFamily: display, fontSize: "clamp(3rem,5.5vw,5.5rem)", fontWeight: 900, lineHeight: 0.88, letterSpacing: "-2px", color: "#000" }}>
             AI<br />scholar<br />friend
           </h2>
-          <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "1px", color: "#000", marginTop: 12, textTransform: "uppercase", lineHeight: 1.6 }}>
-            SCHOLARASK, LIT REVIEW,<br />META-ANALYSIS
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", color: "#000", marginTop: 10, textTransform: "uppercase", lineHeight: 1.5 }}>
+            READ &middot; HIGHLIGHT &middot; REVIEW<br />ASK &middot; ANALYZE &middot; WRITE
           </p>
         </div>
 
-        {/* Right text */}
-        <div style={{ position: "absolute", right: 24, bottom: 48, zIndex: 10, textAlign: "right" }}>
-          <h2 style={{ fontFamily: display, fontSize: "clamp(2rem,4vw,4.5rem)", fontWeight: 900, lineHeight: 0.88, letterSpacing: "-2px", color: "#000" }}>
+        {/* Right text — big, overlapping bottom-right of illustration */}
+        <div style={{ position: "absolute", right: 28, bottom: "8%", zIndex: 10, textAlign: "right" }}>
+          <h2 style={{ fontFamily: display, fontSize: "clamp(3rem,5.5vw,5.5rem)", fontWeight: 900, lineHeight: 0.88, letterSpacing: "-2px", color: "#000" }}>
             All<br />research<br />process
           </h2>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "2px", color: "#000", marginTop: 12, textTransform: "uppercase" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2.5px", color: "#000", marginTop: 10, textTransform: "uppercase" }}>
             IN ONE SIT
           </p>
         </div>
 
         {/* CTA */}
-        <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
-          <span style={{ display: "inline-block", background: accent, color: dark, borderRadius: 9999, padding: "14px 40px", fontSize: 11, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", cursor: "pointer" }}>
+        <div style={{ position: "absolute", bottom: "2%", left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
+          <span style={{ display: "inline-block", background: accent, color: dark, borderRadius: 9999, padding: "14px 44px", fontSize: 12, fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", cursor: "pointer" }}>
             Begin Research
           </span>
         </div>
