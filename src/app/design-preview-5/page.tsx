@@ -7,7 +7,7 @@ export default function DesignPreview5() {
   const img = "https://res.cloudinary.com/dbc0ygwsm/image/upload/f_auto,q_auto/ế_ekoezc";
 
   return (
-    <div style={{ background: bg, fontFamily: body, color: "#111", width: "100vw", height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ background: bg, fontFamily: body, color: "#111", width: "100vw", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
 
       {/* NAV */}
       <nav style={{
@@ -34,14 +34,14 @@ export default function DesignPreview5() {
       <div style={{
         flex: 1,
         display: "grid",
-        gridTemplateColumns: "333px 1fr 333px",
-        overflow: "hidden",
+        gridTemplateColumns: "400px 1fr 400px",
+        minHeight: 0,
       }}>
 
         {/* LEFT COLUMN — fixed 333px */}
         <div style={{
-          minWidth: 333,
-          maxWidth: 333,
+          minWidth: 400,
+          maxWidth: 400,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
@@ -49,10 +49,10 @@ export default function DesignPreview5() {
         }}>
           <h2 style={{
             fontFamily: display,
-            fontSize: 64,
+            fontSize: 100,
             fontWeight: 900,
             lineHeight: 0.88,
-            letterSpacing: -2,
+            letterSpacing: -3,
             color: "#000",
             margin: 0,
           }}>
@@ -79,7 +79,6 @@ export default function DesignPreview5() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          overflow: "hidden",
           minHeight: 0,
           padding: "24px 48px",
         }}>
@@ -111,9 +110,8 @@ export default function DesignPreview5() {
 
         {/* RIGHT COLUMN — fixed 333px */}
         <div style={{
-          minWidth: 333,
-          maxWidth: 333,
-          overflow: "hidden",
+          minWidth: 400,
+          maxWidth: 400,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
@@ -123,10 +121,10 @@ export default function DesignPreview5() {
         }}>
           <h2 style={{
             fontFamily: display,
-            fontSize: 64,
+            fontSize: 100,
             fontWeight: 900,
             lineHeight: 0.88,
-            letterSpacing: -2,
+            letterSpacing: -3,
             color: "#000",
             margin: 0,
           }}>
