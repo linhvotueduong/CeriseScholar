@@ -42,7 +42,6 @@ export default function DesignPreview5() {
         <div style={{
           minWidth: 333,
           maxWidth: 333,
-          overflow: "hidden",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
@@ -60,7 +59,7 @@ export default function DesignPreview5() {
             AI<br />scholar<br />friend
           </h2>
           <p style={{
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: 600,
             letterSpacing: 1.5,
             color: "#000",
@@ -69,9 +68,8 @@ export default function DesignPreview5() {
             fontFamily: body,
             margin: 0,
             marginTop: 12,
-            whiteSpace: "nowrap",
           }}>
-            READ &middot; HIGHLIGHT &middot; REVIEW &middot; ASK &middot; ANALYZE &middot; WRITE
+            READ &middot; HIGHLIGHT &middot; REVIEW<br />ASK &middot; ANALYZE &middot; WRITE
           </p>
         </div>
 
