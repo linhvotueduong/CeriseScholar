@@ -59,12 +59,12 @@ export default function DesignPreview5() {
             AI<br />scholar<br />friend
           </h2>
           <p style={{
-            fontSize: 10,
+            fontSize: 13,
             fontWeight: 600,
-            letterSpacing: 1.5,
+            letterSpacing: 1,
             color: "#000",
             textTransform: "uppercase",
-            lineHeight: 1.5,
+            lineHeight: 1.8,
             fontFamily: body,
             margin: 0,
             marginTop: 12,
