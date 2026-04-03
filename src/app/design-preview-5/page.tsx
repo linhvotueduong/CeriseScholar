@@ -50,9 +50,9 @@ export default function DesignPreview5() {
           <h2 style={{
             fontFamily: display,
             fontSize: 100,
-            fontWeight: 900,
+            fontWeight: 500,
             lineHeight: 0.88,
-            letterSpacing: -3,
+            letterSpacing: 4,
             color: "#000",
             margin: 0,
           }}>
@@ -122,9 +122,9 @@ export default function DesignPreview5() {
           <h2 style={{
             fontFamily: display,
             fontSize: 100,
-            fontWeight: 900,
+            fontWeight: 500,
             lineHeight: 0.88,
-            letterSpacing: -3,
+            letterSpacing: 4,
             color: "#000",
             margin: 0,
           }}>
