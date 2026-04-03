@@ -30,44 +30,42 @@ export default function DesignPreview5() {
         </div>
       </nav>
 
-      {/* HERO — 3-column grid, overflow hidden */}
+      {/* HERO — 3-column grid, all vw-based */}
       <div style={{
         flex: 1,
         display: "grid",
-        gridTemplateColumns: "400px 1fr 400px",
+        gridTemplateColumns: "27vw 1fr 27vw",
         minHeight: 0,
       }}>
 
-        {/* LEFT COLUMN — fixed 333px */}
+        {/* LEFT COLUMN */}
         <div style={{
-          minWidth: 400,
-          maxWidth: 400,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          padding: "0 20px 0 40px",
+          padding: "0 1.5vw 0 3vw",
         }}>
           <h2 style={{
             fontFamily: display,
-            fontSize: 100,
+            fontSize: "6.5vw",
             fontWeight: 500,
             lineHeight: 0.88,
-            letterSpacing: 4,
+            letterSpacing: "0.3vw",
             color: "#000",
             margin: 0,
           }}>
             AI<br />scholar<br />friend
           </h2>
           <p style={{
-            fontSize: 13,
+            fontSize: "0.85vw",
             fontWeight: 600,
-            letterSpacing: 1,
+            letterSpacing: "0.07vw",
             color: "#000",
             textTransform: "uppercase",
             lineHeight: 1.8,
             fontFamily: body,
             margin: 0,
-            marginTop: 12,
+            marginTop: "0.8vw",
           }}>
             READ &middot; HIGHLIGHT &middot; REVIEW<br />ASK &middot; ANALYZE &middot; WRITE
           </p>
@@ -80,11 +78,11 @@ export default function DesignPreview5() {
           alignItems: "center",
           justifyContent: "center",
           minHeight: 0,
-          padding: "24px 48px",
+          padding: "2vw 3vw",
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={img} alt="Cerise Scholar" style={{
-            maxWidth: "90%",
+            maxWidth: "100%",
             width: "100%",
             objectFit: "contain",
             display: "block",
@@ -92,14 +90,14 @@ export default function DesignPreview5() {
           <span style={{
             display: "block",
             width: "fit-content",
-            margin: "24px auto 0",
+            margin: "1.6vw auto 0",
             background: `linear-gradient(180deg, ${accent} 0%, #F5CC33 100%)`,
             color: dark,
             borderRadius: 9999,
-            padding: "14px 44px",
-            fontSize: 12,
+            padding: "1vw 3vw",
+            fontSize: "0.8vw",
             fontWeight: 700,
-            letterSpacing: 3,
+            letterSpacing: "0.2vw",
             textTransform: "uppercase",
             cursor: "pointer",
             boxShadow: "0 6px 20px rgba(255,215,64,0.4), 0 2px 6px rgba(0,0,0,0.08)",
@@ -108,37 +106,35 @@ export default function DesignPreview5() {
           </span>
         </div>
 
-        {/* RIGHT COLUMN — fixed 333px */}
+        {/* RIGHT COLUMN */}
         <div style={{
-          minWidth: 400,
-          maxWidth: 400,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "flex-end",
-          padding: "0 40px 0 20px",
+          padding: "0 3vw 0 1.5vw",
           textAlign: "right",
         }}>
           <h2 style={{
             fontFamily: display,
-            fontSize: 100,
+            fontSize: "6.5vw",
             fontWeight: 500,
             lineHeight: 0.88,
-            letterSpacing: 4,
+            letterSpacing: "0.3vw",
             color: "#000",
             margin: 0,
           }}>
             All<br />research<br />process
           </h2>
           <p style={{
-            fontSize: 11,
+            fontSize: "0.75vw",
             fontWeight: 700,
-            letterSpacing: 2.5,
+            letterSpacing: "0.18vw",
             color: "#000",
             textTransform: "uppercase",
             fontFamily: body,
             margin: 0,
-            marginTop: 12,
+            marginTop: "0.8vw",
             whiteSpace: "nowrap",
           }}>
             IN ONE SIT
