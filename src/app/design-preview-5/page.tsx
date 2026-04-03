@@ -69,8 +69,9 @@ export default function DesignPreview5() {
             fontFamily: body,
             margin: 0,
             marginTop: 12,
+            whiteSpace: "nowrap",
           }}>
-            READ &middot; HIGHLIGHT &middot; REVIEW<br />ASK &middot; ANALYZE &middot; WRITE
+            READ &middot; HIGHLIGHT &middot; REVIEW &middot; ASK &middot; ANALYZE &middot; WRITE
           </p>
         </div>
 
@@ -142,6 +143,7 @@ export default function DesignPreview5() {
             fontFamily: body,
             margin: 0,
             marginTop: 12,
+            whiteSpace: "nowrap",
           }}>
             IN ONE SIT
           </p>
