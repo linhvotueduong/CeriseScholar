@@ -60,51 +60,39 @@ export default function ProjectWorkspacePage() {
   return (
     <div className="-mx-8 -my-8">
       <div className="flex flex-col h-[calc(100vh-57px)]">
-        {/* Project header bar */}
-        <div className="flex items-center gap-3 bg-white border-b border-[#e0d8d0] px-4 py-2">
-          <Link
-            href="/dashboard"
-            className="text-sm text-[#7a6a5a] hover:text-[#1a1208] transition-colors"
-          >
-            &larr; Projects
-          </Link>
+        {/* Project sub-nav bar */}
+        <div style={{ height: "40px", flexShrink: 0, display: "flex", alignItems: "center", padding: "0 24px", gap: "24px", borderBottom: "1px solid #e0d8d0", background: "#fff", fontFamily: "var(--font-noto), 'Noto Sans', sans-serif", fontSize: "11px" }}>
+          <Link href="/dashboard" style={{ color: "#7a6a5a", textDecoration: "none", fontSize: "11px" }}>← Projects</Link>
           {project && (
-            <>
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: project.color }}
-              />
-              <h2 className="text-sm font-medium text-[#1a1208] truncate">
-                {project.name}
-              </h2>
-            </>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: project.color }} />
+              <span style={{ fontWeight: 600, color: "#1a1208", fontSize: "12px" }}>{project.name}</span>
+            </div>
           )}
-          <div className="ml-auto flex items-center gap-4">
+          <div style={{ flex: 1 }} />
+          {[
+            { n: "Workspace", h: `/dashboard/project/${projectId}`, active: true },
+            { n: "ScholarAsk", h: `/dashboard/project/${projectId}/scholar-ask` },
+            { n: "Meta Analysis", h: `/dashboard/project/${projectId}/meta-analysis` },
+            { n: "Lit Review", h: `/dashboard/project/${projectId}/literature-review` },
+            { n: "Paper Writer", h: `/dashboard/project/${projectId}/paper-writer` },
+          ].map((tab) => (
             <Link
-              href={`/dashboard/project/${projectId}/scholar-ask`}
-              className="text-xs text-[#1a1208] hover:underline font-medium"
+              key={tab.n}
+              href={tab.h}
+              style={{
+                color: tab.active ? "#c0392b" : "#7a6a5a",
+                fontWeight: tab.active ? 700 : 400,
+                borderBottom: tab.active ? "2px solid #c0392b" : "2px solid transparent",
+                paddingBottom: "8px",
+                marginBottom: "-1px",
+                fontSize: "11px",
+                textDecoration: "none",
+              }}
             >
-              ScholarAsk
+              {tab.n}
             </Link>
-            <Link
-              href={`/dashboard/project/${projectId}/meta-analysis`}
-              className="text-xs text-[#1a1208] hover:underline font-medium"
-            >
-              Meta-Analysis
-            </Link>
-            <Link
-              href={`/dashboard/project/${projectId}/literature-review`}
-              className="text-xs text-[#1a1208] hover:underline font-medium"
-            >
-              Lit Review
-            </Link>
-            <Link
-              href={`/dashboard/project/${projectId}/paper-writer`}
-              className="text-xs text-[#1a1208] hover:underline font-medium"
-            >
-              Paper Writer &rarr;
-            </Link>
-          </div>
+          ))}
         </div>
 
         {/* Workspace */}

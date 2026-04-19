@@ -52,42 +52,57 @@ export default function ProjectLiteratureReviewPage() {
   }
 
   return (
-    <div>
-      <div className="mb-4">
-        <Link href={`/dashboard/project/${projectId}`} className="text-sm text-[#7a6a5a] hover:text-[#1a1208]">
-          &larr; Back to project
-        </Link>
+    <div className="-mx-8 -my-8">
+      {/* Sub-nav tabs */}
+      <div style={{ height: "40px", flexShrink: 0, display: "flex", alignItems: "center", padding: "0 24px", gap: "24px", borderBottom: "1px solid #e0d8d0", background: "#fff", fontFamily: "var(--font-noto), 'Noto Sans', sans-serif", fontSize: "11px" }}>
+        <Link href="/dashboard" style={{ color: "#7a6a5a", textDecoration: "none", fontSize: "11px" }}>← Projects</Link>
+        <div style={{ flex: 1 }} />
+        {[
+          { n: "Workspace", h: `/dashboard/project/${projectId}` },
+          { n: "ScholarAsk", h: `/dashboard/project/${projectId}/scholar-ask` },
+          { n: "Meta Analysis", h: `/dashboard/project/${projectId}/meta-analysis` },
+          { n: "Lit Review", h: `/dashboard/project/${projectId}/literature-review`, active: true },
+          { n: "Paper Writer", h: `/dashboard/project/${projectId}/paper-writer` },
+        ].map((tab) => (
+          <Link key={tab.n} href={tab.h} style={{ color: tab.active ? "#c0392b" : "#7a6a5a", fontWeight: tab.active ? 700 : 400, borderBottom: tab.active ? "2px solid #c0392b" : "2px solid transparent", paddingBottom: "8px", marginBottom: "-1px", fontSize: "11px", textDecoration: "none" }}>{tab.n}</Link>
+        ))}
       </div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-[#1a1208]">Synthesized Literature Review</h1>
-        <ExportButton entries={filtered} />
-      </div>
-      <div className="mb-4">
-        <ReviewTableFilters
-          sources={sources}
-          sections={sections}
-          selectedSource={selectedSource}
-          selectedSection={selectedSection}
-          searchText={searchText}
-          onSourceChange={setSelectedSource}
-          onSectionChange={setSelectedSection}
-          onSearchChange={setSearchText}
-          totalCount={entries.length}
-          filteredCount={filtered.length}
-        />
-      </div>
-      <ReviewTable entries={filtered} onUpdate={updateEntry} onDelete={deleteEntry} />
-      {hasMore && (
-        <div className="flex justify-center mt-6">
-          <button
-            onClick={loadMore}
-            disabled={loadingMore}
-            className="px-6 py-2.5 border border-gray-300 text-[#5a4a3a] font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
-          >
-            {loadingMore ? "Loading..." : "Load more entries"}
-          </button>
+
+      {/* Content */}
+      <div style={{ padding: "24px 32px" }}>
+        <div className="flex items-center justify-between mb-6">
+          <h1 style={{ fontFamily: "var(--font-display), 'DM Serif Display', serif", fontSize: "24px", fontWeight: 400, color: "#1a1208", margin: 0 }}>
+            Synthesized Literature Review
+          </h1>
+          <ExportButton entries={filtered} />
         </div>
-      )}
+        <div className="mb-4">
+          <ReviewTableFilters
+            sources={sources}
+            sections={sections}
+            selectedSource={selectedSource}
+            selectedSection={selectedSection}
+            searchText={searchText}
+            onSourceChange={setSelectedSource}
+            onSectionChange={setSelectedSection}
+            onSearchChange={setSearchText}
+            totalCount={entries.length}
+            filteredCount={filtered.length}
+          />
+        </div>
+        <ReviewTable entries={filtered} onUpdate={updateEntry} onDelete={deleteEntry} />
+        {hasMore && (
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              style={{ padding: "10px 24px", borderRadius: "50px", border: "1.5px solid #d4cdc5", background: "transparent", fontFamily: "var(--font-body)", fontSize: "13px", fontWeight: 600, color: "#1a1208", cursor: "pointer", opacity: loadingMore ? 0.5 : 1 }}
+            >
+              {loadingMore ? "Loading..." : "Load more entries"}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
