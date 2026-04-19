@@ -13,14 +13,24 @@ const PROJECT_COLORS = [
   "#8b9dc3", "#c8a84b", "#5a4a3a", "#e89a6f",
 ];
 
+const p = {
+  ink: "#1a1208",
+  inkMuted: "#7a6a5a",
+  inkFaint: "#9a8a7a",
+  cerise: "#c0392b",
+  rule: "#e0d8d0",
+  border: "#d4cdc5",
+};
+
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
-  const [newColor, setNewColor] = useState("#111111");
+  const [newColor, setNewColor] = useState("#c0392b");
   const [creating, setCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
   const { user } = useUser();
 
@@ -56,14 +66,13 @@ export default function DashboardPage() {
       .single();
 
     if (data) {
-      // Navigate straight to the project workspace
       router.push(`/dashboard/project/${data.id}`);
       return;
     }
 
     setNewName("");
     setNewDesc("");
-    setNewColor("#111111");
+    setNewColor("#c0392b");
     setShowCreate(false);
     setCreating(false);
   }
@@ -75,28 +84,29 @@ export default function DashboardPage() {
 
     const supabase = createClient();
 
-    // Step 1: Collect storage paths before deletion (CASCADE will remove DB rows)
     const { data: pdfs } = await supabase
       .from("pdfs")
       .select("storage_path")
       .eq("project_id", projectId);
 
-    const storagePaths = pdfs?.map((p) => p.storage_path).filter(Boolean) || [];
+    const storagePaths = pdfs?.map((pp) => pp.storage_path).filter(Boolean) || [];
 
-    // Step 2: Delete the project — CASCADE handles all related DB rows atomically
     const { error } = await supabase.from("projects").delete().eq("id", projectId);
     if (error) {
       alert("Failed to delete project. Please try again.");
       return;
     }
 
-    // Step 3: Clean up storage files (best-effort — DB is already consistent)
     if (storagePaths.length > 0) {
       await supabase.storage.from("pdfs").remove(storagePaths);
     }
 
-    setProjects((prev) => prev.filter((p) => p.id !== projectId));
+    setProjects((prev) => prev.filter((proj) => proj.id !== projectId));
   }
+
+  const filtered = projects.filter((proj) =>
+    proj.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -107,12 +117,25 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-[#1a1208]">My Projects</h1>
+    <div style={{ maxWidth: "960px", margin: "0 auto", padding: "48px 32px 80px" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "32px" }}>
+        <div>
+          <h1 style={{ fontFamily: "var(--font-display), 'DM Serif Display', serif", fontSize: "36px", fontWeight: 400, color: p.ink, margin: "0 0 8px" }}>
+            Your Projects
+          </h1>
+          <p style={{ fontSize: "14px", color: p.inkMuted, margin: 0 }}>
+            {projects.length} research project{projects.length !== 1 ? "s" : ""}
+          </p>
+        </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="px-4 py-2 bg-[#1a1208] text-white text-sm font-medium rounded-lg hover:bg-[#0d0a04] transition-colors"
+          style={{
+            padding: "12px 24px", borderRadius: "50px",
+            background: p.cerise, color: "#fff", border: "none",
+            fontFamily: "var(--font-body), 'DM Sans', sans-serif", fontSize: "13px", fontWeight: 600,
+            cursor: "pointer",
+          }}
         >
           + New Project
         </button>
@@ -122,16 +145,25 @@ export default function DashboardPage() {
       {showCreate && (
         <form
           onSubmit={handleCreate}
-          className="bg-white rounded-xl border border-[#e0d8d0] p-6 mb-6"
+          style={{
+            background: "#fff", border: `1.5px solid ${p.border}`,
+            borderRadius: "16px", padding: "28px 32px", marginBottom: "24px",
+          }}
         >
-          <h3 className="font-semibold text-[#1a1208] mb-4">Create New Project</h3>
-          <div className="space-y-3">
+          <h3 style={{ fontFamily: "var(--font-display)", fontSize: "20px", fontWeight: 400, color: p.ink, margin: "0 0 16px" }}>
+            Create New Project
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Project name (e.g., 'Geopolitical Influence & Peace')"
-              className="w-full px-3 py-2 border border-[#d4cdc5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a1208] text-sm"
+              style={{
+                width: "100%", padding: "12px 16px", border: `1.5px solid ${p.border}`,
+                borderRadius: "10px", fontSize: "13px", fontFamily: "var(--font-body)",
+                color: p.ink, outline: "none", background: "#fff",
+              }}
               autoFocus
               required
             />
@@ -140,35 +172,46 @@ export default function DashboardPage() {
               onChange={(e) => setNewDesc(e.target.value)}
               placeholder="Description (optional)"
               rows={2}
-              className="w-full px-3 py-2 border border-[#d4cdc5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a1208] text-sm resize-none"
+              style={{
+                width: "100%", padding: "12px 16px", border: `1.5px solid ${p.border}`,
+                borderRadius: "10px", fontSize: "13px", fontFamily: "var(--font-body)",
+                color: p.ink, outline: "none", background: "#fff", resize: "none",
+              }}
             />
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[#7a6a5a]">Color:</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "12px", color: p.inkMuted }}>Color:</span>
               {PROJECT_COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setNewColor(c)}
-                  className={`w-6 h-6 rounded-full border-2 transition-all ${
-                    newColor === c ? "border-gray-800 scale-110" : "border-[#e0d8d0]"
-                  }`}
-                  style={{ backgroundColor: c }}
+                  style={{
+                    width: "24px", height: "24px", borderRadius: "50%",
+                    backgroundColor: c, border: newColor === c ? "2px solid #1a1208" : `2px solid ${p.rule}`,
+                    cursor: "pointer", transform: newColor === c ? "scale(1.15)" : "scale(1)",
+                    transition: "all 0.15s",
+                  }}
                 />
               ))}
             </div>
           </div>
-          <div className="flex justify-end gap-2 mt-4">
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
             <button
               type="button"
               onClick={() => setShowCreate(false)}
-              className="px-4 py-2 text-sm text-[#7a6a5a]"
+              style={{ padding: "8px 20px", fontSize: "13px", color: p.inkMuted, background: "none", border: "none", cursor: "pointer" }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!newName.trim() || creating}
-              className="px-4 py-2 text-sm bg-[#1a1208] text-white rounded-lg hover:bg-[#0d0a04] disabled:opacity-50"
+              style={{
+                padding: "10px 24px", borderRadius: "50px",
+                background: p.ink, color: "#fff", border: "none",
+                fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                opacity: !newName.trim() || creating ? 0.5 : 1,
+              }}
             >
               {creating ? "Creating..." : "Create Project"}
             </button>
@@ -176,46 +219,103 @@ export default function DashboardPage() {
         </form>
       )}
 
-      {/* Projects grid */}
-      {projects.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-[#e0d8d0]">
-          <p className="text-[#7a6a5a] text-lg">No projects yet</p>
-          <p className="text-[#9a8a7a] mt-1">
-            Create your first research project to get started
+      {/* Search + filter */}
+      <div style={{ display: "flex", gap: "12px", marginBottom: "28px" }}>
+        <div style={{ flex: 1 }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search projects..."
+            style={{
+              width: "100%", padding: "12px 16px", border: `1.5px solid ${p.border}`,
+              borderRadius: "10px", fontSize: "13px", fontFamily: "var(--font-body)",
+              color: p.ink, outline: "none", background: "#fff",
+            }}
+          />
+        </div>
+        <select style={{
+          padding: "10px 16px", border: `1.5px solid ${p.border}`,
+          borderRadius: "10px", fontSize: "12px", fontFamily: "var(--font-body)",
+          color: p.ink, background: "#fff", outline: "none",
+        }}>
+          <option>All Projects</option>
+          <option>Recent</option>
+          <option>Most Papers</option>
+        </select>
+      </div>
+
+      {/* Project cards */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", background: "#fff", borderRadius: "16px", border: `1.5px solid ${p.border}` }}>
+          <p style={{ fontSize: "16px", color: p.inkMuted }}>
+            {searchQuery ? `No projects match "${searchQuery}"` : "No projects yet"}
+          </p>
+          <p style={{ fontSize: "13px", color: p.inkFaint, marginTop: "8px" }}>
+            {searchQuery ? "Try a different search" : "Create your first research project to get started"}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {projects.map((project) => (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {filtered.map((project) => (
             <Link
               key={project.id}
               href={`/dashboard/project/${project.id}`}
-              className="group block bg-white rounded-xl border border-[#e0d8d0] p-5 hover:shadow-md transition-all relative"
+              className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md group"
+              style={{
+                background: "#fff", border: `1.5px solid ${p.border}`,
+                borderRadius: "16px", padding: "28px 32px",
+                textDecoration: "none", color: p.ink,
+                position: "relative", overflow: "hidden", display: "block",
+              }}
             >
-              <div className="flex items-start gap-3">
-                <div
-                  className="w-4 h-4 rounded-full shrink-0 mt-1"
-                  style={{ backgroundColor: project.color }}
-                />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-[#1a1208] truncate">
+              {/* Color accent bar */}
+              <div style={{ position: "absolute", top: 0, left: 0, width: "4px", height: "100%", background: project.color, borderRadius: "4px 0 0 4px" }} />
+
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "24px" }}>
+                <div style={{ flex: 1 }}>
+                  <h2 style={{ fontFamily: "var(--font-display)", fontSize: "20px", fontWeight: 400, color: p.ink, margin: "0 0 8px", lineHeight: 1.3 }}>
                     {project.name}
-                  </h3>
+                  </h2>
                   {project.description && (
-                    <p className="text-sm text-[#7a6a5a] mt-1 line-clamp-2">
+                    <p style={{ fontSize: "13px", color: p.inkMuted, lineHeight: 1.6, margin: "0 0 16px", maxWidth: "600px" }}>
                       {project.description}
                     </p>
                   )}
-                  <p className="text-xs text-[#9a8a7a] mt-2">
-                    {new Date(project.created_at).toLocaleDateString()}
-                  </p>
+                  <div style={{ display: "flex", gap: "20px", fontSize: "12px", color: p.inkFaint }}>
+                    <span>Edited {new Date(project.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                {/* Right: open button */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "12px", flexShrink: 0 }}>
+                  <div
+                    style={{
+                      width: "12px", height: "12px", borderRadius: "50%",
+                      background: project.color, flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      padding: "6px 16px", borderRadius: "100px",
+                      border: `1.5px solid ${p.border}`, background: "transparent",
+                      fontSize: "11px", fontWeight: 600, color: p.ink,
+                    }}
+                  >
+                    Open →
+                  </span>
                 </div>
               </div>
 
               {/* Delete button */}
               <button
                 onClick={(e) => handleDelete(e, project.id)}
-                className="absolute top-3 right-3 text-[#d4cdc5] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{
+                  position: "absolute", top: "12px", right: "12px",
+                  background: "none", border: "none", fontSize: "18px",
+                  color: p.border, cursor: "pointer",
+                }}
                 title="Delete project"
               >
                 &times;
@@ -224,6 +324,13 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      {/* Quick links */}
+      <div style={{ marginTop: "48px", display: "flex", gap: "16px", justifyContent: "center" }}>
+        <Link href="/research-guidance" className="hover:underline" style={{ fontSize: "13px", color: p.inkMuted, textDecoration: "none" }}>Research Guidance</Link>
+        <span style={{ color: p.rule }}>·</span>
+        <Link href="/about" className="hover:underline" style={{ fontSize: "13px", color: p.inkMuted, textDecoration: "none" }}>About Cerise Scholar</Link>
+      </div>
     </div>
   );
 }
