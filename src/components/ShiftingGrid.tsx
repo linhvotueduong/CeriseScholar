@@ -36,7 +36,7 @@ const dotSides = ["left", "left", "right", "right"];
 
 const TRANSITION = {
   duration: 0.3,
-  ease: [0.4, 0, 0.2, 1] as number[],
+  ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
 };
 
 const HOLD_MS = 2000;
