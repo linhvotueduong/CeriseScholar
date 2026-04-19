@@ -53,14 +53,14 @@ function LeftPanels({
       <div className="w-8 bg-white border-r border-gray-200 flex flex-col items-center pt-2 gap-4 shrink-0">
         <span
           onClick={() => setDocsOpen(true)}
-          className="text-gray-400 text-[10px] cursor-pointer hover:text-[#DE3163]"
+          className="text-gray-400 text-[10px] cursor-pointer hover:text-[#111111]"
           style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
         >
           Documents
         </span>
         <span
           onClick={() => setCodesOpen(true)}
-          className="text-gray-400 text-[10px] cursor-pointer hover:text-[#DE3163]"
+          className="text-gray-400 text-[10px] cursor-pointer hover:text-[#111111]"
           style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
         >
           Codes
@@ -629,7 +629,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
           {/* Header */}
           <div className="px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-[#DE3163] rounded-lg flex items-center justify-center">
+              <div className="w-6 h-6 bg-[#111111] rounded-lg flex items-center justify-center">
                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>

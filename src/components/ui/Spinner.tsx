@@ -7,7 +7,7 @@ export default function Spinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) 
 
   return (
     <div
-      className={`${sizeClasses[size]} animate-spin rounded-full border-2 border-gray-300 border-t-[#DE3163]`}
+      className={`${sizeClasses[size]} animate-spin rounded-full border-2 border-gray-300 border-t-[#111111]`}
     />
   );
 }

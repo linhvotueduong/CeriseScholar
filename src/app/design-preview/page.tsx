@@ -1,63 +1,200 @@
 export default function DesignPreview() {
-  const navy = "hsl(201,100%,13%)";
-  const muted = "hsl(240,4%,66%)";
-  const serif = "'Instrument Serif', serif";
-  const glass = { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" };
+  const purple = "#3D1B7F";
+  const yellow = "#F5D76E";
 
   return (
-    <div style={{ minHeight: "100vh", position: "relative", overflow: "hidden", background: navy, color: "white", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", fontFamily: "'Inter', sans-serif" }}>
 
-      <video autoPlay loop muted playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0 }}>
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4" type="video/mp4" />
-      </video>
+      {/* Layer 0: Snow background — fullscreen behind everything */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        backgroundImage: "url('/snow-bg.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center bottom",
+        backgroundRepeat: "no-repeat",
+        backgroundColor: "#f5f3ef",
+        zIndex: 0,
+      }} />
 
-      <div style={{ position: "relative", zIndex: 20, background: "#DE3163", textAlign: "center", fontSize: 12, padding: "6px 0", fontWeight: 600, letterSpacing: 0.5 }}>
-        Design Preview — visual mockup only
+      {/* Layer 1: "LET'S THINK OUTSIDE THE BOX" image — centered */}
+      <div style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -48%)",
+        zIndex: 1,
+        pointerEvents: "none",
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/think-text.png"
+          alt="Let's Think Outside The Box"
+          style={{ width: "clamp(400px, 42vw, 600px)", height: "auto" }}
+        />
       </div>
 
-      <nav style={{ position: "relative", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 32px", maxWidth: 1100, margin: "0 auto" }}>
-        <span style={{ fontFamily: serif, fontSize: 24 }}>Cerise Scholar</span>
-        <div style={{ display: "flex", gap: 28 }}>
+      {/* Layer 2: Characters cluster — on top of text, compact */}
+      <div style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -52%)",
+        zIndex: 2,
+        pointerEvents: "none",
+        width: "clamp(500px, 50vw, 700px)",
+      }}>
+        {/* Top row — 3 characters */}
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 0 }}>
+          <div style={{ width: "clamp(140px, 14vw, 190px)", height: "clamp(140px, 14vw, 190px)" }}>
+            <video autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "contain" }}>
+              <source src="/Woman_sitting_transparent.webm" type="video/webm" />
+            </video>
+          </div>
+          <div style={{ width: "clamp(150px, 15vw, 210px)", height: "clamp(150px, 15vw, 210px)" }}>
+            <video autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "contain" }}>
+              <source src="/Animate_character_typing_transparent.webm" type="video/webm" />
+            </video>
+          </div>
+          <div style={{ width: "clamp(140px, 14vw, 190px)", height: "clamp(140px, 14vw, 190px)" }}>
+            <video autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "contain" }}>
+              <source src="/Woman_pointing_at_board_transparent.webm" type="video/webm" />
+            </video>
+          </div>
+        </div>
+        {/* Bottom row — 3 characters */}
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", gap: 16, marginTop: -20 }}>
+          <div style={{ width: "clamp(140px, 14vw, 190px)", height: "clamp(140px, 14vw, 190px)" }}>
+            <video autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "contain" }}>
+              <source src="/Woman_working_transparent.webm" type="video/webm" />
+            </video>
+          </div>
+          <div style={{ width: "clamp(150px, 15vw, 210px)", height: "clamp(150px, 15vw, 210px)" }}>
+            <video autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "contain" }}>
+              <source src="/Woman_reading_surrounded_transparent.webm" type="video/webm" />
+            </video>
+          </div>
+          <div style={{ width: "clamp(140px, 14vw, 190px)", height: "clamp(140px, 14vw, 190px)" }}>
+            <video autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "contain" }}>
+              <source src="/Woman_typing_transparent.webm" type="video/webm" />
+            </video>
+          </div>
+        </div>
+      </div>
+
+      {/* Layer 3: Left side text */}
+      <div style={{
+        position: "absolute",
+        left: 32,
+        top: "42%",
+        transform: "translateY(-50%)",
+        zIndex: 3,
+        color: "#1a1a1a",
+      }}>
+        <h2 style={{
+          fontFamily: "'League Spartan', sans-serif",
+          fontSize: "clamp(28px, 3.5vw, 52px)",
+          fontWeight: 800,
+          lineHeight: 1,
+          marginBottom: 12,
+        }}>
+          AI<br />scholar<br />friend
+        </h2>
+        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, color: "#555", lineHeight: 1.6, textTransform: "uppercase" }}>
+          Read · Highlight · Review · Ask ·<br />Analyze · Write
+        </p>
+      </div>
+
+      {/* Layer 3: Right side text */}
+      <div style={{
+        position: "absolute",
+        right: 32,
+        top: "42%",
+        transform: "translateY(-50%)",
+        zIndex: 3,
+        color: "#1a1a1a",
+        textAlign: "right",
+      }}>
+        <h2 style={{
+          fontFamily: "'League Spartan', sans-serif",
+          fontSize: "clamp(28px, 3.5vw, 52px)",
+          fontWeight: 800,
+          lineHeight: 1,
+          marginBottom: 12,
+        }}>
+          All<br />research<br />process
+        </h2>
+        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, color: "#555" }}>
+          IN ONE SET
+        </p>
+      </div>
+
+      {/* Layer 10: Navigation bar */}
+      <nav style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "10px 32px",
+        background: yellow,
+        zIndex: 10,
+      }}>
+        <span style={{ fontFamily: "'League Spartan', sans-serif", fontSize: 20, fontWeight: 700, color: purple }}>
+          Cerise Scholar
+        </span>
+        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
           {["Home", "About", "Research Guide", "Workspace"].map((s, i) => (
-            <span key={s} style={{ fontSize: 14, color: i === 0 ? "white" : muted, cursor: "pointer" }}>{s}</span>
+            <span key={s} style={{
+              fontSize: 13,
+              color: purple,
+              cursor: "pointer",
+              fontWeight: i === 0 ? 700 : 500,
+              textDecoration: i === 0 ? "underline" : "none",
+              textUnderlineOffset: 4,
+            }}>{s}</span>
           ))}
         </div>
-        <span style={{ borderRadius: 9999, padding: "8px 20px", fontSize: 14, cursor: "pointer", ...glass }}>Begin Research</span>
+        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <span style={{ fontSize: 13, color: purple, cursor: "pointer", fontWeight: 500 }}>Log In</span>
+          <span style={{
+            fontSize: 13,
+            color: "white",
+            background: purple,
+            borderRadius: 20,
+            padding: "7px 18px",
+            cursor: "pointer",
+            fontWeight: 600,
+          }}>Sign Up Free</span>
+        </div>
       </nav>
 
-      <section style={{ position: "relative", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "min(8vh,80px) 24px min(8vh,80px)" }}>
-        <h1 style={{ fontFamily: serif, fontSize: "clamp(2.2rem,5.5vw,4.5rem)", lineHeight: 0.95, letterSpacing: "-1.5px", maxWidth: 900, fontWeight: 400 }}>
-          Where every <em style={{ fontStyle: "normal", color: muted }}>highlight</em> becomes<br />
-          <em style={{ fontStyle: "normal", color: muted }}>insight and understanding.</em>
-        </h1>
-        <p style={{ color: muted, fontSize: "clamp(14px,1.2vw,16px)", maxWidth: 540, marginTop: "min(2.5vh,24px)", lineHeight: 1.7 }}>
-          A research companion for deep readers, meticulous reviewers, and ambitious scholars. Upload your PDFs, highlight what matters, and watch your literature review build itself — with AI that cites real academic papers.
-        </p>
-        <span style={{ borderRadius: 9999, padding: "14px 44px", fontSize: 15, marginTop: "min(3vh,32px)", cursor: "pointer", display: "inline-block", ...glass }}>
-          Begin Your Research
+      {/* Layer 10: BEGIN RESEARCH button */}
+      <div style={{
+        position: "absolute",
+        bottom: 40,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 10,
+      }}>
+        <span style={{
+          display: "inline-block",
+          padding: "12px 44px",
+          background: yellow,
+          color: purple,
+          fontWeight: 700,
+          fontSize: 15,
+          borderRadius: 28,
+          cursor: "pointer",
+          letterSpacing: 1.5,
+          textTransform: "uppercase",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}>
+          BEGIN RESEARCH
         </span>
-      </section>
-
-      <section style={{ position: "relative", zIndex: 10, maxWidth: 1000, margin: "0 auto", padding: "0 32px min(6vh,60px)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-        {[
-          { title: "PDF Workspace", desc: "Upload, read, and annotate research papers with OCR, zoom, and page navigation." },
-          { title: "Smart Highlighting", desc: "Select any passage — it instantly becomes a structured entry in your literature review table." },
-          { title: "Literature Review Table", desc: "Auto-populated with source, author, year, theme, and notes. Filter and export to CSV." },
-          { title: "ScholarAsk AI", desc: "Ask research questions in plain language and receive answers with citations from real papers." },
-          { title: "AI Text-to-Speech", desc: "Listen to your PDFs read aloud with 8 natural AI voices. Adjustable speed, paragraph hover play." },
-          { title: "Paper Writer", desc: "Write your paper section by section with auto-imported highlights and methodology notes." },
-        ].map((f) => (
-          <div key={f.title} style={{ borderRadius: 12, padding: "18px 20px", ...glass }}>
-            <h3 style={{ fontFamily: serif, fontSize: 16, marginBottom: 6 }}>{f.title}</h3>
-            <p style={{ fontSize: 13, color: muted, lineHeight: 1.55 }}>{f.desc}</p>
-          </div>
-        ))}
-      </section>
-
-      <footer style={{ position: "relative", zIndex: 10, borderTop: "1px solid rgba(255,255,255,0.1)", padding: 24, maxWidth: 1100, margin: "0 auto", display: "flex", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: serif, fontSize: 14, color: muted }}>Cerise Scholar</span>
-        <span style={{ fontSize: 12, color: "hsl(240,4%,46%)" }}>Built for researchers. &copy; 2026</span>
-      </footer>
+      </div>
     </div>
   );
 }

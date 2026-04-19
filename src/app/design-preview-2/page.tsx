@@ -7,7 +7,7 @@ export default function DesignPreview2() {
 
   return (
     <div style={{ background: "#FFF", fontFamily: "'Inter',sans-serif" }}>
-      <div style={{ background: "#DE3163", textAlign: "center", fontSize: 12, padding: "6px 0", fontWeight: 600, color: "#fff" }}>Design Preview 2 — scroll down for workspace mockups</div>
+      <div style={{ background: "#111111", textAlign: "center", fontSize: 12, padding: "6px 0", fontWeight: 600, color: "#fff" }}>Design Preview 2 — scroll down for workspace mockups</div>
 
       {/* ═══ HERO WITH VIDEO ═══ */}
       <div style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
@@ -67,7 +67,7 @@ export default function DesignPreview2() {
               <span style={{ borderRadius: 9999, padding: "8px 20px", fontSize: 13, background: b, color: "#fff" }}>+ New Project</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
-              {[{ n: "Geopolitical Influence & Peace", d: "Literature review on global conflict resolution strategies", c: "#DE3163", t: "Mar 28, 2026" }, { n: "Student Mental Health Study", d: "Meta-analysis of university counseling program effectiveness", c: "#3B82F6", t: "Mar 15, 2026" }, { n: "AI in Education", d: "Systematic review of AI-assisted learning outcomes", c: "#22C55E", t: "Feb 20, 2026" }].map((p) => (
+              {[{ n: "Geopolitical Influence & Peace", d: "Literature review on global conflict resolution strategies", c: "#111111", t: "Mar 28, 2026" }, { n: "Student Mental Health Study", d: "Meta-analysis of university counseling program effectiveness", c: "#3B82F6", t: "Mar 15, 2026" }, { n: "AI in Education", d: "Systematic review of AI-assisted learning outcomes", c: "#22C55E", t: "Feb 20, 2026" }].map((p) => (
                 <div key={p.n} style={{ background: "#fff", borderRadius: 12, padding: 20, border: `1px solid ${e}` }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                     <div style={{ width: 10, height: 10, borderRadius: "50%", background: p.c }} />
@@ -93,12 +93,12 @@ export default function DesignPreview2() {
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 20px", background: f, borderBottom: `1px solid ${e}` }}>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <span style={{ fontSize: 13, color: g }}>← Projects</span>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#DE3163" }} />
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#111111" }} />
               <span style={{ fontSize: 13, fontWeight: 600 }}>Geopolitical Influence &amp; Peace</span>
             </div>
             <div style={{ display: "flex", gap: 16 }}>
               {["ScholarAsk", "Meta-Analysis", "Lit Review", "Paper Writer →"].map((t) => (
-                <span key={t} style={{ fontSize: 12, color: "#DE3163", fontWeight: 500 }}>{t}</span>
+                <span key={t} style={{ fontSize: 12, color: "#111111", fontWeight: 500 }}>{t}</span>
               ))}
             </div>
           </div>
@@ -106,13 +106,13 @@ export default function DesignPreview2() {
             {/* Left sidebar */}
             <div style={{ width: 180, borderRight: `1px solid ${e}`, background: f, padding: 12, fontSize: 12 }}>
               <div style={{ fontWeight: 600, fontSize: 10, letterSpacing: 0.5, marginBottom: 8 }}>DOCUMENTS</div>
-              <div style={{ color: "#DE3163", marginBottom: 10 }}>+ Upload PDF</div>
+              <div style={{ color: "#111111", marginBottom: 10 }}>+ Upload PDF</div>
               <div style={{ padding: "6px 8px", borderRadius: 6, background: "rgba(222,49,99,0.06)", border: "1px solid rgba(222,49,99,0.15)", marginBottom: 12 }}>
-                <div style={{ color: "#DE3163", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>The Effects Of Delay Of Gratifi...</div>
+                <div style={{ color: "#111111", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>The Effects Of Delay Of Gratifi...</div>
                 <div style={{ fontSize: 10, color: g, marginTop: 2 }}>2.3 MB · <span style={{ color: "#F59E0B" }}>OCR pending</span></div>
               </div>
               <div style={{ fontWeight: 600, fontSize: 10, letterSpacing: 0.5, marginBottom: 8, marginTop: 16, borderTop: `1px solid ${e}`, paddingTop: 12 }}>CODE SYSTEM</div>
-              {[["Abstract", "#EF4444"], ["Introduction", "#F97316"], ["Literature Review", "#EAB308"], ["Methodology", "#22C55E"], ["Results", "#3B82F6"], ["Discussion", "#6366F1"], ["Conclusion", "#8B5CF6"]].map(([n, c]) => (
+              {[["Abstract", "#EF4444"], ["Introduction", "#F97316"], ["Literature Review", "#EAB308"], ["Methodology", "#22C55E"], ["Results", "#3B82F6"], ["Discussion", "#6366F1"], ["Conclusion", "#111111"]].map(([n, c]) => (
                 <div key={n} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />
                   <span>{n}</span>
@@ -161,7 +161,7 @@ export default function DesignPreview2() {
             <div style={{ width: 240, borderLeft: `1px solid ${e}`, padding: 12 }}>
               <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, marginBottom: 12 }}>HIGHLIGHTS (1)</div>
               <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 9999, background: "#DE3163", color: "#fff" }}>All Pages</span>
+                <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 9999, background: "#111111", color: "#fff" }}>All Pages</span>
                 <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 9999, border: `1px solid ${e}`, color: g }}>This Page</span>
               </div>
               <div>
@@ -193,7 +193,7 @@ export default function DesignPreview2() {
               {["Source", "APA Ref", "Section", "Quote", "Notes"].map((h) => (<th key={h} style={{ textAlign: "left", padding: "10px 16px", fontWeight: 500, color: g, borderBottom: `1px solid ${e}`, fontSize: 12 }}>{h}</th>))}
             </tr></thead>
             <tbody>
-              {[{ s: "Smith_2023.pdf", a: "Smith et al. (2023)", c: "Lit Review", q: "prolonged exposure to geopolitical uncertainty...", n: "67% impact rate", cl: "#DE3163" }, { s: "Johnson_2024.pdf", a: "Johnson & Lee (2024)", c: "Methodology", q: "universities with dedicated counseling...", n: "43% improvement", cl: "#3B82F6" }, { s: "Williams_2022.pdf", a: "Williams (2022)", c: "Introduction", q: "environmental stressors correlate...", n: "Background context", cl: "#F59E0B" }].map((r, i) => (
+              {[{ s: "Smith_2023.pdf", a: "Smith et al. (2023)", c: "Lit Review", q: "prolonged exposure to geopolitical uncertainty...", n: "67% impact rate", cl: "#111111" }, { s: "Johnson_2024.pdf", a: "Johnson & Lee (2024)", c: "Methodology", q: "universities with dedicated counseling...", n: "43% improvement", cl: "#3B82F6" }, { s: "Williams_2022.pdf", a: "Williams (2022)", c: "Introduction", q: "environmental stressors correlate...", n: "Background context", cl: "#F59E0B" }].map((r, i) => (
                 <tr key={i} style={{ borderBottom: `1px solid ${e}` }}>
                   <td style={{ padding: "12px 16px", fontWeight: 500 }}>{r.s}</td>
                   <td style={{ padding: "12px 16px", color: "#444" }}>{r.a}</td>
@@ -237,7 +237,7 @@ export default function DesignPreview2() {
                       <div style={{ width: 32, height: 18, borderRadius: 9, background: "#E0E0E0", position: "relative" }}><div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff", position: "absolute", top: 2, left: 2, boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }} /></div>
                       <span style={{ fontSize: 12, color: g }}>Deep research</span>
                     </div>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(222,49,99,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ color: "#DE3163", fontWeight: 700 }}>↑</span></div>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(222,49,99,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ color: "#111111", fontWeight: 700 }}>↑</span></div>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 16, marginTop: 20 }}>

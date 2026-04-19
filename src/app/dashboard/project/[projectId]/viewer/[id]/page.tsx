@@ -19,6 +19,12 @@ export default async function ProjectViewerPage({ params }: Props) {
 
   if (!pdf) notFound();
 
+  const { data: project } = await supabase
+    .from("projects")
+    .select("name, color")
+    .eq("id", projectId)
+    .single();
+
   // 8-hour expiry to cover long research sessions
   const { data: signedUrlData } = await supabase.storage
     .from("pdfs")
@@ -41,6 +47,8 @@ export default async function ProjectViewerPage({ params }: Props) {
         pdfUrl={signedUrlData.signedUrl}
         pdfAuthor={(pdf as unknown as Record<string, string>).pdf_author || ""}
         pdfTitle={(pdf as unknown as Record<string, string>).pdf_title || ""}
+        projectName={project?.name || ""}
+        projectColor={project?.color || "#111111"}
       />
     </div>
   );

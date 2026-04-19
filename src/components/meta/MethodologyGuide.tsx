@@ -217,7 +217,7 @@ export default function MethodologyGuide({
         {([1, 1.5, 2, 3] as Step[]).map((s) => (
           <button key={s} onClick={() => setStep(s)}
             className={`px-3 py-1.5 text-xs rounded-full font-medium transition-colors ${
-              step === s ? "bg-[#DE3163] text-white" : s < step ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+              step === s ? "bg-[#111111] text-white" : s < step ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
             }`}>
             {s === 1 ? "1. Hypothesis" : s === 1.5 ? "1.5 Data Sources" : s === 2 ? "2. Map Variables" : "3. Recommendations"}
           </button>
@@ -233,14 +233,14 @@ export default function MethodologyGuide({
             <label className="text-sm font-medium text-gray-700 block mb-1">Research Question</label>
             <textarea value={researchQuestion} onChange={e => setResearchQuestion(e.target.value)}
               placeholder="e.g., Does the combination of geopolitical and technological disruption have an additive or compounded effect on student psychological stress?"
-              rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#DE3163] resize-none" />
+              rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#111111] resize-none" />
           </div>
 
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">Hypothesis</label>
             <textarea value={hypothesisText} onChange={e => setHypothesisText(e.target.value)}
               placeholder="e.g., Students exposed to both geopolitical and technological disruption will report significantly higher psychological stress than those exposed to only one type of disruption."
-              rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#DE3163] resize-none" />
+              rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#111111] resize-none" />
           </div>
 
           <div>
@@ -249,7 +249,7 @@ export default function MethodologyGuide({
               {HYPOTHESIS_TYPES.map(h => (
                 <button key={h.type} onClick={() => setSelectedType(h.type)}
                   className={`text-left p-3 rounded-lg border transition-all ${
-                    selectedType === h.type ? "border-[#DE3163] bg-pink-50" : "border-gray-200 hover:border-gray-300"
+                    selectedType === h.type ? "border-[#111111] bg-pink-50" : "border-gray-200 hover:border-gray-300"
                   }`}>
                   <p className="font-medium text-sm">{h.label}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{h.description}</p>
@@ -267,7 +267,7 @@ export default function MethodologyGuide({
                 </label>
                 <input value={ivName} onChange={e => setIvName(e.target.value)}
                   placeholder="e.g., Geopolitical disruption exposure"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#DE3163]" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#111111]" />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1">
@@ -275,7 +275,7 @@ export default function MethodologyGuide({
                 </label>
                 <input value={dvName} onChange={e => setDvName(e.target.value)}
                   placeholder="e.g., Psychological stress level"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#DE3163]" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#111111]" />
               </div>
               {(selectedType === "moderation" || selectedType === "mediation") && (
                 <div className="col-span-2">
@@ -284,14 +284,14 @@ export default function MethodologyGuide({
                   </label>
                   <input value={moderator} onChange={e => setModerator(e.target.value)}
                     placeholder={selectedType === "moderation" ? "e.g., Technology dependence level" : "e.g., Sense of control"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#DE3163]" />
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#111111]" />
                 </div>
               )}
             </div>
           )}
 
           <button onClick={() => setStep(1.5)} disabled={!selectedType || !researchQuestion}
-            className="px-4 py-2 bg-[#DE3163] text-white text-sm rounded-lg hover:bg-[#c4294f] disabled:opacity-50">
+            className="px-4 py-2 bg-[#111111] text-white text-sm rounded-lg hover:bg-[#000000] disabled:opacity-50">
             Next: Data Source Suggestions &rarr;
           </button>
         </div>
@@ -361,7 +361,7 @@ export default function MethodologyGuide({
 
           <div className="flex gap-3">
             <button onClick={() => setStep(1)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">&larr; Back</button>
-            <button onClick={() => setStep(2)} className="px-4 py-2 bg-[#DE3163] text-white text-sm rounded-lg hover:bg-[#c4294f]">
+            <button onClick={() => setStep(2)} className="px-4 py-2 bg-[#111111] text-white text-sm rounded-lg hover:bg-[#000000]">
               Next: Map Variables &rarr;
             </button>
           </div>
@@ -387,7 +387,7 @@ export default function MethodologyGuide({
                     IV: {ivName || "Independent Variable"}
                   </label>
                   <select value={ivColumn} onChange={e => setIvColumn(e.target.value)}
-                    className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DE3163]">
+                    className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111111]">
                     <option value="">Select column...</option>
                     {allCols.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -397,7 +397,7 @@ export default function MethodologyGuide({
                     DV: {dvName || "Dependent Variable"}
                   </label>
                   <select value={dvColumn} onChange={e => setDvColumn(e.target.value)}
-                    className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DE3163]">
+                    className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111111]">
                     <option value="">Select column...</option>
                     {numericCols.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -408,7 +408,7 @@ export default function MethodologyGuide({
                       {selectedType === "moderation" ? "Moderator" : "Mediator"}: {moderator}
                     </label>
                     <select value={moderatorColumn} onChange={e => setModeratorColumn(e.target.value)}
-                      className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DE3163]">
+                      className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111111]">
                       <option value="">Select column...</option>
                       {allCols.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
@@ -419,7 +419,7 @@ export default function MethodologyGuide({
                   <div className="flex flex-wrap gap-1.5">
                     {numericCols.filter(c => c !== ivColumn && c !== dvColumn && c !== moderatorColumn).map(c => (
                       <button key={c} onClick={() => setCovariateColumns(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c])}
-                        className={`px-2 py-0.5 text-xs rounded ${covariateColumns.includes(c) ? "bg-[#DE3163] text-white" : "bg-gray-100 text-gray-600"}`}>
+                        className={`px-2 py-0.5 text-xs rounded ${covariateColumns.includes(c) ? "bg-[#111111] text-white" : "bg-gray-100 text-gray-600"}`}>
                         {c}
                       </button>
                     ))}
@@ -430,7 +430,7 @@ export default function MethodologyGuide({
               <div className="flex gap-3">
                 <button onClick={() => setStep(1.5)} className="px-4 py-2 text-sm text-gray-600">&larr; Back</button>
                 <button onClick={() => setStep(3)} disabled={!ivColumn || !dvColumn}
-                  className="px-4 py-2 bg-[#DE3163] text-white text-sm rounded-lg hover:bg-[#c4294f] disabled:opacity-50">
+                  className="px-4 py-2 bg-[#111111] text-white text-sm rounded-lg hover:bg-[#000000] disabled:opacity-50">
                   Next: Get Recommendations &rarr;
                 </button>
               </div>

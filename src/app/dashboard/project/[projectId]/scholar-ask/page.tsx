@@ -22,7 +22,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
       return (
         <div className="p-6 text-center">
           <p className="text-red-500 font-medium">Something went wrong.</p>
-          <button onClick={() => this.setState({ hasError: false })} className="mt-2 text-sm text-[#DE3163] hover:underline">Try again</button>
+          <button onClick={() => this.setState({ hasError: false })} className="mt-2 text-sm text-[#111111] hover:underline">Try again</button>
         </div>
       );
     }
@@ -106,7 +106,7 @@ const ResponseContent = React.memo(function ResponseContent({
             const btn = document.createElement("button");
             btn.textContent = `[${num}]`;
             btn.setAttribute("data-citenum", String(num));
-            btn.className = "inline-flex items-center justify-center bg-[#DE3163] text-white text-[10px] rounded px-1 py-0.5 mx-0.5 hover:bg-[#c4294f] transition-colors font-mono cursor-pointer align-baseline";
+            btn.className = "inline-flex items-center justify-center bg-[#111111] text-white text-[10px] rounded px-1 py-0.5 mx-0.5 hover:bg-[#000000] transition-colors font-mono cursor-pointer align-baseline";
             frag.appendChild(btn);
           } else {
             frag.appendChild(document.createTextNode(m[0]));
@@ -161,7 +161,7 @@ const ResponseContent = React.memo(function ResponseContent({
           tbody: ({ children }) => <tbody className="divide-y divide-gray-100">{children}</tbody>,
           tr: ({ children }) => <tr className="hover:bg-gray-50">{children}</tr>,
           td: ({ children }) => <td className="px-4 py-2.5 text-gray-700">{children}</td>,
-          a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#DE3163] hover:underline">{children}</a>,
+          a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#111111] hover:underline">{children}</a>,
         }}
       >
         {content}
@@ -381,7 +381,7 @@ export default function ScholarAskPage() {
             </div>
             <div className="flex-1 overflow-y-auto py-1">
               {conversations.map((conv) => (
-                <div key={conv.id} className={`flex items-center group ${activeConvId === conv.id ? "bg-white border-r-2 border-[#DE3163]" : "hover:bg-white"}`}>
+                <div key={conv.id} className={`flex items-center group ${activeConvId === conv.id ? "bg-white border-r-2 border-[#111111]" : "hover:bg-white"}`}>
                   <button onClick={() => { setActiveConvId(conv.id); setShowRefs(false); setSelectedPaper(null); }}
                     className={`flex-1 text-left px-3 py-2.5 text-xs transition-colors truncate ${activeConvId === conv.id ? "text-gray-900 font-medium" : "text-gray-600"}`}
                   >{conv.title}</button>
@@ -412,7 +412,7 @@ export default function ScholarAskPage() {
             </button>
             {activeConv && <span className="text-sm text-gray-700 font-medium truncate">{activeConv.title}</span>}
             <div className="ml-auto">
-              <Link href={`/dashboard/project/${projectId}`} className="text-xs text-gray-500 hover:text-[#DE3163]">&larr; Workspace</Link>
+              <Link href={`/dashboard/project/${projectId}`} className="text-xs text-gray-500 hover:text-[#111111]">&larr; Workspace</Link>
             </div>
           </div>
 
@@ -427,19 +427,19 @@ export default function ScholarAskPage() {
                     <textarea ref={inputRef} value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="What would you like to learn more about?" rows={2} className="w-full resize-none text-sm text-gray-800 placeholder-gray-400 focus:outline-none" />
                     <div className="flex items-center justify-between mt-2">
                       <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <div onClick={() => setDeepResearch(!deepResearch)} className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${deepResearch ? "bg-[#DE3163]" : "bg-gray-300"}`}>
+                        <div onClick={() => setDeepResearch(!deepResearch)} className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${deepResearch ? "bg-[#111111]" : "bg-gray-300"}`}>
                           <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow ${deepResearch ? "translate-x-4" : "translate-x-0.5"}`} />
                         </div>
                         <span className="text-xs text-gray-600">Deep research</span>
                       </label>
-                      <button onClick={() => handleSubmit()} disabled={!query.trim()} className="w-8 h-8 bg-[#DE3163] text-white rounded-lg flex items-center justify-center hover:bg-[#c4294f] disabled:opacity-30 transition-colors">
+                      <button onClick={() => handleSubmit()} disabled={!query.trim()} className="w-8 h-8 bg-[#111111] text-white rounded-lg flex items-center justify-center hover:bg-[#000000] disabled:opacity-30 transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                       </button>
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-6 mt-6">
                     {["Explore topics", "Find experts", "Literature review"].map((label) => (
-                      <button key={label} onClick={() => { setQuery({ "Explore topics": "What are the main research topics in ", "Find experts": "Who are the leading researchers studying ", "Literature review": "Provide a literature review on " }[label] || ""); inputRef.current?.focus(); }} className="text-xs text-gray-500 hover:text-[#DE3163] transition-colors">{label}</button>
+                      <button key={label} onClick={() => { setQuery({ "Explore topics": "What are the main research topics in ", "Find experts": "Who are the leading researchers studying ", "Literature review": "Provide a literature review on " }[label] || ""); inputRef.current?.focus(); }} className="text-xs text-gray-500 hover:text-[#111111] transition-colors">{label}</button>
                     ))}
                   </div>
                 </div>
@@ -457,18 +457,18 @@ export default function ScholarAskPage() {
                     ) : msg.loading ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-[#DE3163] rounded-full animate-pulse" />
+                          <div className="w-2 h-2 bg-[#111111] rounded-full animate-pulse" />
                           <span className="text-sm text-gray-700 font-medium">Searching papers and creating a response...</span>
                         </div>
                         <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[#DE3163]" />
+                          <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[#111111]" />
                         </div>
                         <p className="text-center text-sm text-gray-400">Content is loading...</p>
                       </div>
                     ) : msg.error ? (
                       <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                         <p className="text-sm text-red-600">{msg.content}</p>
-                        <button onClick={() => handleSubmit(messages[i - 1]?.content)} className="mt-2 text-xs text-[#DE3163] hover:underline">Retry</button>
+                        <button onClick={() => handleSubmit(messages[i - 1]?.content)} className="mt-2 text-xs text-[#111111] hover:underline">Retry</button>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -486,20 +486,20 @@ export default function ScholarAskPage() {
                         {/* References */}
                         {msg.references && msg.references.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-gray-200">
-                            <button onClick={() => setShowRefs(!showRefs)} className="text-sm text-[#DE3163] hover:underline font-medium">
+                            <button onClick={() => setShowRefs(!showRefs)} className="text-sm text-[#111111] hover:underline font-medium">
                               {showRefs ? "Hide" : "Show all"} {msg.references.length} references
                             </button>
                             {showRefs && (
                               <div className="mt-3 space-y-2">
                                 {msg.references.map((r) => (
                                   <div key={r.num} className="flex items-start gap-2 text-xs">
-                                    <button onClick={() => openPaperPanel(r)} className="bg-[#DE3163] text-white rounded px-1.5 py-0.5 font-mono shrink-0 text-[10px] min-w-[20px] text-center hover:bg-[#c4294f] cursor-pointer">{r.num}</button>
+                                    <button onClick={() => openPaperPanel(r)} className="bg-[#111111] text-white rounded px-1.5 py-0.5 font-mono shrink-0 text-[10px] min-w-[20px] text-center hover:bg-[#000000] cursor-pointer">{r.num}</button>
                                     <div className="flex-1">
-                                      <button onClick={() => openPaperPanel(r)} className="text-left text-gray-700 hover:text-[#DE3163] leading-relaxed">
+                                      <button onClick={() => openPaperPanel(r)} className="text-left text-gray-700 hover:text-[#111111] leading-relaxed">
                                         {r.authors.slice(0, 2).join(", ")}{r.authors.length > 2 ? " et al." : ""} ({r.year || "n.d."}). {r.title}. {r.journal}
                                       </button>
                                       <div className="flex items-center gap-2 mt-0.5">
-                                        <a href={r.url} target="_blank" className="text-[#DE3163] hover:underline font-medium">Read paper &#x2197;</a>
+                                        <a href={r.url} target="_blank" className="text-[#111111] hover:underline font-medium">Read paper &#x2197;</a>
                                         {r.isOpenAccess && <span className="text-[9px] px-1 py-0.5 bg-green-100 text-green-700 rounded">Open Access</span>}
                                         <span className="text-gray-400">{r.citationCount} cited</span>
                                       </div>
@@ -516,7 +516,7 @@ export default function ScholarAskPage() {
                           <div className="mt-4 space-y-2">
                             <p className="text-xs font-semibold text-gray-600">Follow-up Suggestions</p>
                             {extractFollowUps(msg.content).map((fu, j) => (
-                              <button key={j} onClick={() => handleSubmit(fu)} disabled={isLoading} className="block w-full text-left text-sm text-[#DE3163] hover:underline px-3 py-1.5 bg-pink-50 rounded-lg disabled:opacity-50">&rarr; {fu}</button>
+                              <button key={j} onClick={() => handleSubmit(fu)} disabled={isLoading} className="block w-full text-left text-sm text-[#111111] hover:underline px-3 py-1.5 bg-pink-50 rounded-lg disabled:opacity-50">&rarr; {fu}</button>
                             ))}
                           </div>
                         )}
@@ -537,7 +537,7 @@ export default function ScholarAskPage() {
               <div className="max-w-3xl mx-auto">
                 <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 flex items-end gap-2">
                   <textarea value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="Ask a follow-up question" rows={1} disabled={isLoading} className="flex-1 resize-none text-sm text-gray-800 placeholder-gray-400 focus:outline-none disabled:opacity-50" />
-                  <button onClick={() => handleSubmit()} disabled={!query.trim() || isLoading} className="w-8 h-8 bg-[#DE3163] text-white rounded-lg flex items-center justify-center hover:bg-[#c4294f] disabled:opacity-30 transition-colors shrink-0">
+                  <button onClick={() => handleSubmit()} disabled={!query.trim() || isLoading} className="w-8 h-8 bg-[#111111] text-white rounded-lg flex items-center justify-center hover:bg-[#000000] disabled:opacity-30 transition-colors shrink-0">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                   </button>
                 </div>
@@ -560,7 +560,7 @@ export default function ScholarAskPage() {
                 <p className="text-xs text-gray-500 mt-1">{selectedPaper.authors.join(", ")} ({selectedPaper.year || "n.d."})</p>
                 {selectedPaper.journal && <p className="text-xs text-gray-400 mt-0.5">{selectedPaper.journal}</p>}
                 <div className="flex items-center gap-2 mt-2">
-                  <a href={selectedPaper.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#DE3163] hover:underline font-medium">Read full paper &#x2197;</a>
+                  <a href={selectedPaper.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#111111] hover:underline font-medium">Read full paper &#x2197;</a>
                   {selectedPaper.isOpenAccess && <span className="text-[9px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">Open Access</span>}
                   <span className="text-[9px] text-gray-400">{selectedPaper.citationCount} citations</span>
                 </div>
@@ -577,7 +577,7 @@ export default function ScholarAskPage() {
                 <h5 className="text-xs font-semibold text-gray-700 mb-1">How this paper supports the answer</h5>
                 {analyzingPaper === selectedPaper.num ? (
                   <div className="flex items-center gap-2 text-xs text-gray-400 py-2">
-                    <div className="animate-spin rounded-full h-3 w-3 border border-gray-300 border-t-[#DE3163]" />
+                    <div className="animate-spin rounded-full h-3 w-3 border border-gray-300 border-t-[#111111]" />
                     Analyzing...
                   </div>
                 ) : paperAnalysis[selectedPaper.num] ? (

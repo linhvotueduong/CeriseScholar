@@ -3,7 +3,7 @@ export default function DesignPreview3() {
     <div style={{ position: "relative", minHeight: "100vh", width: "100%", overflow: "hidden", background: "#FFFFFF", fontFamily: "'Inter',sans-serif" }}>
 
       {/* Banner */}
-      <div style={{ background: "#DE3163", textAlign: "center", fontSize: 12, padding: "6px 0", fontWeight: 600, color: "white", letterSpacing: 0.5, position: "relative", zIndex: 20 }}>
+      <div style={{ background: "#111111", textAlign: "center", fontSize: 12, padding: "6px 0", fontWeight: 600, color: "white", letterSpacing: 0.5, position: "relative", zIndex: 20 }}>
         Design Preview 3 — visual mockup only
       </div>
 

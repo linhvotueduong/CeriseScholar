@@ -8,7 +8,7 @@ export default function PdfCard({ pdf }: { pdf: Pdf }) {
   return (
     <Link
       href={`/dashboard/viewer/${pdf.id}`}
-      className="block bg-white rounded-xl border border-gray-200 p-5 hover:border-[#DE3163] hover:shadow-sm transition-all"
+      className="block bg-white rounded-xl border border-gray-200 p-5 hover:border-[#111111] hover:shadow-sm transition-all"
     >
       <h3 className="font-semibold text-gray-900 truncate">
         {pdf.display_name}
@@ -26,9 +26,6 @@ export default function PdfCard({ pdf }: { pdf: Pdf }) {
         )}
         {pdf.ocr_status === "failed" && (
           <span className="text-xs text-red-500">OCR failed</span>
-        )}
-        {pdf.ocr_status === "pending" && (
-          <span className="text-xs text-amber-500">OCR pending</span>
         )}
       </div>
       <p className="text-xs text-gray-400 mt-2">

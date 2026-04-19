@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Middleware that runs on every request.
+ * Kept as `middleware` (not `proxy`) because Next 16.2.1's dev runtime
+ * still emits a middleware-manifest and 500s without it.
  * - Refreshes the user's auth session (so they stay logged in)
  * - Redirects non-logged-in users away from /dashboard pages
  * - Redirects logged-in users away from /login and /signup pages

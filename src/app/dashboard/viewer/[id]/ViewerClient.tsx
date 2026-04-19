@@ -18,7 +18,7 @@ export default function ViewerClient({ pdfId, pdfName, pdfUrl, pdfAuthor, pdfTit
       <div className="flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-2">
         <Link
           href="/dashboard"
-          className="text-sm text-gray-500 hover:text-[#DE3163] transition-colors"
+          className="text-sm text-gray-500 hover:text-[#111111] transition-colors"
         >
           &larr; Back
         </Link>

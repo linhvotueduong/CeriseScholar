@@ -118,7 +118,7 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
       <div className="px-2 py-1.5 border-b border-gray-100">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-full text-xs text-[#DE3163] hover:bg-pink-50 py-1 rounded transition-colors"
+          className="w-full text-xs text-[#111111] hover:bg-pink-50 py-1 rounded transition-colors"
         >
           + Upload PDF
         </button>
@@ -155,15 +155,15 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
               onDragOver={(e) => handleDragOver(e, index)}
               onDrop={() => handleDrop(index)}
               onDragEnd={handleDragEnd}
-              className={`group relative ${isDragging ? "opacity-40" : ""} ${isDragOver ? "border-t-2 border-t-[#DE3163]" : ""}`}
+              className={`group relative ${isDragging ? "opacity-40" : ""} ${isDragOver ? "border-t-2 border-t-[#111111]" : ""}`}
             >
               <button
                 onClick={() => router.push(projectId ? `/dashboard/project/${projectId}/viewer/${pdf.id}` : `/dashboard/viewer/${pdf.id}`)}
                 className={`w-full text-left px-3 py-2 border-b border-gray-50 transition-colors ${
-                  isActive ? "bg-pink-50 border-l-2 border-l-[#DE3163]" : "hover:bg-gray-50 border-l-2 border-l-transparent"
+                  isActive ? "bg-pink-50 border-l-2 border-l-[#111111]" : "hover:bg-gray-50 border-l-2 border-l-transparent"
                 }`}
               >
-                <p className={`text-xs truncate pr-4 ${isActive ? "font-medium text-[#DE3163]" : "text-gray-700"}`}>
+                <p className={`text-xs truncate pr-4 ${isActive ? "font-medium text-[#111111]" : "text-gray-700"}`}>
                   {pdf.display_name}
                 </p>
                 <p className="text-[9px] text-gray-400 mt-0.5 flex items-center gap-1">
@@ -173,9 +173,6 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
                   )}
                   {pdf.ocr_status === "failed" && (
                     <span className="text-red-500" title="OCR failed — text extraction unavailable">OCR failed</span>
-                  )}
-                  {pdf.ocr_status === "pending" && (
-                    <span className="text-amber-500" title="OCR pending">OCR pending</span>
                   )}
                 </p>
               </button>

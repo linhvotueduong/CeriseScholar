@@ -18,7 +18,11 @@ export function useTts() {
   const [selectedVoice, setSelectedVoice] = useState("jenny");
   const [rate, setRate] = useState(1.0);
   const [loading, setLoading] = useState(false);
-  const [useAiVoice, setUseAiVoice] = useState(false);
+  // Default: AI (server-generated MP3). This guarantees identical playback on
+  // macOS, Windows, Linux — any browser that can play audio/mpeg. The browser
+  // Web Speech API is kept as a fallback because Windows Chrome often ships
+  // with zero available voices, which silently breaks native TTS.
+  const [useAiVoice, setUseAiVoice] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const blobUrlRef = useRef<string | null>(null);
 
@@ -39,18 +43,50 @@ export function useTts() {
     }
   }, []);
 
-  // Browser TTS — instant, no network call
+  // Browser TTS — instant, no network call. Returns false if the platform
+  // has no usable voices (common on Windows Chrome with no language packs),
+  // so the caller can fall back to AI TTS.
   const speakBrowser = useCallback(
-    (text: string) => {
+    (text: string): boolean => {
+      if (typeof window === "undefined" || !window.speechSynthesis) return false;
       cleanup();
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = rate;
-      utterance.onend = () => { setIsSpeaking(false); setIsPaused(false); };
-      utterance.onerror = () => { setIsSpeaking(false); setIsPaused(false); };
-      window.speechSynthesis.speak(utterance);
-      setIsSpeaking(true);
-      setIsPaused(false);
+
+      // Voices on Chrome are populated asynchronously. If none yet, wait once.
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length === 0) {
+        // Give the browser one chance to populate the voice list.
+        // If still empty after ~300ms, bail out — caller should fall back.
+        let resolved = false;
+        const onVoices = () => {
+          if (resolved) return;
+          resolved = true;
+          window.speechSynthesis.removeEventListener("voiceschanged", onVoices);
+          const ready = window.speechSynthesis.getVoices();
+          if (ready.length > 0) speakBrowserInternal(text);
+        };
+        window.speechSynthesis.addEventListener("voiceschanged", onVoices);
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            window.speechSynthesis.removeEventListener("voiceschanged", onVoices);
+          }
+        }, 300);
+        return false;
+      }
+
+      speakBrowserInternal(text);
+      return true;
+
+      function speakBrowserInternal(t: string) {
+        const utterance = new SpeechSynthesisUtterance(t);
+        utterance.rate = rate;
+        utterance.onend = () => { setIsSpeaking(false); setIsPaused(false); };
+        utterance.onerror = () => { setIsSpeaking(false); setIsPaused(false); };
+        window.speechSynthesis.speak(utterance);
+        setIsSpeaking(true);
+        setIsPaused(false);
+      }
     },
     [rate, cleanup]
   );
@@ -76,6 +112,7 @@ export function useTts() {
         if (!res.ok) throw new Error("TTS failed");
 
         const blob = await res.blob();
+        if (!blob || blob.size === 0) throw new Error("Empty audio");
         const url = URL.createObjectURL(blob);
         blobUrlRef.current = url;
 
@@ -88,12 +125,17 @@ export function useTts() {
         await audio.play();
       } catch {
         setLoading(false);
-        setIsSpeaking(false);
-        setIsPaused(false);
         cleanup();
+        // Server TTS failed — try the browser as a last resort so the user
+        // still hears something, even if it's a lower-quality local voice.
+        const ok = speakBrowser(text);
+        if (!ok) {
+          setIsSpeaking(false);
+          setIsPaused(false);
+        }
       }
     },
-    [rate, selectedVoice, cleanup]
+    [rate, selectedVoice, cleanup, speakBrowser]
   );
 
   // Main speak function — picks browser or AI based on toggle

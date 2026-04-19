@@ -12,7 +12,7 @@ interface CodeSystemPanelProps {
 
 const PALETTE = [
   "#EF4444", "#F97316", "#EAB308", "#22C55E",
-  "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280",
+  "#3B82F6", "#111111", "#EC4899", "#6B7280",
   "#14B8A6", "#A855F7",
 ];
 
@@ -53,7 +53,7 @@ export default function CodeSystemPanel({
       <div className="flex items-center justify-end mb-2">
         <button
           onClick={() => setAdding(!adding)}
-          className="text-xs text-[#DE3163] hover:underline"
+          className="text-xs text-[#111111] hover:underline"
         >
           {adding ? "Cancel" : "+ Add Code"}
         </button>
@@ -67,11 +67,11 @@ export default function CodeSystemPanel({
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Code name..."
-            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#DE3163]"
+            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#111111]"
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             autoFocus
           />
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1 flex-wrap items-center">
             {PALETTE.map((c) => (
               <button
                 key={c}
@@ -80,13 +80,30 @@ export default function CodeSystemPanel({
                   newColor === c ? "border-gray-800 scale-110" : "border-gray-200"
                 }`}
                 style={{ backgroundColor: c }}
+                aria-label={`Select ${c}`}
               />
             ))}
+            {/* Custom color picker — any color */}
+            <label
+              className="w-5 h-5 rounded-full border border-dashed border-gray-400 flex items-center justify-center cursor-pointer overflow-hidden"
+              title="Pick a custom color"
+              style={PALETTE.includes(newColor) ? {} : { backgroundColor: newColor }}
+            >
+              <input
+                type="color"
+                value={newColor}
+                onChange={(e) => setNewColor(e.target.value)}
+                className="opacity-0 w-5 h-5 cursor-pointer"
+              />
+              {PALETTE.includes(newColor) && (
+                <span className="absolute text-[10px] text-gray-500 pointer-events-none">+</span>
+              )}
+            </label>
           </div>
           <button
             onClick={handleAdd}
             disabled={!newName.trim()}
-            className="text-xs px-3 py-1 bg-[#DE3163] text-white rounded hover:bg-[#c4294f] disabled:opacity-50"
+            className="text-xs px-3 py-1 bg-[#111111] text-white rounded hover:bg-[#000000] disabled:opacity-50"
           >
             Add
           </button>
@@ -105,11 +122,20 @@ export default function CodeSystemPanel({
               key={code.id}
               className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 group"
             >
-              {/* Color dot */}
-              <div
-                className="w-3 h-3 rounded-full shrink-0"
+              {/* Color dot — click or pick to recolor */}
+              <label
+                className="w-3 h-3 rounded-full shrink-0 cursor-pointer relative ring-offset-1 hover:ring-2 hover:ring-gray-300"
                 style={{ backgroundColor: code.color }}
-              />
+                title="Click to change color"
+              >
+                <input
+                  type="color"
+                  value={code.color}
+                  onChange={(e) => onUpdateCode(code.id, { color: e.target.value })}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  aria-label={`Change color for ${code.name}`}
+                />
+              </label>
 
               {/* Name — editable on click */}
               {editingId === code.id ? (
@@ -122,7 +148,7 @@ export default function CodeSystemPanel({
                     if (e.key === "Enter") saveEdit(code.id);
                     if (e.key === "Escape") setEditingId(null);
                   }}
-                  className="flex-1 px-1 py-0 text-sm border border-[#DE3163] rounded focus:outline-none"
+                  className="flex-1 px-1 py-0 text-sm border border-[#111111] rounded focus:outline-none"
                   autoFocus
                 />
               ) : (

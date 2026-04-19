@@ -1,80 +1,97 @@
+/* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DM_Serif_Display, DM_Sans, Playfair_Display, Noto_Sans, Fredoka } from "next/font/google";
+import HEDGEHOG from "../../lib/hedgehog_images.js";
 
 export const metadata: Metadata = {
   title: "About — Cerise Scholar",
-  description: "Learn about Cerise Scholar, a free research tool for PDF reading, highlighting, literature reviews, and AI-powered academic search.",
-  openGraph: {
-    title: "About — Cerise Scholar",
-    description: "A free research tool for PDF reading, highlighting, literature reviews, and AI-powered academic search.",
-  },
+  description: "Learn about Cerise Scholar — our features and mission.",
 };
 
-export default function AboutPage() {
+const dmSerif = DM_Serif_Display({ weight: "400", style: ["normal", "italic"], subsets: ["latin"], variable: "--font-dm-serif", display: "swap" });
+const dmSans = DM_Sans({ weight: ["400", "500", "600", "700"], subsets: ["latin"], variable: "--font-dm-sans", display: "swap" });
+const playfair = Playfair_Display({ weight: ["400", "700"], subsets: ["latin"], variable: "--font-playfair", display: "swap" });
+const notoSans = Noto_Sans({ weight: ["400", "500", "600", "700"], subsets: ["latin"], variable: "--font-noto", display: "swap" });
+const fredoka = Fredoka({ weight: ["400", "500", "600", "700"], subsets: ["latin"], variable: "--font-fredoka", display: "swap" });
+
+const p = {
+  bg: "#fefefe", surface: "#fdfcfa", warm: "#faf7f0",
+  ink: "#1a1208", muted: "#7a6a5a", faint: "#9a8a7a",
+  cerise: "#c0392b", rule: "#e0d8d0", border: "#d4cdc5", gold: "#c8a84b",
+};
+
+export default function AboutLanding() {
+  const fc = [dmSerif.variable, dmSans.variable, playfair.variable, notoSans.variable, fredoka.variable].join(" ");
+
   return (
-    <div className="min-h-screen bg-white">
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="text-xl font-bold text-[#DE3163]">Cerise Scholar</Link>
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium">Workspace</Link>
-            <Link href="/" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium">Home</Link>
-            <Link href="/about" className="text-sm text-[#DE3163] font-medium">About</Link>
-            <Link href="/research-guidance" className="text-sm text-gray-600 hover:text-[#DE3163] font-medium">Research Guidance</Link>
+    <div className={`${fc} min-h-screen`} style={{ background: p.bg, color: p.ink, fontFamily: "var(--font-dm-sans), 'DM Sans', sans-serif" }}>
+
+      {/* ── Navbar ── */}
+      <div style={{ padding: "12px 24px 0", position: "relative" }}>
+        <img src={HEDGEHOG.hedgehog03Standing} alt="" className="pointer-events-none hidden lg:block" style={{ position: "absolute", left: "calc(50% - 550px - 60px)", top: "8px", height: "52px", width: "auto", objectFit: "contain", zIndex: 10 }} />
+        <nav style={{ maxWidth: "1100px", margin: "0 auto", height: "48px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", background: "#fff", borderRadius: "100px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+          <Link href="/" style={{ fontFamily: "var(--font-playfair)", fontSize: "15px", color: p.ink, textDecoration: "none" }}>Cerise Scholar</Link>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px", fontFamily: "var(--font-noto)", fontSize: "11px" }}>
+            <Link href="/" className="hover:opacity-70" style={{ color: p.ink, textDecoration: "none" }}>Home</Link>
+            <div className="group" style={{ position: "relative" }}><span className="cursor-pointer" style={{ color: p.cerise, fontWeight: 600 }}>About</span><div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: "8px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", padding: "8px", minWidth: "120px", zIndex: 200 }}><Link href="/about/features" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: p.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Features</Link><Link href="/about/mission" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: p.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Mission</Link></div></div>
+            <Link href="/research-guidance" className="hover:opacity-70" style={{ color: p.ink, textDecoration: "none" }}>Research Guide</Link>
+            <Link href="/projects-preview" className="hover:opacity-70" style={{ color: p.ink, textDecoration: "none" }}>Projects</Link>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/login" className="px-4 py-2 text-sm text-gray-600 hover:text-[#DE3163]">Log In</Link>
-          <Link href="/signup" className="px-4 py-2 text-sm bg-[#DE3163] text-white rounded-lg hover:bg-[#c4294f]">Sign Up Free</Link>
-        </div>
-      </nav>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <Link href="/login" className="hover:opacity-70" style={{ fontFamily: "var(--font-noto)", fontSize: "11px", color: p.ink, textDecoration: "none" }}>Log In</Link>
+            <Link href="/signup" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "6px 16px", fontFamily: "var(--font-noto)", fontSize: "11px", fontWeight: 600, background: p.ink, color: "#fff", borderRadius: "100px", textDecoration: "none" }}>Sign Up Free</Link>
+          </div>
+        </nav>
+      </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-16">
-        <h1 className="text-4xl font-bold text-gray-900 mb-6">About Cerise Scholar</h1>
+      {/* ── About landing ── */}
+      <section style={{ maxWidth: "900px", margin: "0 auto", padding: "100px 32px", textAlign: "center" }}>
+        <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: p.cerise, margin: "0 0 20px" }}>ABOUT</p>
+        <h1 style={{ fontFamily: "var(--font-dm-serif)", fontSize: "clamp(36px, 4vw, 52px)", fontWeight: 400, lineHeight: 1.1, margin: "0 0 24px" }}>
+          Get to know <span style={{ fontStyle: "italic", color: p.cerise }}>Cerise Scholar</span>
+        </h1>
+        <p style={{ fontSize: "clamp(14px, 1.1vw, 16px)", color: p.muted, lineHeight: 1.7, maxWidth: "480px", margin: "0 auto 60px" }}>
+          Explore what we built and why we built it.
+        </p>
 
-        <div className="space-y-6 text-gray-600 leading-relaxed">
-          <p className="text-lg">
-            Cerise Scholar is a research tool designed to streamline the academic literature review process. Built for researchers, by a researcher.
-          </p>
+        {/* Two cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", maxWidth: "700px", margin: "0 auto" }}>
+          {/* Features card */}
+          <Link href="/about/features" className="hover:shadow-lg transition-shadow" style={{ textDecoration: "none", color: p.ink, background: "#fff", border: `1.5px solid ${p.border}`, borderRadius: "20px", padding: "40px 32px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+            <img src={HEDGEHOG.hedgehog05Laptop} alt="" style={{ width: "100px", height: "100px", objectFit: "contain", marginBottom: "20px" }} />
+            <h2 style={{ fontFamily: "var(--font-dm-serif)", fontSize: "clamp(22px, 1.8vw, 28px)", fontWeight: 400, margin: "0 0 12px" }}>
+              Features
+            </h2>
+            <p style={{ fontSize: "13px", color: p.muted, lineHeight: 1.6, margin: "0 0 20px" }}>
+              8 research tools, one workspace. See how everything connects.
+            </p>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: p.cerise }}>Explore features →</span>
+          </Link>
 
-          <h2 className="text-2xl font-semibold text-gray-900 mt-8">What is Cerise Scholar?</h2>
-          <p>
-            Cerise Scholar combines PDF reading, annotation, and literature review synthesis into one seamless workspace. Instead of juggling multiple tools, you can read your sources, highlight key passages, take notes, and organize everything into a structured literature review table — all in one place.
-          </p>
-
-          <h2 className="text-2xl font-semibold text-gray-900 mt-8">Key Features</h2>
-          <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Multi-Project Workspace</strong> — Organize your research into separate projects, each with its own PDFs, highlights, and literature review.</li>
-            <li><strong>PDF Viewer</strong> — Upload, read, and annotate PDFs directly in your browser with full-page scrolling and zoom.</li>
-            <li><strong>Smart Highlighting</strong> — Select text, choose a color, assign it to a section of your paper, and add notes — all in one step.</li>
-            <li><strong>Code System</strong> — Tag your highlights with paper sections (Abstract, Introduction, Methodology, etc.) inspired by MAXQDA.</li>
-            <li><strong>Synthesized Literature Review Table</strong> — Every highlight automatically populates a structured table with document name, APA reference, section, quotes, notes, and synthesis columns.</li>
-            <li><strong>Meta-Analysis Tools</strong> — Upload datasets from ICPSR, run statistical analyses, calculate effect sizes, and generate forest plots.</li>
-            <li><strong>Methodology Guide</strong> — A step-by-step assistant that helps you define your hypothesis, find the right data, choose statistical tests, and draft your methodology section.</li>
-            <li><strong>Text-to-Speech</strong> — Listen to your PDFs read aloud using your browser&apos;s built-in voices.</li>
-            <li><strong>CSV Export</strong> — Export your literature review table for use in spreadsheets or reference managers.</li>
-          </ul>
-
-          <h2 className="text-2xl font-semibold text-gray-900 mt-8">Who is it for?</h2>
-          <p>
-            Cerise Scholar is built for academic researchers, graduate students, and anyone conducting literature reviews or meta-analyses. Whether you&apos;re writing a thesis, dissertation, or research paper, Cerise Scholar helps you stay organized and efficient.
-          </p>
-
-          <h2 className="text-2xl font-semibold text-gray-900 mt-8">Open Source</h2>
-          <p>
-            Cerise Scholar is open source and free to use. View the code on{" "}
-            <a href="https://github.com/linhvotueduong/CeriseScholar" target="_blank" className="text-[#DE3163] hover:underline">
-              GitHub
-            </a>.
-          </p>
-        </div>
-
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <Link href="/signup" className="px-6 py-3 bg-[#DE3163] text-white font-medium rounded-lg hover:bg-[#c4294f] transition-colors">
-            Get Started Free
+          {/* Mission card */}
+          <Link href="/about/mission" className="hover:shadow-lg transition-shadow" style={{ textDecoration: "none", color: "#fff", background: p.ink, borderRadius: "20px", padding: "40px 32px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+            <img src={HEDGEHOG.hedgehog06Clasped} alt="" style={{ width: "100px", height: "100px", objectFit: "contain", marginBottom: "20px" }} />
+            <h2 style={{ fontFamily: "var(--font-dm-serif)", fontSize: "clamp(22px, 1.8vw, 28px)", fontWeight: 400, margin: "0 0 12px" }}>
+              Mission
+            </h2>
+            <p style={{ fontSize: "13px", opacity: 0.7, lineHeight: 1.6, margin: "0 0 20px" }}>
+              Built for the quiet ones with big questions. Meet StarPine and Cerise.
+            </p>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: p.gold }}>Read our story →</span>
           </Link>
         </div>
-      </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer style={{ background: "#f5f2ec", borderTop: `1px solid ${p.rule}` }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "48px 48px 24px" }}>
+          <div style={{ borderTop: `1px solid ${p.rule}`, paddingTop: "20px", paddingBottom: "24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "11px", color: p.faint }}>© 2025 Cerise Scholar · All rights reserved</span>
+            <span style={{ fontSize: "11px", color: p.faint }}>Built for researchers</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

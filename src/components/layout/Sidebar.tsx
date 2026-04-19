@@ -28,7 +28,7 @@ export default function Sidebar() {
               className={cn(
                 "block px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-[#DE3163] text-white"
+                  ? "bg-[#111111] text-white"
                   : "text-gray-600 hover:bg-gray-100"
               )}
             >

@@ -100,8 +100,8 @@ export default function ResizablePanel({
         <div
           className={`absolute top-0 bottom-0 transition-all ${
             dragging
-              ? "w-1 bg-[#DE3163]"
-              : "w-[2px] bg-transparent hover:bg-[#DE3163]"
+              ? "w-1 bg-[#111111]"
+              : "w-[2px] bg-transparent hover:bg-[#111111]"
           }`}
           style={{ left: "50%", transform: "translateX(-50%)" }}
         />

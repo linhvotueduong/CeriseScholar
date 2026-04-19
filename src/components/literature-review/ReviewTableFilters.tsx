@@ -33,7 +33,7 @@ export default function ReviewTableFilters({
         <select
           value={selectedSource}
           onChange={(e) => onSourceChange(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#DE3163]"
+          className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#111111]"
         >
           <option value="">All PDFs</option>
           {sources.map((source) => (
@@ -48,7 +48,7 @@ export default function ReviewTableFilters({
         <select
           value={selectedSection}
           onChange={(e) => onSectionChange(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#DE3163]"
+          className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#111111]"
         >
           <option value="">All Sections</option>
           {sections.map((section) => (
@@ -65,7 +65,7 @@ export default function ReviewTableFilters({
           value={searchText}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Filter by text, notes, synthesis..."
-          className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-64 focus:outline-none focus:ring-1 focus:ring-[#DE3163]"
+          className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-64 focus:outline-none focus:ring-1 focus:ring-[#111111]"
         />
       </div>
 

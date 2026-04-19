@@ -13,6 +13,6 @@ export const DEFAULT_CODES = [
   { name: "Literature Review", color: "#EAB308" },
   { name: "Methodology", color: "#22C55E" },
   { name: "Results", color: "#3B82F6" },
-  { name: "Discussion", color: "#8B5CF6" },
+  { name: "Discussion", color: "#111111" },
   { name: "Conclusion", color: "#EC4899" },
 ];

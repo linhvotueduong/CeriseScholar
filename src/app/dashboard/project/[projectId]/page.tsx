@@ -52,7 +52,7 @@ export default function ProjectWorkspacePage() {
   if (loading) {
     return (
       <div className="-mx-8 -my-8 flex items-center justify-center h-[calc(100vh-57px)]">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-[#DE3163]" />
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-[#111111]" />
       </div>
     );
   }
@@ -64,7 +64,7 @@ export default function ProjectWorkspacePage() {
         <div className="flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-2">
           <Link
             href="/dashboard"
-            className="text-sm text-gray-500 hover:text-[#DE3163] transition-colors"
+            className="text-sm text-gray-500 hover:text-[#111111] transition-colors"
           >
             &larr; Projects
           </Link>
@@ -82,25 +82,25 @@ export default function ProjectWorkspacePage() {
           <div className="ml-auto flex items-center gap-4">
             <Link
               href={`/dashboard/project/${projectId}/scholar-ask`}
-              className="text-xs text-[#DE3163] hover:underline font-medium"
+              className="text-xs text-[#111111] hover:underline font-medium"
             >
               ScholarAsk
             </Link>
             <Link
               href={`/dashboard/project/${projectId}/meta-analysis`}
-              className="text-xs text-[#DE3163] hover:underline font-medium"
+              className="text-xs text-[#111111] hover:underline font-medium"
             >
               Meta-Analysis
             </Link>
             <Link
               href={`/dashboard/project/${projectId}/literature-review`}
-              className="text-xs text-[#DE3163] hover:underline font-medium"
+              className="text-xs text-[#111111] hover:underline font-medium"
             >
               Lit Review
             </Link>
             <Link
               href={`/dashboard/project/${projectId}/paper-writer`}
-              className="text-xs text-[#DE3163] hover:underline font-medium"
+              className="text-xs text-[#111111] hover:underline font-medium"
             >
               Paper Writer &rarr;
             </Link>

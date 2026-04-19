@@ -54,7 +54,7 @@ function EditableNote({
           if (e.key === "Escape") { setDraft(content); setEditing(false); }
         }}
         rows={3}
-        className="w-full text-xs text-gray-600 mt-2 bg-yellow-50 p-2 rounded border border-[#DE3163] focus:outline-none resize-y"
+        className="w-full text-xs text-gray-600 mt-2 bg-yellow-50 p-2 rounded border border-[#111111] focus:outline-none resize-y"
       />
     );
   }
@@ -105,7 +105,7 @@ export default function AnnotationSidebar({
             onClick={() => setFilter("all")}
             className={`text-xs px-2 py-1 rounded ${
               filter === "all"
-                ? "bg-[#DE3163] text-white"
+                ? "bg-[#111111] text-white"
                 : "bg-gray-100 text-gray-600"
             }`}
           >
@@ -115,7 +115,7 @@ export default function AnnotationSidebar({
             onClick={() => setFilter("page")}
             className={`text-xs px-2 py-1 rounded ${
               filter === "page"
-                ? "bg-[#DE3163] text-white"
+                ? "bg-[#111111] text-white"
                 : "bg-gray-100 text-gray-600"
             }`}
           >
@@ -150,14 +150,14 @@ export default function AnnotationSidebar({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={(e) => { e.stopPropagation(); onGoToPage(highlight.page_number); }}
-                        className="text-xs text-[#DE3163] font-medium hover:underline"
+                        className="text-xs text-[#111111] font-medium hover:underline"
                       >
                         Page {highlight.page_number}
                       </button>
                       {onReadHighlight && (
                         <button
                           onClick={(e) => { e.stopPropagation(); onReadHighlight(highlight.highlighted_text); }}
-                          className="text-xs text-gray-400 hover:text-[#DE3163]"
+                          className="text-xs text-gray-400 hover:text-[#111111]"
                           title="Read this highlight aloud"
                         >
                           &#9654;
@@ -192,7 +192,7 @@ export default function AnnotationSidebar({
                         e.stopPropagation();
                         onAddNote(highlight.id, highlight.page_number);
                       }}
-                      className="text-xs text-gray-400 hover:text-[#DE3163] mt-2"
+                      className="text-xs text-gray-400 hover:text-[#111111] mt-2"
                     >
                       + Add note
                     </button>

@@ -9,8 +9,8 @@ import type { Project } from "@/types/project";
 import Spinner from "@/components/ui/Spinner";
 
 const PROJECT_COLORS = [
-  "#DE3163", "#EF4444", "#F97316", "#EAB308",
-  "#22C55E", "#3B82F6", "#8B5CF6", "#EC4899",
+  "#111111", "#EF4444", "#F97316", "#EAB308",
+  "#22C55E", "#3B82F6", "#111111", "#EC4899",
 ];
 
 export default function DashboardPage() {
@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
-  const [newColor, setNewColor] = useState("#DE3163");
+  const [newColor, setNewColor] = useState("#111111");
   const [creating, setCreating] = useState(false);
   const router = useRouter();
   const { user } = useUser();
@@ -63,7 +63,7 @@ export default function DashboardPage() {
 
     setNewName("");
     setNewDesc("");
-    setNewColor("#DE3163");
+    setNewColor("#111111");
     setShowCreate(false);
     setCreating(false);
   }
@@ -112,7 +112,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold text-gray-900">My Projects</h1>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="px-4 py-2 bg-[#DE3163] text-white text-sm font-medium rounded-lg hover:bg-[#c4294f] transition-colors"
+          className="px-4 py-2 bg-[#111111] text-white text-sm font-medium rounded-lg hover:bg-[#000000] transition-colors"
         >
           + New Project
         </button>
@@ -131,7 +131,7 @@ export default function DashboardPage() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Project name (e.g., 'Geopolitical Influence & Peace')"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DE3163] text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#111111] text-sm"
               autoFocus
               required
             />
@@ -140,7 +140,7 @@ export default function DashboardPage() {
               onChange={(e) => setNewDesc(e.target.value)}
               placeholder="Description (optional)"
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DE3163] text-sm resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#111111] text-sm resize-none"
             />
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500">Color:</span>
@@ -168,7 +168,7 @@ export default function DashboardPage() {
             <button
               type="submit"
               disabled={!newName.trim() || creating}
-              className="px-4 py-2 text-sm bg-[#DE3163] text-white rounded-lg hover:bg-[#c4294f] disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-[#111111] text-white rounded-lg hover:bg-[#000000] disabled:opacity-50"
             >
               {creating ? "Creating..." : "Create Project"}
             </button>

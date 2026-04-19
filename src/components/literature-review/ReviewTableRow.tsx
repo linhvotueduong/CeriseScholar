@@ -55,7 +55,7 @@ function EditableCell({
   }
 
   if (editing) {
-    const cls = "w-full px-2 py-1 text-sm border border-[#DE3163] rounded focus:outline-none";
+    const cls = "w-full px-2 py-1 text-sm border border-[#111111] rounded focus:outline-none";
     return multiline ? (
       <textarea
         ref={inputRef as React.RefObject<HTMLTextAreaElement>}
@@ -97,7 +97,7 @@ export default function ReviewTableRow({ entry, onUpdate, onDelete }: ReviewTabl
       <td className="px-3 py-2 text-sm text-gray-800 min-w-[140px]">
         <a
           href={`/dashboard/viewer/${entry.pdf_id}`}
-          className="text-[#DE3163] hover:underline"
+          className="text-[#111111] hover:underline"
           title={entry.source}
         >
           {entry.source}

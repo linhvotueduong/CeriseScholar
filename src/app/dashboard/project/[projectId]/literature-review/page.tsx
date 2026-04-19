@@ -54,7 +54,7 @@ export default function ProjectLiteratureReviewPage() {
   return (
     <div>
       <div className="mb-4">
-        <Link href={`/dashboard/project/${projectId}`} className="text-sm text-gray-500 hover:text-[#DE3163]">
+        <Link href={`/dashboard/project/${projectId}`} className="text-sm text-gray-500 hover:text-[#111111]">
           &larr; Back to project
         </Link>
       </div>

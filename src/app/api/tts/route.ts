@@ -4,6 +4,11 @@ import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
 import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 
+// Vercel serverless: allow up to 60s for long-text synthesis.
+// The Edge TTS WebSocket stream is slow enough that 10s default can cut off 5000-char jobs.
+export const maxDuration = 60;
+export const runtime = "nodejs";
+
 async function getSupabase() {
   const cookieStore = await cookies();
   return createServerClient(

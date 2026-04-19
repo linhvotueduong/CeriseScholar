@@ -37,7 +37,7 @@ export default function TtsControls({
     <div className="flex items-center gap-3 bg-white border-t border-gray-200 px-4 py-2">
       {loading ? (
         <div className="flex items-center gap-2">
-          <div className="animate-spin rounded-full h-4 w-4 border border-gray-300 border-t-[#DE3163]" />
+          <div className="animate-spin rounded-full h-4 w-4 border border-gray-300 border-t-[#111111]" />
           <span className="text-xs text-gray-500">Generating AI voice...</span>
         </div>
       ) : (
@@ -52,7 +52,7 @@ export default function TtsControls({
           {/* Speed */}
           <div className="flex items-center gap-2 ml-2">
             <label className="text-xs text-gray-500">Speed:</label>
-            <input type="range" min={0.5} max={2} step={0.25} value={rate} onChange={(e) => onRateChange(parseFloat(e.target.value))} className="w-16 accent-[#DE3163]" />
+            <input type="range" min={0.5} max={2} step={0.25} value={rate} onChange={(e) => onRateChange(parseFloat(e.target.value))} className="w-16 accent-[#111111]" />
             <span className="text-xs text-gray-600 w-8">{rate}x</span>
           </div>
 
@@ -62,7 +62,7 @@ export default function TtsControls({
               <label className="flex items-center gap-1.5 cursor-pointer select-none">
                 <div
                   onClick={() => onToggleAiVoice(!useAiVoice)}
-                  className={`w-7 h-3.5 rounded-full transition-colors relative cursor-pointer ${useAiVoice ? "bg-[#DE3163]" : "bg-gray-300"}`}
+                  className={`w-7 h-3.5 rounded-full transition-colors relative cursor-pointer ${useAiVoice ? "bg-[#111111]" : "bg-gray-300"}`}
                 >
                   <div className={`absolute top-0.5 w-2.5 h-2.5 bg-white rounded-full transition-transform shadow ${useAiVoice ? "translate-x-3.5" : "translate-x-0.5"}`} />
                 </div>
@@ -82,7 +82,7 @@ export default function TtsControls({
             </div>
           )}
 
-          <span className="ml-auto text-xs text-[#DE3163] font-medium animate-pulse">
+          <span className="ml-auto text-xs text-[#111111] font-medium animate-pulse">
             {isPaused ? "Paused" : useAiVoice ? "AI Speaking..." : "Speaking..."}
           </span>
         </>

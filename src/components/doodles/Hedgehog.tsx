@@ -29,7 +29,7 @@ export function HedgehogHero({ className = "", size = 300 }: { className?: strin
       <circle cx="85" cy="200" r="6" fill="#F5F0EB" stroke="#2D2D2D" strokeWidth="2.5" />
 
       {/* Book in left hand */}
-      <rect x="60" y="188" width="40" height="30" rx="3" fill="#DE3163" stroke="#2D2D2D" strokeWidth="2.5" />
+      <rect x="60" y="188" width="40" height="30" rx="3" fill="#111111" stroke="#2D2D2D" strokeWidth="2.5" />
       <line x1="80" y1="188" x2="80" y2="218" stroke="#2D2D2D" strokeWidth="2" />
       <line x1="67" y1="197" x2="77" y2="197" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
       <line x1="67" y1="203" x2="75" y2="203" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
@@ -73,17 +73,17 @@ export function HedgehogHero({ className = "", size = 300 }: { className?: strin
       <path d="M158 132 Q170 142 182 132" stroke="#2D2D2D" strokeWidth="2.5" fill="none" strokeLinecap="round" />
 
       {/* Blush cheeks */}
-      <ellipse cx="138" cy="125" rx="8" ry="5" fill="#DE3163" opacity="0.25" />
-      <ellipse cx="202" cy="125" rx="8" ry="5" fill="#DE3163" opacity="0.25" />
+      <ellipse cx="138" cy="125" rx="8" ry="5" fill="#111111" opacity="0.25" />
+      <ellipse cx="202" cy="125" rx="8" ry="5" fill="#111111" opacity="0.25" />
 
       {/* Feet */}
       <ellipse cx="145" cy="235" rx="18" ry="10" fill="#F5F0EB" stroke="#2D2D2D" strokeWidth="2.5" />
       <ellipse cx="200" cy="235" rx="18" ry="10" fill="#F5F0EB" stroke="#2D2D2D" strokeWidth="2.5" />
 
       {/* Sparkle accents */}
-      <path d="M50 80 L53 73 L56 80 L63 83 L56 86 L53 93 L50 86 L43 83Z" fill="#DE3163" opacity="0.6" />
-      <path d="M260 145 L262 140 L264 145 L269 147 L264 149 L262 154 L260 149 L255 147Z" fill="#DE3163" opacity="0.4" />
-      <circle cx="280" cy="85" r="3" fill="#DE3163" opacity="0.3" />
+      <path d="M50 80 L53 73 L56 80 L63 83 L56 86 L53 93 L50 86 L43 83Z" fill="#111111" opacity="0.6" />
+      <path d="M260 145 L262 140 L264 145 L269 147 L264 149 L262 154 L260 149 L255 147Z" fill="#111111" opacity="0.4" />
+      <circle cx="280" cy="85" r="3" fill="#111111" opacity="0.3" />
     </svg>
   );
 }
@@ -128,8 +128,8 @@ export function HedgehogReading({ className = "", size = 200 }: { className?: st
       <path d="M100 95 Q108 102 116 95" stroke="#2D2D2D" strokeWidth="2" fill="none" strokeLinecap="round" />
 
       {/* Blush */}
-      <ellipse cx="85" cy="90" rx="6" ry="3.5" fill="#DE3163" opacity="0.25" />
-      <ellipse cx="131" cy="90" rx="6" ry="3.5" fill="#DE3163" opacity="0.25" />
+      <ellipse cx="85" cy="90" rx="6" ry="3.5" fill="#111111" opacity="0.25" />
+      <ellipse cx="131" cy="90" rx="6" ry="3.5" fill="#111111" opacity="0.25" />
 
       {/* Arms holding open book */}
       <path d="M65 120 Q50 128 48 142" stroke="#2D2D2D" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -145,7 +145,7 @@ export function HedgehogReading({ className = "", size = 200 }: { className?: st
       <line x1="118" y1="155" x2="155" y2="157" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" />
 
       {/* Highlight line on book in cerise */}
-      <line x1="55" y1="163" x2="88" y2="161" stroke="#DE3163" strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="55" y1="163" x2="88" y2="161" stroke="#111111" strokeWidth="2.5" strokeLinecap="round" />
 
       {/* Feet */}
       <ellipse cx="88" cy="178" rx="14" ry="8" fill="#F5F0EB" stroke="#2D2D2D" strokeWidth="2" />
@@ -194,16 +194,16 @@ export function HedgehogHighlighting({ className = "", size = 200 }: { className
       <path d="M102 96 Q112 105 122 96" stroke="#2D2D2D" strokeWidth="2" fill="none" strokeLinecap="round" />
 
       {/* Blush */}
-      <ellipse cx="88" cy="90" rx="6" ry="3.5" fill="#DE3163" opacity="0.25" />
-      <ellipse cx="136" cy="90" rx="6" ry="3.5" fill="#DE3163" opacity="0.25" />
+      <ellipse cx="88" cy="90" rx="6" ry="3.5" fill="#111111" opacity="0.25" />
+      <ellipse cx="136" cy="90" rx="6" ry="3.5" fill="#111111" opacity="0.25" />
 
       {/* Right arm holding highlighter */}
       <path d="M158 115 Q172 108 178 95" stroke="#2D2D2D" strokeWidth="3" fill="none" strokeLinecap="round" />
 
       {/* Highlighter pen */}
-      <rect x="170" y="58" width="14" height="45" rx="3" fill="#DE3163" stroke="#2D2D2D" strokeWidth="2" transform="rotate(15 177 80)" />
-      <rect x="172" y="48" width="10" height="14" rx="2" fill="#c4294f" stroke="#2D2D2D" strokeWidth="1.5" transform="rotate(15 177 55)" />
-      <path d="M173 102 L177 112 L181 102" fill="#DE3163" stroke="#2D2D2D" strokeWidth="1.5" transform="rotate(15 177 107)" />
+      <rect x="170" y="58" width="14" height="45" rx="3" fill="#111111" stroke="#2D2D2D" strokeWidth="2" transform="rotate(15 177 80)" />
+      <rect x="172" y="48" width="10" height="14" rx="2" fill="#000000" stroke="#2D2D2D" strokeWidth="1.5" transform="rotate(15 177 55)" />
+      <path d="M173 102 L177 112 L181 102" fill="#111111" stroke="#2D2D2D" strokeWidth="1.5" transform="rotate(15 177 107)" />
 
       {/* Left arm */}
       <path d="M66 118 Q52 125 48 135" stroke="#2D2D2D" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -213,7 +213,7 @@ export function HedgehogHighlighting({ className = "", size = 200 }: { className
       <rect x="25" y="138" width="50" height="42" rx="2" fill="white" stroke="#2D2D2D" strokeWidth="2" />
       <line x1="32" y1="148" x2="68" y2="148" stroke="#ddd" strokeWidth="1.5" strokeLinecap="round" />
       <line x1="32" y1="155" x2="65" y2="155" stroke="#ddd" strokeWidth="1.5" strokeLinecap="round" />
-      <rect x="30" y="159" width="40" height="6" rx="1" fill="#DE3163" opacity="0.3" />
+      <rect x="30" y="159" width="40" height="6" rx="1" fill="#111111" opacity="0.3" />
       <line x1="32" y1="162" x2="68" y2="162" stroke="#ddd" strokeWidth="1.5" strokeLinecap="round" />
       <line x1="32" y1="169" x2="55" y2="169" stroke="#ddd" strokeWidth="1.5" strokeLinecap="round" />
 
@@ -222,7 +222,7 @@ export function HedgehogHighlighting({ className = "", size = 200 }: { className
       <ellipse cx="132" cy="172" rx="13" ry="7" fill="#F5F0EB" stroke="#2D2D2D" strokeWidth="2" />
 
       {/* Sparkle */}
-      <path d="M40 55 L42 50 L44 55 L49 57 L44 59 L42 64 L40 59 L35 57Z" fill="#DE3163" opacity="0.5" />
+      <path d="M40 55 L42 50 L44 55 L49 57 L44 59 L42 64 L40 59 L35 57Z" fill="#111111" opacity="0.5" />
     </svg>
   );
 }
@@ -250,9 +250,9 @@ export function HedgehogListening({ className = "", size = 200 }: { className?: 
       {/* Headphone band */}
       <path d="M68 72 Q68 40 110 38 Q152 40 152 72" stroke="#2D2D2D" strokeWidth="4" fill="none" strokeLinecap="round" />
       {/* Left headphone cup */}
-      <rect x="58" y="65" width="18" height="24" rx="8" fill="#DE3163" stroke="#2D2D2D" strokeWidth="2.5" />
+      <rect x="58" y="65" width="18" height="24" rx="8" fill="#111111" stroke="#2D2D2D" strokeWidth="2.5" />
       {/* Right headphone cup */}
-      <rect x="144" y="65" width="18" height="24" rx="8" fill="#DE3163" stroke="#2D2D2D" strokeWidth="2.5" />
+      <rect x="144" y="65" width="18" height="24" rx="8" fill="#111111" stroke="#2D2D2D" strokeWidth="2.5" />
 
       {/* Glasses */}
       <circle cx="98" cy="80" r="10" stroke="#2D2D2D" strokeWidth="2" fill="none" />
@@ -270,20 +270,20 @@ export function HedgehogListening({ className = "", size = 200 }: { className?: 
       <path d="M100 96 Q110 106 120 96" stroke="#2D2D2D" strokeWidth="2" fill="none" strokeLinecap="round" />
 
       {/* Blush */}
-      <ellipse cx="86" cy="90" rx="6" ry="3.5" fill="#DE3163" opacity="0.25" />
-      <ellipse cx="134" cy="90" rx="6" ry="3.5" fill="#DE3163" opacity="0.25" />
+      <ellipse cx="86" cy="90" rx="6" ry="3.5" fill="#111111" opacity="0.25" />
+      <ellipse cx="134" cy="90" rx="6" ry="3.5" fill="#111111" opacity="0.25" />
 
       {/* Arms swaying */}
       <path d="M65 120 Q48 130 45 145" stroke="#2D2D2D" strokeWidth="3" fill="none" strokeLinecap="round" />
       <path d="M155 120 Q172 130 175 145" stroke="#2D2D2D" strokeWidth="3" fill="none" strokeLinecap="round" />
 
       {/* Music notes */}
-      <path d="M42 50 L42 38 L50 35 L50 47" stroke="#DE3163" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <circle cx="42" cy="50" r="3.5" fill="#DE3163" />
-      <circle cx="50" cy="47" r="3.5" fill="#DE3163" />
+      <path d="M42 50 L42 38 L50 35 L50 47" stroke="#111111" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <circle cx="42" cy="50" r="3.5" fill="#111111" />
+      <circle cx="50" cy="47" r="3.5" fill="#111111" />
 
-      <path d="M165 42 L165 30" stroke="#DE3163" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="165" cy="42" r="3" fill="#DE3163" opacity="0.6" />
+      <path d="M165 42 L165 30" stroke="#111111" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="165" cy="42" r="3" fill="#111111" opacity="0.6" />
 
       {/* Feet */}
       <ellipse cx="90" cy="178" rx="13" ry="7" fill="#F5F0EB" stroke="#2D2D2D" strokeWidth="2" />
@@ -331,8 +331,8 @@ export function HedgehogWriting({ className = "", size = 200 }: { className?: st
       <path d="M98 87 Q105 92 112 87" stroke="#2D2D2D" strokeWidth="2" fill="none" strokeLinecap="round" />
 
       {/* Blush */}
-      <ellipse cx="82" cy="82" rx="5" ry="3" fill="#DE3163" opacity="0.25" />
-      <ellipse cx="128" cy="82" rx="5" ry="3" fill="#DE3163" opacity="0.25" />
+      <ellipse cx="82" cy="82" rx="5" ry="3" fill="#111111" opacity="0.25" />
+      <ellipse cx="128" cy="82" rx="5" ry="3" fill="#111111" opacity="0.25" />
 
       {/* Desk */}
       <rect x="15" y="148" width="170" height="8" rx="3" fill="#E8D5B7" stroke="#2D2D2D" strokeWidth="2" />
@@ -341,13 +341,13 @@ export function HedgehogWriting({ className = "", size = 200 }: { className?: st
       <rect x="30" y="120" width="55" height="30" rx="2" fill="white" stroke="#2D2D2D" strokeWidth="2" />
       <line x1="37" y1="128" x2="78" y2="128" stroke="#ddd" strokeWidth="1.5" strokeLinecap="round" />
       <line x1="37" y1="134" x2="75" y2="134" stroke="#ddd" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="37" y1="140" x2="60" y2="140" stroke="#DE3163" strokeWidth="2" strokeLinecap="round" />
+      <line x1="37" y1="140" x2="60" y2="140" stroke="#111111" strokeWidth="2" strokeLinecap="round" />
 
       {/* Right arm with pen */}
       <path d="M148 110 Q158 118 155 132" stroke="#2D2D2D" strokeWidth="3" fill="none" strokeLinecap="round" />
       {/* Pen */}
       <line x1="152" y1="125" x2="72" y2="140" stroke="#2D2D2D" strokeWidth="3" strokeLinecap="round" />
-      <line x1="152" y1="125" x2="158" y2="122" stroke="#DE3163" strokeWidth="3" strokeLinecap="round" />
+      <line x1="152" y1="125" x2="158" y2="122" stroke="#111111" strokeWidth="3" strokeLinecap="round" />
 
       {/* Left arm on desk */}
       <path d="M60 110 Q45 120 42 130" stroke="#2D2D2D" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -406,8 +406,8 @@ export function HedgehogIdea({ className = "", size = 200 }: { className?: strin
       <ellipse cx="110" cy="101" rx="5" ry="3" fill="#E57373" />
 
       {/* Blush */}
-      <ellipse cx="86" cy="93" rx="6" ry="3.5" fill="#DE3163" opacity="0.3" />
-      <ellipse cx="134" cy="93" rx="6" ry="3.5" fill="#DE3163" opacity="0.3" />
+      <ellipse cx="86" cy="93" rx="6" ry="3.5" fill="#111111" opacity="0.3" />
+      <ellipse cx="134" cy="93" rx="6" ry="3.5" fill="#111111" opacity="0.3" />
 
       {/* Arms raised in excitement */}
       <path d="M65 120 Q42 105 38 85" stroke="#2D2D2D" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -434,7 +434,7 @@ export function HedgehogIdea({ className = "", size = 200 }: { className?: strin
       <ellipse cx="130" cy="178" rx="13" ry="7" fill="#F5F0EB" stroke="#2D2D2D" strokeWidth="2" />
 
       {/* Sparkles */}
-      <path d="M30 65 L32 60 L34 65 L39 67 L34 69 L32 74 L30 69 L25 67Z" fill="#DE3163" opacity="0.5" />
+      <path d="M30 65 L32 60 L34 65 L39 67 L34 69 L32 74 L30 69 L25 67Z" fill="#111111" opacity="0.5" />
       <path d="M172 55 L174 50 L176 55 L181 57 L176 59 L174 64 L172 59 L167 57Z" fill="#FDCB40" opacity="0.5" />
     </svg>
   );
@@ -476,8 +476,8 @@ export function HedgehogSearch({ className = "", size = 200 }: { className?: str
       <path d="M103 93 Q110 99 117 93" stroke="#2D2D2D" strokeWidth="2" fill="none" strokeLinecap="round" />
 
       {/* Blush */}
-      <ellipse cx="86" cy="88" rx="6" ry="3.5" fill="#DE3163" opacity="0.25" />
-      <ellipse cx="134" cy="88" rx="6" ry="3.5" fill="#DE3163" opacity="0.25" />
+      <ellipse cx="86" cy="88" rx="6" ry="3.5" fill="#111111" opacity="0.25" />
+      <ellipse cx="134" cy="88" rx="6" ry="3.5" fill="#111111" opacity="0.25" />
 
       {/* Right arm holding magnifying glass */}
       <path d="M155 115 Q170 105 175 92" stroke="#2D2D2D" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -535,8 +535,8 @@ export function HedgehogWaving({ className = "", size = 120 }: { className?: str
       <path d="M59 57 Q64 62 69 57" stroke="#2D2D2D" strokeWidth="1.5" fill="none" strokeLinecap="round" />
 
       {/* Blush */}
-      <ellipse cx="49" cy="54" rx="4" ry="2.5" fill="#DE3163" opacity="0.25" />
-      <ellipse cx="79" cy="54" rx="4" ry="2.5" fill="#DE3163" opacity="0.25" />
+      <ellipse cx="49" cy="54" rx="4" ry="2.5" fill="#111111" opacity="0.25" />
+      <ellipse cx="79" cy="54" rx="4" ry="2.5" fill="#111111" opacity="0.25" />
 
       {/* Waving arm */}
       <path d="M92 65 Q105 55 108 42" stroke="#2D2D2D" strokeWidth="2.5" fill="none" strokeLinecap="round" />

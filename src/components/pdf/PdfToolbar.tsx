@@ -79,11 +79,11 @@ export default function PdfToolbar({
           value={pageInput}
           onChange={(e) => setPageInput(e.target.value)}
           placeholder="Go to..."
-          className="w-14 px-1.5 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#DE3163]"
+          className="w-14 px-1.5 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#111111]"
         />
         <button
           type="submit"
-          className="px-1.5 py-1 text-xs bg-[#DE3163] text-white rounded hover:bg-[#c4294f] shrink-0"
+          className="px-1.5 py-1 text-xs bg-[#111111] text-white rounded hover:bg-[#000000] shrink-0"
         >
           Go
         </button>
@@ -96,7 +96,7 @@ export default function PdfToolbar({
         onClick={onToggleHighlightMode}
         className={`px-2 py-1 text-xs rounded font-medium transition-colors shrink-0 ${
           highlightMode
-            ? "bg-[#DE3163] text-white"
+            ? "bg-[#111111] text-white"
             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
         }`}
       >
@@ -129,7 +129,7 @@ export default function PdfToolbar({
           onClick={onToggleChat}
           className={`px-2 py-1 text-xs rounded font-medium transition-colors shrink-0 ${
             chatOpen
-              ? "bg-[#DE3163] text-white"
+              ? "bg-[#111111] text-white"
               : "bg-purple-100 text-purple-700 hover:bg-purple-200"
           }`}
         >

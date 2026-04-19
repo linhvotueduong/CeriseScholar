@@ -5,7 +5,7 @@ import type { Code } from "@/types/code";
 
 const HIGHLIGHT_COLORS = [
   { name: "Yellow", value: "#FFD700" },
-  { name: "Cerise", value: "#DE3163" },
+  { name: "Cerise", value: "#111111" },
   { name: "Green", value: "#77DD77" },
   { name: "Blue", value: "#89CFF0" },
   { name: "Orange", value: "#FFB347" },
@@ -143,7 +143,7 @@ export default function NoteModal({
           onChange={(e) => setContent(e.target.value)}
           placeholder="Write your note or comment about this highlight... (optional)"
           rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#DE3163] focus:border-transparent resize-none"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#111111] focus:border-transparent resize-none"
         />
         <div className="flex justify-end gap-2 mt-4">
           <button
@@ -155,7 +155,7 @@ export default function NoteModal({
           </button>
           <button
             type="submit"
-            className="px-4 py-2 text-sm bg-[#DE3163] text-white rounded-lg hover:bg-[#c4294f]"
+            className="px-4 py-2 text-sm bg-[#111111] text-white rounded-lg hover:bg-[#000000]"
           >
             Save Note
           </button>

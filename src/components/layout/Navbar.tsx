@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import Link from "next/link";
@@ -8,11 +8,6 @@ import Link from "next/link";
 export default function Navbar() {
   const { user } = useUser();
   const router = useRouter();
-  const pathname = usePathname();
-
-  // Extract projectId from the URL if we're inside a project
-  const projectMatch = pathname.match(/\/dashboard\/project\/([^/]+)/);
-  const currentProjectId = projectMatch ? projectMatch[1] : null;
 
   async function handleLogout() {
     const supabase = createClient();
@@ -25,52 +20,30 @@ export default function Navbar() {
     <nav className="bg-white border-b border-gray-200 px-6 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href="/" className="text-xl font-bold text-[#DE3163]">
+          <Link href="/" className="text-xl font-bold text-[#111111]">
             Cerise Scholar
           </Link>
 
           <div className="flex items-center gap-4">
-            {user && (
-              <Link
-                href="/dashboard"
-                className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
-              >
-                Workspace
-              </Link>
-            )}
-            <Link
-              href="/"
-              className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
-            >
-              Home
-            </Link>
             <Link
               href="/about"
-              className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
+              className="text-sm text-gray-600 hover:text-[#111111] font-medium transition-colors"
             >
               About
             </Link>
             <Link
               href="/research-guidance"
-              className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
+              className="text-sm text-gray-600 hover:text-[#111111] font-medium transition-colors"
             >
               Research Guidance
             </Link>
-            {user && currentProjectId && (
-              <>
-                <Link
-                  href={`/dashboard/project/${currentProjectId}/literature-review`}
-                  className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
-                >
-                  Literature Review
-                </Link>
-                <Link
-                  href={`/dashboard/project/${currentProjectId}/paper-writer`}
-                  className="text-sm text-gray-600 hover:text-[#DE3163] font-medium transition-colors"
-                >
-                  Paper Writer
-                </Link>
-              </>
+            {user && (
+              <Link
+                href="/dashboard"
+                className="text-sm text-gray-600 hover:text-[#111111] font-medium transition-colors"
+              >
+                Projects
+              </Link>
             )}
           </div>
         </div>
@@ -80,7 +53,7 @@ export default function Navbar() {
             <span className="text-sm text-gray-500">{user.email}</span>
             <button
               onClick={handleLogout}
-              className="text-sm text-gray-600 hover:text-[#DE3163] transition-colors"
+              className="text-sm text-gray-600 hover:text-[#111111] transition-colors"
             >
               Log Out
             </button>

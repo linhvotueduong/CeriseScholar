@@ -98,10 +98,10 @@ export default function UploadPage() {
       <div
         className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
           dragOver
-            ? "border-[#DE3163] bg-pink-50"
+            ? "border-[#111111] bg-pink-50"
             : file
             ? "border-green-400 bg-green-50"
-            : "border-gray-300 hover:border-[#DE3163]"
+            : "border-gray-300 hover:border-[#111111]"
         }`}
         onClick={() => fileInputRef.current?.click()}
         onDragOver={(e) => {
@@ -150,7 +150,7 @@ export default function UploadPage() {
       <button
         onClick={handleUpload}
         disabled={!file || uploading}
-        className="mt-6 w-full py-3 px-4 bg-[#DE3163] text-white font-medium rounded-lg hover:bg-[#c4294f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        className="mt-6 w-full py-3 px-4 bg-[#111111] text-white font-medium rounded-lg hover:bg-[#000000] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
       >
         {uploading ? (
           <>

@@ -308,15 +308,15 @@ export default function PdfPage({
               onSpeakFromHere(playTextRef.current);
             }
           }}
-          className="absolute z-20 flex items-center justify-center rounded-full hover:opacity-80 transition-opacity cursor-pointer"
-          style={{ top: playBtnPos.top + 1, left: playBtnPos.left - 32, width: 16, height: 16, backgroundColor: isSpeaking ? "#EF4444" : "#7B8EC2" }}
+          className="absolute z-20 flex items-center justify-center rounded-full hover:opacity-80 transition-opacity cursor-pointer shadow-sm"
+          style={{ top: playBtnPos.top - 2, left: 10, width: 20, height: 20, backgroundColor: isSpeaking ? "#EF4444" : "#7B8EC2" }}
         >
           {isSpeaking ? (
-            <svg width="7" height="7" viewBox="0 0 10 10" fill="white">
+            <svg width="9" height="9" viewBox="0 0 10 10" fill="white">
               <rect x="1" y="1" width="8" height="8" rx="1" />
             </svg>
           ) : (
-            <svg width="7" height="8" viewBox="0 0 10 12" fill="white">
+            <svg width="9" height="10" viewBox="0 0 10 12" fill="white">
               <path d="M1 0.5v11l9-5.5z" />
             </svg>
           )}
