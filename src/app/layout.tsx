@@ -1,25 +1,43 @@
 import type { Metadata } from "next";
-import { Roboto, Montserrat, PT_Mono } from "next/font/google";
+import { DM_Sans, DM_Serif_Display, PT_Mono, Playfair_Display, Noto_Sans } from "next/font/google";
 import "./globals.css";
 import FlowGuide from "../components/FlowGuide";
 
-// Paper design system fonts
-const roboto = Roboto({
+// Cerise Scholar design system fonts
+const dmSans = DM_Sans({
   variable: "--font-body",
   subsets: ["latin"],
-  weight: ["100", "300", "400", "500", "700", "900"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
-const montserrat = Montserrat({
+const dmSerif = DM_Serif_Display({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 const ptMono = PT_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
   weight: ["400"],
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
+});
+
+const notoSans = Noto_Sans({
+  variable: "--font-noto",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -35,7 +53,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${roboto.variable} ${montserrat.variable} ${ptMono.variable} h-full antialiased`}
+      className={`${dmSans.variable} ${dmSerif.variable} ${ptMono.variable} ${playfair.variable} ${notoSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-paper text-ink">{children}<FlowGuide /></body>
     </html>

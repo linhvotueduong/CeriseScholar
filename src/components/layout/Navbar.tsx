@@ -17,49 +17,137 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-6 py-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="text-xl font-bold text-[#111111]">
-            Cerise Scholar
+    <div style={{ padding: "12px 24px 0" }}>
+      <nav
+        style={{
+          maxWidth: "1100px",
+          margin: "0 auto",
+          height: "48px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 28px",
+          background: "#ffffff",
+          borderRadius: "100px",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+        }}
+      >
+        {/* Logo */}
+        <Link
+          href="/"
+          style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: "15px",
+            fontWeight: 400,
+            color: "#1a1208",
+            textDecoration: "none",
+          }}
+        >
+          Cerise Scholar
+        </Link>
+
+        {/* Nav links */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "20px",
+            fontFamily: "'Noto Sans', sans-serif",
+            fontSize: "11px",
+          }}
+        >
+          <Link href="/" className="hover:opacity-70" style={{ color: "#1a1208", textDecoration: "none" }}>
+            Home
           </Link>
 
-          <div className="flex items-center gap-4">
-            <Link
-              href="/about"
-              className="text-sm text-gray-600 hover:text-[#111111] font-medium transition-colors"
+          {/* About dropdown */}
+          <div className="group" style={{ position: "relative" }}>
+            <span className="hover:opacity-70 cursor-pointer" style={{ color: "#1a1208" }}>About</span>
+            <div
+              className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200"
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                marginTop: "8px",
+                background: "#fff",
+                borderRadius: "12px",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                padding: "8px",
+                minWidth: "120px",
+                zIndex: 200,
+              }}
             >
-              About
-            </Link>
-            <Link
-              href="/research-guidance"
-              className="text-sm text-gray-600 hover:text-[#111111] font-medium transition-colors"
-            >
-              Research Guidance
-            </Link>
-            {user && (
-              <Link
-                href="/dashboard"
-                className="text-sm text-gray-600 hover:text-[#111111] font-medium transition-colors"
-              >
-                Projects
+              <Link href="/about/features" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: "#1a1208", textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>
+                Features
               </Link>
-            )}
+              <Link href="/about/mission" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: "#1a1208", textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>
+                Mission
+              </Link>
+            </div>
           </div>
+
+          <Link href="/research-guidance" className="hover:opacity-70" style={{ color: "#1a1208", textDecoration: "none" }}>
+            Guidance
+          </Link>
+
+          {user && (
+            <Link href="/dashboard" className="hover:opacity-70" style={{ color: "#1a1208", textDecoration: "none", fontWeight: 600 }}>
+              Projects
+            </Link>
+          )}
         </div>
 
-        {user && (
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">{user.email}</span>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-gray-600 hover:text-[#111111] transition-colors"
-            >
-              Log Out
-            </button>
-          </div>
-        )}
-      </div>
-    </nav>
+        {/* Right side: auth */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {user ? (
+            <>
+              <span style={{ fontFamily: "'Noto Sans', sans-serif", fontSize: "11px", color: "#7a6a5a" }}>
+                {user.email}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="hover:opacity-70"
+                style={{
+                  fontFamily: "'Noto Sans', sans-serif",
+                  fontSize: "11px",
+                  color: "#1a1208",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="hover:opacity-70" style={{ fontFamily: "'Noto Sans', sans-serif", fontSize: "11px", color: "#1a1208", textDecoration: "none" }}>
+                Log In
+              </Link>
+              <Link
+                href="/signup"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "6px 16px",
+                  fontFamily: "'Noto Sans', sans-serif",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  background: "#1a1208",
+                  color: "#fff",
+                  borderRadius: "100px",
+                  textDecoration: "none",
+                }}
+              >
+                Sign Up Free
+              </Link>
+            </>
+          )}
+        </div>
+      </nav>
+    </div>
   );
 }

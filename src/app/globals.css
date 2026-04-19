@@ -1,32 +1,33 @@
 @import "tailwindcss";
 
 /* ====================================================================
-   Paper Design System (typeui.sh / paper)
-   Light, print-inspired, tactile. Black primary + purple secondary.
-   Typography: Roboto (body), Montserrat (display), PT Mono (mono).
-   Spacing scale: 4/8/12/16/24/32 only.
+   Cerise Scholar Design System
+   Warm, editorial, cream-based. Cerise accent + warm ink.
+   Typography: DM Sans (body), DM Serif Display (display), PT Mono (mono).
    ==================================================================== */
 
 :root {
   /* -- Surfaces -- */
-  --paper:        #ffffff;   /* base paper surface */
-  --paper-soft:   #f8f7f4;   /* subtle warm off-white for layered paper */
-  --paper-sunken: #f1efea;   /* deeper sunken surface */
-  --color-bg:     #fefefe;   /* preview homepage page background */
-  --rule:         #e6e3dc;   /* hairline rules on paper */
-  --edge:         #d8d4cb;   /* stronger edges / dividers */
+  --paper:        #fefefe;   /* cream base */
+  --paper-soft:   #fdfcfa;   /* light surface */
+  --paper-sunken: #faf7f0;   /* warm surface */
+  --color-bg:     #fefefe;   /* page background */
+  --rule:         #e0d8d0;   /* hairline rules */
+  --edge:         #d4cdc5;   /* card borders */
 
-  /* -- Ink (text on paper) -- */
-  --ink:          #111827;   /* body text */
-  --ink-muted:    #4b5563;   /* secondary text */
-  --ink-faint:    #8a8576;   /* tertiary / meta text */
+  /* -- Ink (text) -- */
+  --ink:          #1a1208;   /* body text — warm near-black */
+  --ink-muted:    #7a6a5a;   /* secondary text */
+  --ink-faint:    #9a8a7a;   /* tertiary / meta text */
 
-  /* -- Brand tokens (monochrome: all ink, no accent color) -- */
-  --primary:      #111111;   /* near-black: default buttons, headings */
+  /* -- Brand tokens -- */
+  --primary:      #1a1208;   /* warm near-black for buttons, headings */
   --primary-hover:#000000;
-  --secondary:    #111111;   /* same as primary — monochrome brand */
-  --secondary-hover:#000000;
-  --secondary-soft:#f1efea;  /* neutral paper-sunken tint for highlighted backgrounds */
+  --secondary:    #c0392b;   /* cerise red accent */
+  --secondary-hover:#a82d22;
+  --secondary-soft:#faf7f0;  /* warm tint for highlighted backgrounds */
+  --cerise:       #c0392b;   /* brand accent */
+  --gold:         #c8a84b;   /* gold accent for stars, highlights */
 
   /* -- Status -- */
   --success:      #16a34a;
@@ -34,19 +35,19 @@
   --danger:       #dc2626;
 
   /* -- Typography -- */
-  --font-body:    var(--font-body), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: var(--font-display), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-body:    var(--font-body), "DM Sans", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-display), "DM Serif Display", "Montserrat", Georgia, serif;
   --font-mono:    var(--font-mono), "PT Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  /* -- Radius (tactile paper = subtle) -- */
+  /* -- Radius -- */
   --radius-sm: 4px;
   --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-lg: 14px;
 
-  /* -- Elevation (paper shadows — soft, low) -- */
-  --shadow-1: 0 1px 0 rgba(17, 24, 39, 0.04), 0 1px 2px rgba(17, 24, 39, 0.06);
-  --shadow-2: 0 2px 4px rgba(17, 24, 39, 0.06), 0 4px 12px rgba(17, 24, 39, 0.04);
-  --shadow-3: 0 6px 16px rgba(17, 24, 39, 0.08), 0 12px 32px rgba(17, 24, 39, 0.06);
+  /* -- Elevation (soft, warm shadows) -- */
+  --shadow-1: 0 1px 0 rgba(26, 18, 8, 0.04), 0 1px 2px rgba(26, 18, 8, 0.06);
+  --shadow-2: 0 2px 4px rgba(26, 18, 8, 0.06), 0 4px 12px rgba(26, 18, 8, 0.04);
+  --shadow-3: 0 6px 16px rgba(26, 18, 8, 0.08), 0 12px 32px rgba(26, 18, 8, 0.06);
 }
 
 @theme inline {
@@ -62,6 +63,8 @@
   --color-primary:       var(--primary);
   --color-secondary:     var(--secondary);
   --color-secondary-soft:var(--secondary-soft);
+  --color-cerise:        var(--cerise);
+  --color-gold:          var(--gold);
   --color-success:       var(--success);
   --color-warning:       var(--warning);
   --color-danger:        var(--danger);
@@ -134,7 +137,7 @@ input, textarea, select {
 }
 
 .textLayer ::selection {
-  background: rgba(17, 17, 17, 0.18); /* monochrome ink selection */
+  background: rgba(192, 57, 43, 0.18); /* cerise-tinted selection */
 }
 
 .textLayer .endOfContent {
