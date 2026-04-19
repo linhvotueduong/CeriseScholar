@@ -30,10 +30,10 @@ const COLORS = {
   grid: "#e6e3dc",
   axis: "#4b5563",
   label: "#4b5563",
-  marker: "#111111",
+  marker: "#1a1208",
   markerStroke: "#000000",
-  diamond: "#111111",
-  ci: "#111111",
+  diamond: "#1a1208",
+  ci: "#1a1208",
   ref: "#8a8576",
 };
 
@@ -400,7 +400,7 @@ export function DraperyPlot({ effects, method = "random" }: { effects: StudyEffe
         {effects.map(e => (
           <polyline key={e.name} points={curve(e.effect, e.se)} fill="none" stroke={COLORS.marker} opacity={0.35} strokeWidth={1} />
         ))}
-        <polyline points={curve(pooled.effect, pooled.se)} fill="none" stroke="#111111" strokeWidth={2} />
+        <polyline points={curve(pooled.effect, pooled.se)} fill="none" stroke="#1a1208" strokeWidth={2} />
         {ticks(xMin, xMax, 5).map(t => (
           <g key={t}>
             <line x1={xs(t)} y1={padT + plotH} x2={xs(t)} y2={padT + plotH + 4} stroke={COLORS.axis} />

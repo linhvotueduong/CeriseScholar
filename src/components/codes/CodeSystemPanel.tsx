@@ -12,7 +12,7 @@ interface CodeSystemPanelProps {
 
 const PALETTE = [
   "#EF4444", "#F97316", "#EAB308", "#22C55E",
-  "#3B82F6", "#111111", "#EC4899", "#6B7280",
+  "#3B82F6", "#1a1208", "#EC4899", "#6B7280",
   "#14B8A6", "#A855F7",
 ];
 
@@ -53,7 +53,7 @@ export default function CodeSystemPanel({
       <div className="flex items-center justify-end mb-2">
         <button
           onClick={() => setAdding(!adding)}
-          className="text-xs text-[#111111] hover:underline"
+          className="text-xs text-[#1a1208] hover:underline"
         >
           {adding ? "Cancel" : "+ Add Code"}
         </button>
@@ -61,13 +61,13 @@ export default function CodeSystemPanel({
 
       {/* Add new code form */}
       {adding && (
-        <div className="mb-3 p-2 bg-gray-50 rounded-lg space-y-2">
+        <div className="mb-3 p-2 bg-[#fdfcfa] rounded-lg space-y-2">
           <input
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Code name..."
-            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#111111]"
+            className="w-full px-2 py-1 text-sm border border-[#d4cdc5] rounded focus:outline-none focus:ring-1 focus:ring-[#1a1208]"
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             autoFocus
           />
@@ -77,7 +77,7 @@ export default function CodeSystemPanel({
                 key={c}
                 onClick={() => setNewColor(c)}
                 className={`w-5 h-5 rounded-full border ${
-                  newColor === c ? "border-gray-800 scale-110" : "border-gray-200"
+                  newColor === c ? "border-gray-800 scale-110" : "border-[#e0d8d0]"
                 }`}
                 style={{ backgroundColor: c }}
                 aria-label={`Select ${c}`}
@@ -96,14 +96,14 @@ export default function CodeSystemPanel({
                 className="opacity-0 w-5 h-5 cursor-pointer"
               />
               {PALETTE.includes(newColor) && (
-                <span className="absolute text-[10px] text-gray-500 pointer-events-none">+</span>
+                <span className="absolute text-[10px] text-[#7a6a5a] pointer-events-none">+</span>
               )}
             </label>
           </div>
           <button
             onClick={handleAdd}
             disabled={!newName.trim()}
-            className="text-xs px-3 py-1 bg-[#111111] text-white rounded hover:bg-[#000000] disabled:opacity-50"
+            className="text-xs px-3 py-1 bg-[#1a1208] text-white rounded hover:bg-[#000000] disabled:opacity-50"
           >
             Add
           </button>
@@ -113,14 +113,14 @@ export default function CodeSystemPanel({
       {/* Code list */}
       <div className="space-y-1">
         {codes.length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-2">
+          <p className="text-xs text-[#9a8a7a] text-center py-2">
             No codes yet. Codes will be created automatically when you first open a PDF.
           </p>
         ) : (
           codes.map((code) => (
             <div
               key={code.id}
-              className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 group"
+              className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[#fdfcfa] group"
             >
               {/* Color dot — click or pick to recolor */}
               <label
@@ -148,13 +148,13 @@ export default function CodeSystemPanel({
                     if (e.key === "Enter") saveEdit(code.id);
                     if (e.key === "Escape") setEditingId(null);
                   }}
-                  className="flex-1 px-1 py-0 text-sm border border-[#111111] rounded focus:outline-none"
+                  className="flex-1 px-1 py-0 text-sm border border-[#1a1208] rounded focus:outline-none"
                   autoFocus
                 />
               ) : (
                 <span
                   onClick={() => startEdit(code)}
-                  className="flex-1 text-sm text-gray-700 cursor-pointer"
+                  className="flex-1 text-sm text-[#5a4a3a] cursor-pointer"
                   title="Click to rename"
                 >
                   {code.name}
@@ -164,7 +164,7 @@ export default function CodeSystemPanel({
               {/* Delete button */}
               <button
                 onClick={() => onDeleteCode(code.id)}
-                className="text-xs text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-xs text-[#d4cdc5] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Delete code"
               >
                 &times;

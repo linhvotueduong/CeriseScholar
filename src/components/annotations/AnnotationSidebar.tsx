@@ -54,7 +54,7 @@ function EditableNote({
           if (e.key === "Escape") { setDraft(content); setEditing(false); }
         }}
         rows={3}
-        className="w-full text-xs text-gray-600 mt-2 bg-yellow-50 p-2 rounded border border-[#111111] focus:outline-none resize-y"
+        className="w-full text-xs text-[#7a6a5a] mt-2 bg-yellow-50 p-2 rounded border border-[#1a1208] focus:outline-none resize-y"
       />
     );
   }
@@ -62,7 +62,7 @@ function EditableNote({
   return (
     <p
       onClick={(e) => { e.stopPropagation(); setEditing(true); }}
-      className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded cursor-pointer hover:bg-yellow-100 transition-colors"
+      className="text-xs text-[#7a6a5a] mt-2 bg-yellow-50 p-2 rounded cursor-pointer hover:bg-yellow-100 transition-colors"
       title="Click to edit note"
     >
       {content}
@@ -96,8 +96,8 @@ export default function AnnotationSidebar({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Header */}
-      <div className="p-3 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-800">
+      <div className="p-3 border-b border-[#e0d8d0]">
+        <h3 className="text-sm font-semibold text-[#1a1208]">
           Highlights ({highlights.length})
         </h3>
         <div className="flex gap-2 mt-2">
@@ -105,8 +105,8 @@ export default function AnnotationSidebar({
             onClick={() => setFilter("all")}
             className={`text-xs px-2 py-1 rounded ${
               filter === "all"
-                ? "bg-[#111111] text-white"
-                : "bg-gray-100 text-gray-600"
+                ? "bg-[#1a1208] text-white"
+                : "bg-[#faf7f0] text-[#7a6a5a]"
             }`}
           >
             All Pages
@@ -115,8 +115,8 @@ export default function AnnotationSidebar({
             onClick={() => setFilter("page")}
             className={`text-xs px-2 py-1 rounded ${
               filter === "page"
-                ? "bg-[#111111] text-white"
-                : "bg-gray-100 text-gray-600"
+                ? "bg-[#1a1208] text-white"
+                : "bg-[#faf7f0] text-[#7a6a5a]"
             }`}
           >
             This Page
@@ -127,7 +127,7 @@ export default function AnnotationSidebar({
       {/* Highlight list */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
-          <p className="text-sm text-gray-400 p-4 text-center">
+          <p className="text-sm text-[#9a8a7a] p-4 text-center">
             {filter === "page"
               ? "No highlights on this page"
               : "No highlights yet. Enable highlight mode and select text."}
@@ -141,7 +141,7 @@ export default function AnnotationSidebar({
               return (
                 <div
                   key={highlight.id}
-                  className="p-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="p-3 hover:bg-[#fdfcfa] transition-colors cursor-pointer"
                   onClick={() => setDetailHighlight(highlight)}
                   title="Click to view full highlight"
                 >
@@ -150,14 +150,14 @@ export default function AnnotationSidebar({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={(e) => { e.stopPropagation(); onGoToPage(highlight.page_number); }}
-                        className="text-xs text-[#111111] font-medium hover:underline"
+                        className="text-xs text-[#1a1208] font-medium hover:underline"
                       >
                         Page {highlight.page_number}
                       </button>
                       {onReadHighlight && (
                         <button
                           onClick={(e) => { e.stopPropagation(); onReadHighlight(highlight.highlighted_text); }}
-                          className="text-xs text-gray-400 hover:text-[#111111]"
+                          className="text-xs text-[#9a8a7a] hover:text-[#1a1208]"
                           title="Read this highlight aloud"
                         >
                           &#9654;
@@ -166,7 +166,7 @@ export default function AnnotationSidebar({
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); onDeleteHighlight(highlight.id); }}
-                      className="text-xs text-gray-400 hover:text-red-500"
+                      className="text-xs text-[#9a8a7a] hover:text-red-500"
                       title="Delete highlight"
                     >
                       &times;
@@ -174,7 +174,7 @@ export default function AnnotationSidebar({
                   </div>
 
                   {/* Highlighted text preview */}
-                  <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed">
+                  <p className="text-sm text-[#5a4a3a] line-clamp-3 leading-relaxed">
                     &ldquo;{highlight.highlighted_text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim()}&rdquo;
                   </p>
 
@@ -192,13 +192,13 @@ export default function AnnotationSidebar({
                         e.stopPropagation();
                         onAddNote(highlight.id, highlight.page_number);
                       }}
-                      className="text-xs text-gray-400 hover:text-[#111111] mt-2"
+                      className="text-xs text-[#9a8a7a] hover:text-[#1a1208] mt-2"
                     >
                       + Add note
                     </button>
                   )}
 
-                  <p className="text-[10px] text-gray-300 mt-1">
+                  <p className="text-[10px] text-[#d4cdc5] mt-1">
                     {new Date(highlight.created_at).toLocaleString()}
                   </p>
                 </div>

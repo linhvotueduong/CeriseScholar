@@ -37,22 +37,22 @@ export default function HighlightDetailModal({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-[#e0d8d0]">
           <div className="flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: color }}
             />
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-[#7a6a5a]">
               Page {pageNumber}
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-[#9a8a7a]">
               {new Date(createdAt).toLocaleString()}
             </span>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl"
+            className="text-[#9a8a7a] hover:text-[#7a6a5a] text-xl"
           >
             &times;
           </button>
@@ -62,11 +62,11 @@ export default function HighlightDetailModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {/* Highlighted text — full view */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+            <label className="text-xs font-semibold text-[#7a6a5a] uppercase tracking-wider block mb-2">
               Highlighted Text
             </label>
             <div
-              className="p-4 rounded-lg text-gray-800 leading-relaxed"
+              className="p-4 rounded-lg text-[#1a1208] leading-relaxed"
               style={{ backgroundColor: color + "30" }}
             >
               <p className="text-base leading-relaxed">{highlightedText.replace(/\n+/g, " ").replace(/\s+/g, " ").trim()}</p>
@@ -76,7 +76,7 @@ export default function HighlightDetailModal({
                 onReHighlight();
                 onClose();
               }}
-              className="text-xs text-[#111111] hover:underline mt-2"
+              className="text-xs text-[#1a1208] hover:underline mt-2"
             >
               Re-highlight (select new text to replace)
             </button>
@@ -85,13 +85,13 @@ export default function HighlightDetailModal({
           {/* Note — full view, editable */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-[#7a6a5a] uppercase tracking-wider">
                 My Notes
               </label>
               {!editingNote && (
                 <button
                   onClick={() => setEditingNote(true)}
-                  className="text-xs text-[#111111] hover:underline"
+                  className="text-xs text-[#1a1208] hover:underline"
                 >
                   Edit
                 </button>
@@ -105,19 +105,19 @@ export default function HighlightDetailModal({
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#111111] focus:border-transparent resize-y text-base"
+                  className="w-full px-3 py-2 border border-[#d4cdc5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a1208] focus:border-transparent resize-y text-base"
                   placeholder="Write your notes..."
                 />
                 <div className="flex justify-end gap-2 mt-2">
                   <button
                     onClick={() => { setDraft(noteContent); setEditingNote(false); }}
-                    className="text-xs text-gray-500 hover:text-gray-700"
+                    className="text-xs text-[#7a6a5a] hover:text-[#5a4a3a]"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={saveNote}
-                    className="text-xs px-3 py-1 bg-[#111111] text-white rounded hover:bg-[#000000]"
+                    className="text-xs px-3 py-1 bg-[#1a1208] text-white rounded hover:bg-[#000000]"
                   >
                     Save
                   </button>
@@ -126,9 +126,9 @@ export default function HighlightDetailModal({
             ) : (
               <div className="p-4 bg-yellow-50 rounded-lg min-h-[60px]">
                 {noteContent ? (
-                  <p className="text-base text-gray-700 whitespace-pre-wrap">{noteContent}</p>
+                  <p className="text-base text-[#5a4a3a] whitespace-pre-wrap">{noteContent}</p>
                 ) : (
-                  <p className="text-sm text-gray-400 italic">
+                  <p className="text-sm text-[#9a8a7a] italic">
                     No note yet. Click &quot;Edit&quot; to add one.
                   </p>
                 )}
@@ -138,10 +138,10 @@ export default function HighlightDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 flex justify-end">
+        <div className="p-4 border-t border-[#e0d8d0] flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+            className="px-4 py-2 text-sm bg-[#faf7f0] text-[#5a4a3a] rounded-lg hover:bg-gray-200"
           >
             Close
           </button>

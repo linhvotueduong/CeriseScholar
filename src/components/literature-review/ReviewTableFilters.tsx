@@ -29,11 +29,11 @@ export default function ReviewTableFilters({
     <div className="flex items-center gap-4 flex-wrap">
       {/* Filter by source PDF */}
       <div className="flex items-center gap-2">
-        <label className="text-sm text-gray-500">Source:</label>
+        <label className="text-sm text-[#7a6a5a]">Source:</label>
         <select
           value={selectedSource}
           onChange={(e) => onSourceChange(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#111111]"
+          className="text-sm border border-[#d4cdc5] rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1a1208]"
         >
           <option value="">All PDFs</option>
           {sources.map((source) => (
@@ -44,11 +44,11 @@ export default function ReviewTableFilters({
 
       {/* Filter by section/code */}
       <div className="flex items-center gap-2">
-        <label className="text-sm text-gray-500">Section:</label>
+        <label className="text-sm text-[#7a6a5a]">Section:</label>
         <select
           value={selectedSection}
           onChange={(e) => onSectionChange(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#111111]"
+          className="text-sm border border-[#d4cdc5] rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1a1208]"
         >
           <option value="">All Sections</option>
           {sections.map((section) => (
@@ -59,17 +59,17 @@ export default function ReviewTableFilters({
 
       {/* Search */}
       <div className="flex items-center gap-2">
-        <label className="text-sm text-gray-500">Search:</label>
+        <label className="text-sm text-[#7a6a5a]">Search:</label>
         <input
           type="text"
           value={searchText}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Filter by text, notes, synthesis..."
-          className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-64 focus:outline-none focus:ring-1 focus:ring-[#111111]"
+          className="text-sm border border-[#d4cdc5] rounded-lg px-3 py-1.5 w-64 focus:outline-none focus:ring-1 focus:ring-[#1a1208]"
         />
       </div>
 
-      <span className="text-xs text-gray-400 ml-auto">
+      <span className="text-xs text-[#9a8a7a] ml-auto">
         {filteredCount === totalCount
           ? `${totalCount} entries`
           : `${filteredCount} of ${totalCount} entries`}

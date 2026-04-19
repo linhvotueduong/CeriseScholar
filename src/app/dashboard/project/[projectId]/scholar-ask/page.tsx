@@ -22,7 +22,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
       return (
         <div className="p-6 text-center">
           <p className="text-red-500 font-medium">Something went wrong.</p>
-          <button onClick={() => this.setState({ hasError: false })} className="mt-2 text-sm text-[#111111] hover:underline">Try again</button>
+          <button onClick={() => this.setState({ hasError: false })} className="mt-2 text-sm text-[#1a1208] hover:underline">Try again</button>
         </div>
       );
     }
@@ -106,7 +106,7 @@ const ResponseContent = React.memo(function ResponseContent({
             const btn = document.createElement("button");
             btn.textContent = `[${num}]`;
             btn.setAttribute("data-citenum", String(num));
-            btn.className = "inline-flex items-center justify-center bg-[#111111] text-white text-[10px] rounded px-1 py-0.5 mx-0.5 hover:bg-[#000000] transition-colors font-mono cursor-pointer align-baseline";
+            btn.className = "inline-flex items-center justify-center bg-[#1a1208] text-white text-[10px] rounded px-1 py-0.5 mx-0.5 hover:bg-[#000000] transition-colors font-mono cursor-pointer align-baseline";
             frag.appendChild(btn);
           } else {
             frag.appendChild(document.createTextNode(m[0]));
@@ -139,29 +139,29 @@ const ResponseContent = React.memo(function ResponseContent({
   }, []);
 
   return (
-    <div ref={ref} className="text-sm text-gray-800 leading-relaxed">
+    <div ref={ref} className="text-sm text-[#1a1208] leading-relaxed">
       <Markdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h2: ({ children }) => <h2 className="text-lg font-bold text-gray-900 mt-6 mb-2">{children}</h2>,
-          h3: ({ children }) => <h3 className="text-base font-semibold text-gray-900 mt-4 mb-2">{children}</h3>,
+          h2: ({ children }) => <h2 className="text-lg font-bold text-[#1a1208] mt-6 mb-2">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-base font-semibold text-[#1a1208] mt-4 mb-2">{children}</h3>,
           p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
-          strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+          strong: ({ children }) => <strong className="font-semibold text-[#1a1208]">{children}</strong>,
           em: ({ children }) => <em>{children}</em>,
           ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1.5">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1.5">{children}</ol>,
-          li: ({ children }) => <li className="text-gray-700">{children}</li>,
+          li: ({ children }) => <li className="text-[#5a4a3a]">{children}</li>,
           table: ({ children }) => (
-            <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="overflow-x-auto my-4 rounded-lg border border-[#e0d8d0] shadow-sm">
               <table className="w-full text-xs border-collapse">{children}</table>
             </div>
           ),
           thead: ({ children }) => <thead className="bg-gray-100">{children}</thead>,
-          th: ({ children }) => <th className="px-4 py-2.5 text-left font-semibold text-gray-800 border-b border-gray-200">{children}</th>,
+          th: ({ children }) => <th className="px-4 py-2.5 text-left font-semibold text-[#1a1208] border-b border-[#e0d8d0]">{children}</th>,
           tbody: ({ children }) => <tbody className="divide-y divide-gray-100">{children}</tbody>,
           tr: ({ children }) => <tr className="hover:bg-gray-50">{children}</tr>,
-          td: ({ children }) => <td className="px-4 py-2.5 text-gray-700">{children}</td>,
-          a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#111111] hover:underline">{children}</a>,
+          td: ({ children }) => <td className="px-4 py-2.5 text-[#5a4a3a]">{children}</td>,
+          a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#1a1208] hover:underline">{children}</a>,
         }}
       >
         {content}
@@ -375,15 +375,15 @@ export default function ScholarAskPage() {
       <div className="flex h-[calc(100vh-57px-64px)] -mx-8 -my-8">
         {/* Left Sidebar */}
         {sidebarOpen && (
-          <div className="w-52 bg-gray-50 border-r border-gray-200 flex flex-col shrink-0">
-            <div className="p-3 border-b border-gray-200">
-              <button onClick={newConversation} className="w-full flex items-center gap-2 px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">+ New research</button>
+          <div className="w-52 bg-gray-50 border-r border-[#e0d8d0] flex flex-col shrink-0">
+            <div className="p-3 border-b border-[#e0d8d0]">
+              <button onClick={newConversation} className="w-full flex items-center gap-2 px-3 py-2 text-xs bg-white border border-[#e0d8d0] rounded-lg hover:bg-gray-50 text-[#5a4a3a] font-medium">+ New research</button>
             </div>
             <div className="flex-1 overflow-y-auto py-1">
               {conversations.map((conv) => (
-                <div key={conv.id} className={`flex items-center group ${activeConvId === conv.id ? "bg-white border-r-2 border-[#111111]" : "hover:bg-white"}`}>
+                <div key={conv.id} className={`flex items-center group ${activeConvId === conv.id ? "bg-white border-r-2 border-[#1a1208]" : "hover:bg-white"}`}>
                   <button onClick={() => { setActiveConvId(conv.id); setShowRefs(false); setSelectedPaper(null); }}
-                    className={`flex-1 text-left px-3 py-2.5 text-xs transition-colors truncate ${activeConvId === conv.id ? "text-gray-900 font-medium" : "text-gray-600"}`}
+                    className={`flex-1 text-left px-3 py-2.5 text-xs transition-colors truncate ${activeConvId === conv.id ? "text-[#1a1208] font-medium" : "text-[#7a6a5a]"}`}
                   >{conv.title}</button>
                   <button
                     onClick={(e) => {
@@ -398,7 +398,7 @@ export default function ScholarAskPage() {
                   </button>
                 </div>
               ))}
-              {conversations.length === 0 && <p className="text-[10px] text-gray-400 px-3 py-4 text-center">No conversations yet</p>}
+              {conversations.length === 0 && <p className="text-[10px] text-[#9a8a7a] px-3 py-4 text-center">No conversations yet</p>}
             </div>
           </div>
         )}
@@ -406,13 +406,13 @@ export default function ScholarAskPage() {
         {/* Main content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Top bar */}
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200 bg-white shrink-0">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-400 hover:text-gray-600 p-1">
+          <div className="flex items-center gap-2 px-4 py-2 border-b border-[#e0d8d0] bg-white shrink-0">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#9a8a7a] hover:text-[#7a6a5a] p-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
-            {activeConv && <span className="text-sm text-gray-700 font-medium truncate">{activeConv.title}</span>}
+            {activeConv && <span className="text-sm text-[#5a4a3a] font-medium truncate">{activeConv.title}</span>}
             <div className="ml-auto">
-              <Link href={`/dashboard/project/${projectId}`} className="text-xs text-gray-500 hover:text-[#111111]">&larr; Workspace</Link>
+              <Link href={`/dashboard/project/${projectId}`} className="text-xs text-[#7a6a5a] hover:text-[#1a1208]">&larr; Workspace</Link>
             </div>
           </div>
 
@@ -420,26 +420,26 @@ export default function ScholarAskPage() {
           <div className="flex-1 overflow-y-auto">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full px-6">
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">Discover <em>deeper</em> insights</h1>
-                <p className="text-gray-500 mb-10">Powered by OpenAlex and AI synthesis</p>
+                <h1 className="text-4xl font-bold text-[#1a1208] mb-2">Discover <em>deeper</em> insights</h1>
+                <p className="text-[#7a6a5a] mb-10">Powered by OpenAlex and AI synthesis</p>
                 <div className="w-full max-w-2xl">
                   <div className="bg-white border border-gray-300 rounded-2xl p-4 shadow-sm">
-                    <textarea ref={inputRef} value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="What would you like to learn more about?" rows={2} className="w-full resize-none text-sm text-gray-800 placeholder-gray-400 focus:outline-none" />
+                    <textarea ref={inputRef} value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="What would you like to learn more about?" rows={2} className="w-full resize-none text-sm text-[#1a1208] placeholder-gray-400 focus:outline-none" />
                     <div className="flex items-center justify-between mt-2">
                       <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <div onClick={() => setDeepResearch(!deepResearch)} className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${deepResearch ? "bg-[#111111]" : "bg-gray-300"}`}>
+                        <div onClick={() => setDeepResearch(!deepResearch)} className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${deepResearch ? "bg-[#1a1208]" : "bg-gray-300"}`}>
                           <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow ${deepResearch ? "translate-x-4" : "translate-x-0.5"}`} />
                         </div>
-                        <span className="text-xs text-gray-600">Deep research</span>
+                        <span className="text-xs text-[#7a6a5a]">Deep research</span>
                       </label>
-                      <button onClick={() => handleSubmit()} disabled={!query.trim()} className="w-8 h-8 bg-[#111111] text-white rounded-lg flex items-center justify-center hover:bg-[#000000] disabled:opacity-30 transition-colors">
+                      <button onClick={() => handleSubmit()} disabled={!query.trim()} className="w-8 h-8 bg-[#1a1208] text-white rounded-lg flex items-center justify-center hover:bg-[#000000] disabled:opacity-30 transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                       </button>
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-6 mt-6">
                     {["Explore topics", "Find experts", "Literature review"].map((label) => (
-                      <button key={label} onClick={() => { setQuery({ "Explore topics": "What are the main research topics in ", "Find experts": "Who are the leading researchers studying ", "Literature review": "Provide a literature review on " }[label] || ""); inputRef.current?.focus(); }} className="text-xs text-gray-500 hover:text-[#111111] transition-colors">{label}</button>
+                      <button key={label} onClick={() => { setQuery({ "Explore topics": "What are the main research topics in ", "Find experts": "Who are the leading researchers studying ", "Literature review": "Provide a literature review on " }[label] || ""); inputRef.current?.focus(); }} className="text-xs text-[#7a6a5a] hover:text-[#1a1208] transition-colors">{label}</button>
                     ))}
                   </div>
                 </div>
@@ -451,29 +451,29 @@ export default function ScholarAskPage() {
                     {msg.role === "user" ? (
                       <div className="flex justify-end">
                         <div className="bg-gray-100 rounded-2xl px-4 py-3 max-w-lg">
-                          <p className="text-sm text-gray-800">{msg.content}</p>
+                          <p className="text-sm text-[#1a1208]">{msg.content}</p>
                         </div>
                       </div>
                     ) : msg.loading ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-[#111111] rounded-full animate-pulse" />
-                          <span className="text-sm text-gray-700 font-medium">Searching papers and creating a response...</span>
+                          <div className="w-2 h-2 bg-[#1a1208] rounded-full animate-pulse" />
+                          <span className="text-sm text-[#5a4a3a] font-medium">Searching papers and creating a response...</span>
                         </div>
                         <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[#111111]" />
+                          <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[#1a1208]" />
                         </div>
-                        <p className="text-center text-sm text-gray-400">Content is loading...</p>
+                        <p className="text-center text-sm text-[#9a8a7a]">Content is loading...</p>
                       </div>
                     ) : msg.error ? (
                       <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                         <p className="text-sm text-red-600">{msg.content}</p>
-                        <button onClick={() => handleSubmit(messages[i - 1]?.content)} className="mt-2 text-xs text-[#111111] hover:underline">Retry</button>
+                        <button onClick={() => handleSubmit(messages[i - 1]?.content)} className="mt-2 text-xs text-[#1a1208] hover:underline">Retry</button>
                       </div>
                     ) : (
                       <div className="space-y-4">
                         {(msg.paperCount || msg.totalFound) && (
-                          <p className="text-xs text-gray-500">Analyzed {msg.paperCount} papers &middot; {msg.totalFound} sources found</p>
+                          <p className="text-xs text-[#7a6a5a]">Analyzed {msg.paperCount} papers &middot; {msg.totalFound} sources found</p>
                         )}
 
                         {/* AI response — memoized, won't re-render when panel state changes */}
@@ -485,23 +485,23 @@ export default function ScholarAskPage() {
 
                         {/* References */}
                         {msg.references && msg.references.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-gray-200">
-                            <button onClick={() => setShowRefs(!showRefs)} className="text-sm text-[#111111] hover:underline font-medium">
+                          <div className="mt-4 pt-4 border-t border-[#e0d8d0]">
+                            <button onClick={() => setShowRefs(!showRefs)} className="text-sm text-[#1a1208] hover:underline font-medium">
                               {showRefs ? "Hide" : "Show all"} {msg.references.length} references
                             </button>
                             {showRefs && (
                               <div className="mt-3 space-y-2">
                                 {msg.references.map((r) => (
                                   <div key={r.num} className="flex items-start gap-2 text-xs">
-                                    <button onClick={() => openPaperPanel(r)} className="bg-[#111111] text-white rounded px-1.5 py-0.5 font-mono shrink-0 text-[10px] min-w-[20px] text-center hover:bg-[#000000] cursor-pointer">{r.num}</button>
+                                    <button onClick={() => openPaperPanel(r)} className="bg-[#1a1208] text-white rounded px-1.5 py-0.5 font-mono shrink-0 text-[10px] min-w-[20px] text-center hover:bg-[#000000] cursor-pointer">{r.num}</button>
                                     <div className="flex-1">
-                                      <button onClick={() => openPaperPanel(r)} className="text-left text-gray-700 hover:text-[#111111] leading-relaxed">
+                                      <button onClick={() => openPaperPanel(r)} className="text-left text-[#5a4a3a] hover:text-[#1a1208] leading-relaxed">
                                         {r.authors.slice(0, 2).join(", ")}{r.authors.length > 2 ? " et al." : ""} ({r.year || "n.d."}). {r.title}. {r.journal}
                                       </button>
                                       <div className="flex items-center gap-2 mt-0.5">
-                                        <a href={r.url} target="_blank" className="text-[#111111] hover:underline font-medium">Read paper &#x2197;</a>
+                                        <a href={r.url} target="_blank" className="text-[#1a1208] hover:underline font-medium">Read paper &#x2197;</a>
                                         {r.isOpenAccess && <span className="text-[9px] px-1 py-0.5 bg-green-100 text-green-700 rounded">Open Access</span>}
-                                        <span className="text-gray-400">{r.citationCount} cited</span>
+                                        <span className="text-[#9a8a7a]">{r.citationCount} cited</span>
                                       </div>
                                     </div>
                                   </div>
@@ -514,14 +514,14 @@ export default function ScholarAskPage() {
                         {/* Follow-ups */}
                         {extractFollowUps(msg.content).length > 0 && (
                           <div className="mt-4 space-y-2">
-                            <p className="text-xs font-semibold text-gray-600">Follow-up Suggestions</p>
+                            <p className="text-xs font-semibold text-[#7a6a5a]">Follow-up Suggestions</p>
                             {extractFollowUps(msg.content).map((fu, j) => (
-                              <button key={j} onClick={() => handleSubmit(fu)} disabled={isLoading} className="block w-full text-left text-sm text-[#111111] hover:underline px-3 py-1.5 bg-pink-50 rounded-lg disabled:opacity-50">&rarr; {fu}</button>
+                              <button key={j} onClick={() => handleSubmit(fu)} disabled={isLoading} className="block w-full text-left text-sm text-[#1a1208] hover:underline px-3 py-1.5 bg-pink-50 rounded-lg disabled:opacity-50">&rarr; {fu}</button>
                             ))}
                           </div>
                         )}
 
-                        <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[10px] text-gray-400 hover:text-gray-600">Copy response</button>
+                        <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[10px] text-[#9a8a7a] hover:text-[#7a6a5a]">Copy response</button>
                       </div>
                     )}
                   </div>
@@ -533,15 +533,15 @@ export default function ScholarAskPage() {
 
           {/* Bottom input */}
           {messages.length > 0 && (
-            <div className="border-t border-gray-200 bg-white px-6 py-3 shrink-0">
+            <div className="border-t border-[#e0d8d0] bg-white px-6 py-3 shrink-0">
               <div className="max-w-3xl mx-auto">
                 <div className="bg-white border border-gray-300 rounded-2xl px-4 py-3 flex items-end gap-2">
-                  <textarea value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="Ask a follow-up question" rows={1} disabled={isLoading} className="flex-1 resize-none text-sm text-gray-800 placeholder-gray-400 focus:outline-none disabled:opacity-50" />
-                  <button onClick={() => handleSubmit()} disabled={!query.trim() || isLoading} className="w-8 h-8 bg-[#111111] text-white rounded-lg flex items-center justify-center hover:bg-[#000000] disabled:opacity-30 transition-colors shrink-0">
+                  <textarea value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="Ask a follow-up question" rows={1} disabled={isLoading} className="flex-1 resize-none text-sm text-[#1a1208] placeholder-gray-400 focus:outline-none disabled:opacity-50" />
+                  <button onClick={() => handleSubmit()} disabled={!query.trim() || isLoading} className="w-8 h-8 bg-[#1a1208] text-white rounded-lg flex items-center justify-center hover:bg-[#000000] disabled:opacity-30 transition-colors shrink-0">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                   </button>
                 </div>
-                <p className="text-[10px] text-gray-400 text-center mt-1.5">ScholarAsk is powered by OpenAlex and AI. Responses may vary in quality.</p>
+                <p className="text-[10px] text-[#9a8a7a] text-center mt-1.5">ScholarAsk is powered by OpenAlex and AI. Responses may vary in quality.</p>
               </div>
             </div>
           )}
@@ -549,41 +549,41 @@ export default function ScholarAskPage() {
 
         {/* RIGHT PANEL — completely independent, doesn't affect ResponseContent */}
         {selectedPaper && (
-          <div className="w-80 bg-white border-l border-gray-200 flex flex-col shrink-0 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between shrink-0">
-              <h3 className="text-xs font-semibold text-gray-800">Source [{selectedPaper.num}]</h3>
-              <button onClick={() => setSelectedPaper(null)} className="text-xs text-gray-400 hover:text-gray-600">Close</button>
+          <div className="w-80 bg-white border-l border-[#e0d8d0] flex flex-col shrink-0 overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#e0d8d0] flex items-center justify-between shrink-0">
+              <h3 className="text-xs font-semibold text-[#1a1208]">Source [{selectedPaper.num}]</h3>
+              <button onClick={() => setSelectedPaper(null)} className="text-xs text-[#9a8a7a] hover:text-[#7a6a5a]">Close</button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 leading-snug">{selectedPaper.title}</h4>
-                <p className="text-xs text-gray-500 mt-1">{selectedPaper.authors.join(", ")} ({selectedPaper.year || "n.d."})</p>
-                {selectedPaper.journal && <p className="text-xs text-gray-400 mt-0.5">{selectedPaper.journal}</p>}
+                <h4 className="text-sm font-semibold text-[#1a1208] leading-snug">{selectedPaper.title}</h4>
+                <p className="text-xs text-[#7a6a5a] mt-1">{selectedPaper.authors.join(", ")} ({selectedPaper.year || "n.d."})</p>
+                {selectedPaper.journal && <p className="text-xs text-[#9a8a7a] mt-0.5">{selectedPaper.journal}</p>}
                 <div className="flex items-center gap-2 mt-2">
-                  <a href={selectedPaper.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#111111] hover:underline font-medium">Read full paper &#x2197;</a>
+                  <a href={selectedPaper.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#1a1208] hover:underline font-medium">Read full paper &#x2197;</a>
                   {selectedPaper.isOpenAccess && <span className="text-[9px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">Open Access</span>}
-                  <span className="text-[9px] text-gray-400">{selectedPaper.citationCount} citations</span>
+                  <span className="text-[9px] text-[#9a8a7a]">{selectedPaper.citationCount} citations</span>
                 </div>
               </div>
               <div>
-                <h5 className="text-xs font-semibold text-gray-700 mb-1">Abstract</h5>
+                <h5 className="text-xs font-semibold text-[#5a4a3a] mb-1">Abstract</h5>
                 {selectedPaper.abstract ? (
-                  <p className="text-xs text-gray-600 leading-relaxed">{selectedPaper.abstract}</p>
+                  <p className="text-xs text-[#7a6a5a] leading-relaxed">{selectedPaper.abstract}</p>
                 ) : (
-                  <p className="text-xs text-gray-400 italic">No abstract available.</p>
+                  <p className="text-xs text-[#9a8a7a] italic">No abstract available.</p>
                 )}
               </div>
               <div>
-                <h5 className="text-xs font-semibold text-gray-700 mb-1">How this paper supports the answer</h5>
+                <h5 className="text-xs font-semibold text-[#5a4a3a] mb-1">How this paper supports the answer</h5>
                 {analyzingPaper === selectedPaper.num ? (
-                  <div className="flex items-center gap-2 text-xs text-gray-400 py-2">
-                    <div className="animate-spin rounded-full h-3 w-3 border border-gray-300 border-t-[#111111]" />
+                  <div className="flex items-center gap-2 text-xs text-[#9a8a7a] py-2">
+                    <div className="animate-spin rounded-full h-3 w-3 border border-gray-300 border-t-[#1a1208]" />
                     Analyzing...
                   </div>
                 ) : paperAnalysis[selectedPaper.num] ? (
-                  <p className="text-xs text-gray-600 leading-relaxed bg-purple-50 border border-purple-200 rounded-lg p-3">{paperAnalysis[selectedPaper.num]}</p>
+                  <p className="text-xs text-[#7a6a5a] leading-relaxed bg-purple-50 border border-purple-200 rounded-lg p-3">{paperAnalysis[selectedPaper.num]}</p>
                 ) : (
-                  <p className="text-xs text-gray-400 italic">Analysis will generate automatically...</p>
+                  <p className="text-xs text-[#9a8a7a] italic">Analysis will generate automatically...</p>
                 )}
               </div>
             </div>

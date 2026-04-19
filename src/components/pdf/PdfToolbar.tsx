@@ -49,24 +49,24 @@ export default function PdfToolbar({
   }
 
   return (
-    <div className="flex items-center bg-white border-b border-gray-200 px-2 py-1.5 sticky top-0 z-10 overflow-x-auto whitespace-nowrap gap-1.5 min-h-[40px] shrink-0">
+    <div className="flex items-center bg-white border-b border-[#e0d8d0] px-2 py-1.5 sticky top-0 z-10 overflow-x-auto whitespace-nowrap gap-1.5 min-h-[40px] shrink-0">
       {/* Page navigation */}
       <button
         onClick={onPrevPage}
         disabled={currentPage <= 1}
-        className="px-1.5 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-40 shrink-0"
+        className="px-1.5 py-1 text-xs bg-[#faf7f0] rounded hover:bg-gray-200 disabled:opacity-40 shrink-0"
       >
         Prev
       </button>
 
-      <span className="text-xs text-gray-600 shrink-0">
+      <span className="text-xs text-[#7a6a5a] shrink-0">
         {currentPage}/{totalPages}
       </span>
 
       <button
         onClick={onNextPage}
         disabled={currentPage >= totalPages}
-        className="px-1.5 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-40 shrink-0"
+        className="px-1.5 py-1 text-xs bg-[#faf7f0] rounded hover:bg-gray-200 disabled:opacity-40 shrink-0"
       >
         Next
       </button>
@@ -79,11 +79,11 @@ export default function PdfToolbar({
           value={pageInput}
           onChange={(e) => setPageInput(e.target.value)}
           placeholder="Go to..."
-          className="w-14 px-1.5 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#111111]"
+          className="w-14 px-1.5 py-1 text-xs border border-[#d4cdc5] rounded focus:outline-none focus:ring-1 focus:ring-[#1a1208]"
         />
         <button
           type="submit"
-          className="px-1.5 py-1 text-xs bg-[#111111] text-white rounded hover:bg-[#000000] shrink-0"
+          className="px-1.5 py-1 text-xs bg-[#1a1208] text-white rounded hover:bg-[#000000] shrink-0"
         >
           Go
         </button>
@@ -96,8 +96,8 @@ export default function PdfToolbar({
         onClick={onToggleHighlightMode}
         className={`px-2 py-1 text-xs rounded font-medium transition-colors shrink-0 ${
           highlightMode
-            ? "bg-[#111111] text-white"
-            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            ? "bg-[#1a1208] text-white"
+            : "bg-[#faf7f0] text-[#7a6a5a] hover:bg-gray-200"
         }`}
       >
         {highlightMode ? "Highlighting ON" : "Highlight"}
@@ -109,14 +109,14 @@ export default function PdfToolbar({
       <button
         onClick={onReadPage}
         disabled={isSpeaking}
-        className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-40 shrink-0"
+        className="px-2 py-1 text-xs bg-[#faf7f0] text-[#7a6a5a] rounded hover:bg-gray-200 disabled:opacity-40 shrink-0"
       >
         Read Page
       </button>
       <button
         onClick={onReadSelection}
         disabled={isSpeaking}
-        className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 disabled:opacity-40 shrink-0"
+        className="px-2 py-1 text-xs bg-[#faf7f0] text-[#7a6a5a] rounded hover:bg-gray-200 disabled:opacity-40 shrink-0"
       >
         Read Selection
       </button>
@@ -129,7 +129,7 @@ export default function PdfToolbar({
           onClick={onToggleChat}
           className={`px-2 py-1 text-xs rounded font-medium transition-colors shrink-0 ${
             chatOpen
-              ? "bg-[#111111] text-white"
+              ? "bg-[#1a1208] text-white"
               : "bg-purple-100 text-purple-700 hover:bg-purple-200"
           }`}
         >
@@ -142,16 +142,16 @@ export default function PdfToolbar({
       {/* Zoom */}
       <button
         onClick={onZoomOut}
-        className="px-1.5 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 shrink-0"
+        className="px-1.5 py-1 text-xs bg-[#faf7f0] rounded hover:bg-gray-200 shrink-0"
       >
         -
       </button>
-      <span className="text-xs text-gray-600 w-10 text-center shrink-0">
+      <span className="text-xs text-[#7a6a5a] w-10 text-center shrink-0">
         {Math.round(zoom * 100)}%
       </span>
       <button
         onClick={onZoomIn}
-        className="px-1.5 py-1 text-xs bg-gray-100 rounded hover:bg-gray-200 shrink-0"
+        className="px-1.5 py-1 text-xs bg-[#faf7f0] rounded hover:bg-gray-200 shrink-0"
       >
         +
       </button>

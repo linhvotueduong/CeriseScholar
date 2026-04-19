@@ -39,7 +39,7 @@ export default function ExportButton({ entries }: ExportButtonProps) {
     <button
       onClick={handleExport}
       disabled={entries.length === 0}
-      className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      className="px-4 py-2 text-sm bg-white border border-[#d4cdc5] rounded-lg hover:bg-[#fdfcfa] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
     >
       Export CSV
     </button>

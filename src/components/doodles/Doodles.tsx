@@ -29,10 +29,10 @@ export function DoodleScientist({ className = "", size = 120 }: { className?: st
       <path d="M78 60 L95 70 L90 78" stroke="black" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       {/* Beaker in hand */}
       <path d="M22 78 L20 95 L35 95 L33 78 Z" stroke="black" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M23 88 Q27 85 32 88" stroke="#111111" strokeWidth="2" fill="none" />
+      <path d="M23 88 Q27 85 32 88" stroke="#1a1208" strokeWidth="2" fill="none" />
       {/* Pocket */}
       <rect x="50" y="70" width="8" height="10" rx="1" stroke="black" strokeWidth="1.5" fill="none" />
-      <line x1="53" y1="70" x2="53" y2="75" stroke="#111111" strokeWidth="1.5" />
+      <line x1="53" y1="70" x2="53" y2="75" stroke="#1a1208" strokeWidth="1.5" />
     </svg>
   );
 }
@@ -46,7 +46,7 @@ export function DoodleBook({ className = "", size = 80 }: { className?: string; 
       <line x1="25" y1="36" x2="50" y2="36" stroke="black" strokeWidth="2" strokeLinecap="round" />
       <line x1="25" y1="44" x2="45" y2="44" stroke="black" strokeWidth="2" strokeLinecap="round" />
       {/* Bookmark */}
-      <path d="M55 15 L55 30 L58 27 L61 30 L61 15" fill="#111111" stroke="#111111" strokeWidth="1" />
+      <path d="M55 15 L55 30 L58 27 L61 30 L61 15" fill="#1a1208" stroke="#1a1208" strokeWidth="1" />
     </svg>
   );
 }
@@ -69,11 +69,11 @@ export function DoodleLightbulb({ className = "", size = 60 }: { className?: str
       <line x1="25" y1="50" x2="35" y2="50" stroke="black" strokeWidth="2" strokeLinecap="round" />
       <line x1="26" y1="53" x2="34" y2="53" stroke="black" strokeWidth="2" strokeLinecap="round" />
       {/* Rays */}
-      <line x1="30" y1="2" x2="30" y2="0" stroke="#111111" strokeWidth="2" strokeLinecap="round" />
-      <line x1="48" y1="10" x2="50" y2="8" stroke="#111111" strokeWidth="2" strokeLinecap="round" />
-      <line x1="12" y1="10" x2="10" y2="8" stroke="#111111" strokeWidth="2" strokeLinecap="round" />
-      <line x1="52" y1="25" x2="55" y2="25" stroke="#111111" strokeWidth="2" strokeLinecap="round" />
-      <line x1="8" y1="25" x2="5" y2="25" stroke="#111111" strokeWidth="2" strokeLinecap="round" />
+      <line x1="30" y1="2" x2="30" y2="0" stroke="#1a1208" strokeWidth="2" strokeLinecap="round" />
+      <line x1="48" y1="10" x2="50" y2="8" stroke="#1a1208" strokeWidth="2" strokeLinecap="round" />
+      <line x1="12" y1="10" x2="10" y2="8" stroke="#1a1208" strokeWidth="2" strokeLinecap="round" />
+      <line x1="52" y1="25" x2="55" y2="25" stroke="#1a1208" strokeWidth="2" strokeLinecap="round" />
+      <line x1="8" y1="25" x2="5" y2="25" stroke="#1a1208" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -88,7 +88,7 @@ export function DoodlePDF({ className = "", size = 65 }: { className?: string; s
       <line x1="20" y1="51" x2="38" y2="51" stroke="black" strokeWidth="2" strokeLinecap="round" />
       <line x1="20" y1="59" x2="35" y2="59" stroke="black" strokeWidth="2" strokeLinecap="round" />
       {/* PDF label */}
-      <rect x="16" y="22" width="24" height="10" rx="2" fill="#111111" />
+      <rect x="16" y="22" width="24" height="10" rx="2" fill="#1a1208" />
       <text x="22" y="30" fill="white" fontSize="7" fontWeight="bold" fontFamily="sans-serif">PDF</text>
     </svg>
   );
@@ -99,7 +99,7 @@ export function DoodlePencil({ className = "", size = 60 }: { className?: string
     <svg width={size} height={size} viewBox="0 0 60 60" fill="none" className={className}>
       <path d="M45 5 L55 15 L20 50 L8 53 L11 41 Z" stroke="black" strokeWidth="2.5" fill="none" strokeLinejoin="round" />
       <line x1="38" y1="12" x2="48" y2="22" stroke="black" strokeWidth="2" />
-      <path d="M8 53 L11 41 L20 50 Z" fill="#111111" stroke="black" strokeWidth="1.5" />
+      <path d="M8 53 L11 41 L20 50 Z" fill="#1a1208" stroke="black" strokeWidth="1.5" />
     </svg>
   );
 }
@@ -125,10 +125,10 @@ export function DoodleChart({ className = "", size = 70 }: { className?: string;
       <line x1="15" y1="55" x2="15" y2="10" stroke="black" strokeWidth="2.5" strokeLinecap="round" />
       {/* Bars */}
       <rect x="22" y="38" width="8" height="17" rx="1" stroke="black" strokeWidth="2" fill="none" />
-      <rect x="34" y="25" width="8" height="30" rx="1" stroke="black" strokeWidth="2" fill="#111111" fillOpacity="0.3" />
+      <rect x="34" y="25" width="8" height="30" rx="1" stroke="black" strokeWidth="2" fill="#1a1208" fillOpacity="0.3" />
       <rect x="46" y="18" width="8" height="37" rx="1" stroke="black" strokeWidth="2" fill="none" />
       {/* Trend line */}
-      <path d="M18 42 L30 35 L42 22 L54 15" stroke="#111111" strokeWidth="2" fill="none" strokeLinecap="round" strokeDasharray="4 3" />
+      <path d="M18 42 L30 35 L42 22 L54 15" stroke="#1a1208" strokeWidth="2" fill="none" strokeLinecap="round" strokeDasharray="4 3" />
     </svg>
   );
 }
@@ -136,7 +136,7 @@ export function DoodleChart({ className = "", size = 70 }: { className?: string;
 export function DoodleStars({ className = "" }: { className?: string }) {
   return (
     <svg width="30" height="30" viewBox="0 0 30 30" fill="none" className={className}>
-      <path d="M15 2 L17 12 L27 12 L19 18 L22 28 L15 22 L8 28 L11 18 L3 12 L13 12Z" stroke="#111111" strokeWidth="1.5" fill="none" />
+      <path d="M15 2 L17 12 L27 12 L19 18 L22 28 L15 22 L8 28 L11 18 L3 12 L13 12Z" stroke="#1a1208" strokeWidth="1.5" fill="none" />
     </svg>
   );
 }
@@ -153,7 +153,7 @@ export function DoodleArrow({ className = "" }: { className?: string }) {
 export function DoodleUnderline({ className = "", width = 200 }: { className?: string; width?: number }) {
   return (
     <svg width={width} height="12" viewBox={`0 0 ${width} 12`} fill="none" className={className}>
-      <path d={`M2 8 Q${width * 0.25} 2 ${width * 0.5} 8 Q${width * 0.75} 14 ${width - 2} 6`} stroke="#111111" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <path d={`M2 8 Q${width * 0.25} 2 ${width * 0.5} 8 Q${width * 0.75} 14 ${width - 2} 6`} stroke="#1a1208" strokeWidth="3" fill="none" strokeLinecap="round" />
     </svg>
   );
 }

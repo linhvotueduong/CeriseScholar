@@ -13,7 +13,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 shrink-0 border-r border-gray-200 bg-white min-h-[calc(100vh-57px)]">
+    <aside className="w-56 shrink-0 border-r border-[#e0d8d0] bg-white min-h-[calc(100vh-57px)]">
       <nav className="p-4 space-y-1">
         {links.map((link) => {
           const isActive =
@@ -28,8 +28,8 @@ export default function Sidebar() {
               className={cn(
                 "block px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-[#111111] text-white"
-                  : "text-gray-600 hover:bg-gray-100"
+                  ? "bg-[#1a1208] text-white"
+                  : "text-[#7a6a5a] hover:bg-[#faf7f0]"
               )}
             >
               {link.label}

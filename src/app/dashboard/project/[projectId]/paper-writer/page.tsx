@@ -105,7 +105,7 @@ export default function PaperWriterPage() {
   if (loading) {
     return (
       <div className="-mx-8 -my-8 flex items-center justify-center h-[calc(100vh-57px)]">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-[#111111]" />
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-[#1a1208]" />
       </div>
     );
   }
@@ -114,10 +114,10 @@ export default function PaperWriterPage() {
     <div className="-mx-8 -my-8">
       <div className="flex flex-col h-[calc(100vh-57px)]">
         {/* Header */}
-        <div className="flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-2">
+        <div className="flex items-center gap-3 bg-white border-b border-[#e0d8d0] px-4 py-2">
           <Link
             href={`/dashboard/project/${projectId}`}
-            className="text-sm text-gray-500 hover:text-[#111111] transition-colors"
+            className="text-sm text-[#7a6a5a] hover:text-[#1a1208] transition-colors"
           >
             &larr; Workspace
           </Link>
@@ -127,21 +127,21 @@ export default function PaperWriterPage() {
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: project.color }}
               />
-              <h2 className="text-sm font-medium text-gray-800 truncate">
+              <h2 className="text-sm font-medium text-[#1a1208] truncate">
                 {project.name}
               </h2>
             </>
           )}
-          <span className="text-sm text-gray-400">/ Paper Writer</span>
+          <span className="text-sm text-[#9a8a7a]">/ Paper Writer</span>
 
           <div className="ml-auto flex items-center gap-3">
             {/* Save status */}
-            <span className={`text-xs ${saveError ? "text-red-500 font-medium" : "text-gray-400"}`}>
+            <span className={`text-xs ${saveError ? "text-red-500 font-medium" : "text-[#9a8a7a]"}`}>
               {saveError ? saveError : saving ? "Saving..." : "Auto-saved"}
             </span>
 
             {/* Total word count */}
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+            <span className="text-xs text-[#7a6a5a] bg-gray-100 px-2 py-1 rounded">
               Total: {totalWords.toLocaleString()} words
             </span>
 
@@ -149,7 +149,7 @@ export default function PaperWriterPage() {
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="px-3 py-1.5 text-xs bg-[#111111] text-white rounded-lg hover:bg-[#000000] transition-colors font-medium disabled:opacity-50"
+              className="px-3 py-1.5 text-xs bg-[#1a1208] text-white rounded-lg hover:bg-[#000000] transition-colors font-medium disabled:opacity-50"
             >
               {syncing ? "Syncing..." : "Sync Materials"}
             </button>
@@ -157,7 +157,7 @@ export default function PaperWriterPage() {
             {/* Toggle guidance */}
             <button
               onClick={() => setShowGuidance(!showGuidance)}
-              className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+              className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-[#7a6a5a]"
             >
               {showGuidance ? "Hide Tips" : "Show Tips"}
             </button>
@@ -167,9 +167,9 @@ export default function PaperWriterPage() {
         {/* Main content */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left sidebar: section nav */}
-          <div className="w-52 bg-white border-r border-gray-200 flex flex-col shrink-0">
+          <div className="w-52 bg-white border-r border-[#e0d8d0] flex flex-col shrink-0">
             <div className="px-3 py-3 border-b border-gray-100">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-[#7a6a5a] uppercase tracking-wider">
                 Sections
               </h3>
             </div>
@@ -184,11 +184,11 @@ export default function PaperWriterPage() {
                     onClick={() => setActiveSection(key)}
                     className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center gap-2 ${
                       activeSection === key
-                        ? "bg-pink-50 text-[#111111] font-medium border-r-2 border-[#111111]"
-                        : "text-gray-700 hover:bg-gray-50"
+                        ? "bg-pink-50 text-[#1a1208] font-medium border-r-2 border-[#1a1208]"
+                        : "text-[#5a4a3a] hover:bg-gray-50"
                     }`}
                   >
-                    <span className="text-xs text-gray-400 w-4">
+                    <span className="text-xs text-[#9a8a7a] w-4">
                       {index + 1}.
                     </span>
                     <span className="flex-1">{SECTION_LABELS[key]}</span>
@@ -201,16 +201,16 @@ export default function PaperWriterPage() {
             </div>
 
             {/* Navigation links */}
-            <div className="border-t border-gray-200 p-3 space-y-1">
+            <div className="border-t border-[#e0d8d0] p-3 space-y-1">
               <Link
                 href={`/dashboard/project/${projectId}/literature-review`}
-                className="block text-xs text-[#111111] hover:underline"
+                className="block text-xs text-[#1a1208] hover:underline"
               >
                 Lit Review Table
               </Link>
               <Link
                 href={`/dashboard/project/${projectId}/meta-analysis`}
-                className="block text-xs text-[#111111] hover:underline"
+                className="block text-xs text-[#1a1208] hover:underline"
               >
                 Meta-Analysis
               </Link>
@@ -220,16 +220,16 @@ export default function PaperWriterPage() {
           {/* Center: editor */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Section header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+            <div className="bg-white border-b border-[#e0d8d0] px-6 py-3 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-[#1a1208]">
                   {SECTION_LABELS[activeSection]}
                 </h2>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-[#7a6a5a] mt-0.5">
                   {SECTION_GUIDANCE[activeSection].description}
                 </p>
               </div>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-[#9a8a7a]">
                 {wordCount} words
               </span>
             </div>
@@ -243,7 +243,7 @@ export default function PaperWriterPage() {
                     updateSection(activeSection, e.target.value)
                   }
                   placeholder={`Start writing your ${SECTION_LABELS[activeSection]} section here...\n\nTip: ${SECTION_GUIDANCE[activeSection].tips[0]}`}
-                  className="w-full min-h-[500px] p-6 bg-white border border-gray-200 rounded-xl text-gray-800 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-[#111111] focus:border-transparent"
+                  className="w-full min-h-[500px] p-6 bg-white border border-[#e0d8d0] rounded-xl text-[#1a1208] text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-[#1a1208] focus:border-transparent"
                   style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
                 />
               </div>
@@ -252,16 +252,16 @@ export default function PaperWriterPage() {
 
           {/* Right panel: guidance OR synced materials */}
           {(showGuidance || showSyncPanel) && (
-            <div className="w-72 bg-white border-l border-gray-200 flex flex-col shrink-0 overflow-hidden">
+            <div className="w-72 bg-white border-l border-[#e0d8d0] flex flex-col shrink-0 overflow-hidden">
               {/* Panel tabs */}
               {syncedData && (
-                <div className="flex border-b border-gray-200">
+                <div className="flex border-b border-[#e0d8d0]">
                   <button
                     onClick={() => setShowSyncPanel(false)}
                     className={`flex-1 text-xs py-2.5 font-medium transition-colors ${
                       !showSyncPanel
-                        ? "text-[#111111] border-b-2 border-[#111111]"
-                        : "text-gray-500 hover:text-gray-700"
+                        ? "text-[#1a1208] border-b-2 border-[#1a1208]"
+                        : "text-[#7a6a5a] hover:text-[#5a4a3a]"
                     }`}
                   >
                     Writing Tips
@@ -270,8 +270,8 @@ export default function PaperWriterPage() {
                     onClick={() => setShowSyncPanel(true)}
                     className={`flex-1 text-xs py-2.5 font-medium transition-colors ${
                       showSyncPanel
-                        ? "text-[#111111] border-b-2 border-[#111111]"
-                        : "text-gray-500 hover:text-gray-700"
+                        ? "text-[#1a1208] border-b-2 border-[#1a1208]"
+                        : "text-[#7a6a5a] hover:text-[#5a4a3a]"
                     }`}
                   >
                     Synced Materials
@@ -283,16 +283,16 @@ export default function PaperWriterPage() {
                 {!showSyncPanel ? (
                   /* Writing guidance */
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-800 mb-3">
+                    <h3 className="text-sm font-semibold text-[#1a1208] mb-3">
                       Writing Tips for {SECTION_LABELS[activeSection]}
                     </h3>
                     <ul className="space-y-2.5">
                       {SECTION_GUIDANCE[activeSection].tips.map((tip, i) => (
                         <li
                           key={i}
-                          className="flex items-start gap-2 text-xs text-gray-600 leading-relaxed"
+                          className="flex items-start gap-2 text-xs text-[#7a6a5a] leading-relaxed"
                         >
-                          <span className="text-[#111111] mt-0.5 shrink-0 font-bold">
+                          <span className="text-[#1a1208] mt-0.5 shrink-0 font-bold">
                             {i + 1}.
                           </span>
                           {tip}
@@ -315,7 +315,7 @@ export default function PaperWriterPage() {
 
                     {activeSection === "literature_review" && (
                       <div className="mt-4 p-3 bg-pink-50 border border-pink-200 rounded-lg">
-                        <p className="text-xs text-[#111111] font-medium mb-1">
+                        <p className="text-xs text-[#1a1208] font-medium mb-1">
                           Use your synthesis paragraphs
                         </p>
                         <p className="text-xs text-pink-600">
@@ -328,7 +328,7 @@ export default function PaperWriterPage() {
 
                     {activeSection === "methodology" && (
                       <div className="mt-4 p-3 bg-pink-50 border border-pink-200 rounded-lg">
-                        <p className="text-xs text-[#111111] font-medium mb-1">
+                        <p className="text-xs text-[#1a1208] font-medium mb-1">
                           Copy from Meta-Analysis
                         </p>
                         <p className="text-xs text-pink-600">
@@ -341,7 +341,7 @@ export default function PaperWriterPage() {
 
                     {activeSection === "references" && (
                       <div className="mt-4 p-3 bg-pink-50 border border-pink-200 rounded-lg">
-                        <p className="text-xs text-[#111111] font-medium mb-1">
+                        <p className="text-xs text-[#1a1208] font-medium mb-1">
                           Import your references
                         </p>
                         <p className="text-xs text-pink-600">
@@ -358,14 +358,14 @@ export default function PaperWriterPage() {
                     Object.keys(syncedData.synthesisBySection).length === 0 &&
                     syncedData.references.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-[#7a6a5a]">
                           No materials found.
                         </p>
-                        <p className="text-xs text-gray-400 mt-2">
+                        <p className="text-xs text-[#9a8a7a] mt-2">
                           Add synthesis paragraphs and APA references in your{" "}
                           <Link
                             href={`/dashboard/project/${projectId}/literature-review`}
-                            className="text-[#111111] hover:underline"
+                            className="text-[#1a1208] hover:underline"
                           >
                             Lit Review Table
                           </Link>{" "}
@@ -380,12 +380,12 @@ export default function PaperWriterPage() {
                             0 && (
                             <div>
                               <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wider">
+                                <h4 className="text-xs font-semibold text-[#1a1208] uppercase tracking-wider">
                                   Synthesis Paragraphs
                                 </h4>
                                 <button
                                   onClick={insertAllSynthesis}
-                                  className="text-[10px] text-[#111111] hover:underline font-medium"
+                                  className="text-[10px] text-[#1a1208] hover:underline font-medium"
                                 >
                                   Insert all into Lit Review
                                 </button>
@@ -394,18 +394,18 @@ export default function PaperWriterPage() {
                                 syncedData.synthesisBySection
                               ).map(([section, paragraphs]) => (
                                 <div key={section} className="mb-3">
-                                  <p className="text-xs font-medium text-gray-600 mb-1">
+                                  <p className="text-xs font-medium text-[#7a6a5a] mb-1">
                                     {section}
                                   </p>
                                   {paragraphs.map((p, i) => (
                                     <div
                                       key={i}
-                                      className="mb-2 p-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700 leading-relaxed group relative"
+                                      className="mb-2 p-2 bg-gray-50 border border-[#e0d8d0] rounded text-xs text-[#5a4a3a] leading-relaxed group relative"
                                     >
                                       <p className="pr-12">{p}</p>
                                       <button
                                         onClick={() => insertIntoEditor(p)}
-                                        className="absolute top-2 right-2 text-[10px] text-[#111111] opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-pink-200 rounded px-1.5 py-0.5 hover:bg-pink-50"
+                                        className="absolute top-2 right-2 text-[10px] text-[#1a1208] opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-pink-200 rounded px-1.5 py-0.5 hover:bg-pink-50"
                                       >
                                         Insert
                                       </button>
@@ -420,12 +420,12 @@ export default function PaperWriterPage() {
                         {syncedData && syncedData.references.length > 0 && (
                           <div>
                             <div className="flex items-center justify-between mb-2">
-                              <h4 className="text-xs font-semibold text-gray-800 uppercase tracking-wider">
+                              <h4 className="text-xs font-semibold text-[#1a1208] uppercase tracking-wider">
                                 APA References ({syncedData.references.length})
                               </h4>
                               <button
                                 onClick={insertAllReferences}
-                                className="text-[10px] text-[#111111] hover:underline font-medium"
+                                className="text-[10px] text-[#1a1208] hover:underline font-medium"
                               >
                                 Insert all into References
                               </button>
@@ -433,12 +433,12 @@ export default function PaperWriterPage() {
                             {syncedData.references.map((ref, i) => (
                               <div
                                 key={i}
-                                className="mb-2 p-2 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700 leading-relaxed group relative"
+                                className="mb-2 p-2 bg-gray-50 border border-[#e0d8d0] rounded text-xs text-[#5a4a3a] leading-relaxed group relative"
                               >
                                 <p className="pr-12">{ref}</p>
                                 <button
                                   onClick={() => insertIntoEditor(ref)}
-                                  className="absolute top-2 right-2 text-[10px] text-[#111111] opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-pink-200 rounded px-1.5 py-0.5 hover:bg-pink-50"
+                                  className="absolute top-2 right-2 text-[10px] text-[#1a1208] opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-pink-200 rounded px-1.5 py-0.5 hover:bg-pink-50"
                                 >
                                   Insert
                                 </button>

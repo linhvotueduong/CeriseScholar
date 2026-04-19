@@ -48,7 +48,7 @@ export default async function ProjectViewerPage({ params }: Props) {
         pdfAuthor={(pdf as unknown as Record<string, string>).pdf_author || ""}
         pdfTitle={(pdf as unknown as Record<string, string>).pdf_title || ""}
         projectName={project?.name || ""}
-        projectColor={project?.color || "#111111"}
+        projectColor={project?.color || "#1a1208"}
       />
     </div>
   );

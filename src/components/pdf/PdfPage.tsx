@@ -331,7 +331,7 @@ export default function PdfPage({
         containerHeight={pageDimensions.height}
         onCreateHighlight={handleCreateHighlight}
       />
-      <div className="text-center text-xs text-gray-400 py-1">
+      <div className="text-center text-xs text-[#9a8a7a] py-1">
         Page {pageNumber}
       </div>
     </div>

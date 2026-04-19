@@ -55,7 +55,7 @@ function EditableCell({
   }
 
   if (editing) {
-    const cls = "w-full px-2 py-1 text-sm border border-[#111111] rounded focus:outline-none";
+    const cls = "w-full px-2 py-1 text-sm border border-[#1a1208] rounded focus:outline-none";
     return multiline ? (
       <textarea
         ref={inputRef as React.RefObject<HTMLTextAreaElement>}
@@ -85,25 +85,25 @@ function EditableCell({
       className="block w-full px-2 py-1 text-sm cursor-pointer rounded hover:bg-pink-50 min-h-[28px] whitespace-pre-wrap"
       title="Click to edit"
     >
-      {value || <span className="text-gray-300 italic">{placeholder}</span>}
+      {value || <span className="text-[#d4cdc5] italic">{placeholder}</span>}
     </span>
   );
 }
 
 export default function ReviewTableRow({ entry, onUpdate, onDelete }: ReviewTableRowProps) {
   return (
-    <tr className="border-b border-gray-100 hover:bg-gray-50 align-top">
+    <tr className="border-b border-gray-100 hover:bg-[#fdfcfa] align-top">
       {/* A: Document Name (source) — read-only, links to PDF */}
-      <td className="px-3 py-2 text-sm text-gray-800 min-w-[140px]">
+      <td className="px-3 py-2 text-sm text-[#1a1208] min-w-[140px]">
         <a
           href={`/dashboard/viewer/${entry.pdf_id}`}
-          className="text-[#111111] hover:underline"
+          className="text-[#1a1208] hover:underline"
           title={entry.source}
         >
           {entry.source}
         </a>
         {entry.authors && (
-          <p className="text-[11px] text-gray-400 mt-0.5">{entry.authors}{entry.year ? `, ${entry.year}` : ""}</p>
+          <p className="text-[11px] text-[#9a8a7a] mt-0.5">{entry.authors}{entry.year ? `, ${entry.year}` : ""}</p>
         )}
       </td>
 
@@ -129,18 +129,18 @@ export default function ReviewTableRow({ entry, onUpdate, onDelete }: ReviewTabl
           placeholder="Assign section..."
         />
         {entry.theme_category && (
-          <span className="text-[10px] text-gray-400 px-2 block mt-0.5">
+          <span className="text-[10px] text-[#9a8a7a] px-2 block mt-0.5">
             {entry.theme_category}
           </span>
         )}
       </td>
 
       {/* C: Quotes from sources (highlighted text) — read-only */}
-      <td className="px-3 py-2 text-sm text-gray-700 min-w-[200px] max-w-[350px]">
+      <td className="px-3 py-2 text-sm text-[#5a4a3a] min-w-[200px] max-w-[350px]">
         <p className="leading-relaxed">
           {entry.highlighted_text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim()}
         </p>
-        <p className="text-[10px] text-gray-400 mt-1">
+        <p className="text-[10px] text-[#9a8a7a] mt-1">
           p. {entry.page_number}
         </p>
       </td>
@@ -173,7 +173,7 @@ export default function ReviewTableRow({ entry, onUpdate, onDelete }: ReviewTabl
       <td className="px-2 py-2 w-[30px]">
         <button
           onClick={() => onDelete(entry.id)}
-          className="text-gray-300 hover:text-red-500 text-sm"
+          className="text-[#d4cdc5] hover:text-red-500 text-sm"
           title="Delete entry"
         >
           &times;

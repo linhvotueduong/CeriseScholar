@@ -118,7 +118,7 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
       <div className="px-2 py-1.5 border-b border-gray-100">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-full text-xs text-[#111111] hover:bg-pink-50 py-1 rounded transition-colors"
+          className="w-full text-xs text-[#1a1208] hover:bg-pink-50 py-1 rounded transition-colors"
         >
           + Upload PDF
         </button>
@@ -155,18 +155,18 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
               onDragOver={(e) => handleDragOver(e, index)}
               onDrop={() => handleDrop(index)}
               onDragEnd={handleDragEnd}
-              className={`group relative ${isDragging ? "opacity-40" : ""} ${isDragOver ? "border-t-2 border-t-[#111111]" : ""}`}
+              className={`group relative ${isDragging ? "opacity-40" : ""} ${isDragOver ? "border-t-2 border-t-[#1a1208]" : ""}`}
             >
               <button
                 onClick={() => router.push(projectId ? `/dashboard/project/${projectId}/viewer/${pdf.id}` : `/dashboard/viewer/${pdf.id}`)}
                 className={`w-full text-left px-3 py-2 border-b border-gray-50 transition-colors ${
-                  isActive ? "bg-pink-50 border-l-2 border-l-[#111111]" : "hover:bg-gray-50 border-l-2 border-l-transparent"
+                  isActive ? "bg-pink-50 border-l-2 border-l-[#1a1208]" : "hover:bg-[#fdfcfa] border-l-2 border-l-transparent"
                 }`}
               >
-                <p className={`text-xs truncate pr-4 ${isActive ? "font-medium text-[#111111]" : "text-gray-700"}`}>
+                <p className={`text-xs truncate pr-4 ${isActive ? "font-medium text-[#1a1208]" : "text-[#5a4a3a]"}`}>
                   {pdf.display_name}
                 </p>
-                <p className="text-[9px] text-gray-400 mt-0.5 flex items-center gap-1">
+                <p className="text-[9px] text-[#9a8a7a] mt-0.5 flex items-center gap-1">
                   {pdf.file_size ? `${(pdf.file_size / 1024 / 1024).toFixed(1)} MB` : ""} · {new Date(pdf.created_at).toLocaleDateString()}
                   {pdf.ocr_status === "processing" && (
                     <span className="text-blue-500" title="OCR in progress">processing...</span>
@@ -179,7 +179,7 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
 
               <button
                 onClick={(e) => handleDelete(e, pdf.id)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 text-xs"
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-[#d4cdc5] hover:text-red-500 opacity-0 group-hover:opacity-100 text-xs"
                 title="Delete"
               >
                 &times;
@@ -189,7 +189,7 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
         })}
       </div>
 
-      <div className="px-3 py-1.5 text-[9px] text-gray-400 border-t border-gray-100">
+      <div className="px-3 py-1.5 text-[9px] text-[#9a8a7a] border-t border-gray-100">
         {pdfs.length} document{pdfs.length !== 1 ? "s" : ""}
       </div>
     </div>

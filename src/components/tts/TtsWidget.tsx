@@ -84,7 +84,7 @@ export default function TtsWidget({
                   className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-[#3A3A4E] transition-colors"
                   title={useAiVoice ? "AI Voice ON" : "AI Voice OFF"}
                 >
-                  <svg className={`w-3.5 h-3.5 ${useAiVoice ? "text-blue-400" : "text-gray-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <svg className={`w-3.5 h-3.5 ${useAiVoice ? "text-blue-400" : "text-[#7a6a5a]"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m-4 0h8m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 </button>
@@ -124,7 +124,7 @@ export default function TtsWidget({
                 {rate <= 0.8 ? "Slow" : rate <= 1.2 ? "Normal" : rate <= 1.5 ? "Fast" : "Very Fast"}
               </p>
             </div>
-            <button onClick={() => setShowSpeedPanel(false)} className="text-gray-500 hover:text-white">
+            <button onClick={() => setShowSpeedPanel(false)} className="text-[#7a6a5a] hover:text-white">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -157,7 +157,7 @@ export default function TtsWidget({
                 className={`py-2 rounded-lg text-xs font-medium transition-colors ${
                   Math.abs(rate - s) < 0.05
                     ? "bg-blue-600 text-white"
-                    : "bg-[#2A2A3E] text-gray-300 hover:bg-[#3A3A4E]"
+                    : "bg-[#2A2A3E] text-[#d4cdc5] hover:bg-[#3A3A4E]"
                 }`}
               >
                 {s}x
@@ -172,7 +172,7 @@ export default function TtsWidget({
         <div className="fixed right-16 top-1/2 -translate-y-1/2 z-50 bg-[#1E1E2E] rounded-2xl p-5 shadow-2xl w-56">
           <div className="flex items-center justify-between mb-3">
             <p className="text-white font-semibold text-sm">Voice</p>
-            <button onClick={() => setShowVoicePanel(false)} className="text-gray-500 hover:text-white">
+            <button onClick={() => setShowVoicePanel(false)} className="text-[#7a6a5a] hover:text-white">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -182,7 +182,7 @@ export default function TtsWidget({
           {/* AI Voice toggle */}
           {onToggleAiVoice && (
             <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-700">
-              <span className="text-xs text-gray-300">AI Voice</span>
+              <span className="text-xs text-[#d4cdc5]">AI Voice</span>
               <div
                 onClick={() => onToggleAiVoice(!useAiVoice)}
                 className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${useAiVoice ? "bg-blue-600" : "bg-gray-600"}`}
@@ -202,7 +202,7 @@ export default function TtsWidget({
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
                     selectedVoice === v.id
                       ? "bg-blue-600 text-white"
-                      : "text-gray-300 hover:bg-[#2A2A3E]"
+                      : "text-[#d4cdc5] hover:bg-[#2A2A3E]"
                   }`}
                 >
                   {v.label}
@@ -212,7 +212,7 @@ export default function TtsWidget({
           )}
 
           {!useAiVoice && (
-            <p className="text-xs text-gray-500">Using browser voice (instant). Toggle AI Voice for natural-sounding voices.</p>
+            <p className="text-xs text-[#7a6a5a]">Using browser voice (instant). Toggle AI Voice for natural-sounding voices.</p>
           )}
         </div>
       )}

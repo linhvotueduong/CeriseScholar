@@ -50,17 +50,17 @@ function LeftPanels({
   // If both closed, show thin collapsed bar
   if (!docsOpen && !codesOpen) {
     return (
-      <div className="w-8 bg-white border-r border-gray-200 flex flex-col items-center pt-2 gap-4 shrink-0">
+      <div className="w-8 bg-white border-r border-[#e0d8d0] flex flex-col items-center pt-2 gap-4 shrink-0">
         <span
           onClick={() => setDocsOpen(true)}
-          className="text-gray-400 text-[10px] cursor-pointer hover:text-[#111111]"
+          className="text-[#9a8a7a] text-[10px] cursor-pointer hover:text-[#1a1208]"
           style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
         >
           Documents
         </span>
         <span
           onClick={() => setCodesOpen(true)}
-          className="text-gray-400 text-[10px] cursor-pointer hover:text-[#111111]"
+          className="text-[#9a8a7a] text-[10px] cursor-pointer hover:text-[#1a1208]"
           style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
         >
           Codes
@@ -70,19 +70,19 @@ function LeftPanels({
   }
 
   return (
-    <div className="flex flex-col border-r border-gray-200 bg-white shrink-0" style={{ width: 220 }}>
+    <div className="flex flex-col border-r border-[#e0d8d0] bg-white shrink-0" style={{ width: 220 }}>
       {/* Documents panel */}
       {docsOpen ? (
-        <div className={`flex flex-col min-h-0 ${codesOpen ? "flex-1" : "flex-1"} border-b border-gray-200`}>
+        <div className={`flex flex-col min-h-0 ${codesOpen ? "flex-1" : "flex-1"} border-b border-[#e0d8d0]`}>
           <div
             onClick={() => setDocsOpen(false)}
-            className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer select-none shrink-0"
+            className="flex items-center justify-between px-3 py-2 hover:bg-[#fdfcfa] cursor-pointer select-none shrink-0"
           >
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-gray-400">▼</span>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Documents</span>
+              <span className="text-[10px] text-[#9a8a7a]">▼</span>
+              <span className="text-xs font-semibold text-[#7a6a5a] uppercase tracking-wider">Documents</span>
             </div>
-            <span className="text-[10px] text-gray-400">{totalPages}p</span>
+            <span className="text-[10px] text-[#9a8a7a]">{totalPages}p</span>
           </div>
           <div className="flex-1 overflow-y-auto">
             <DocumentPanel currentPdfId={pdfId} projectId={projectId} />
@@ -91,10 +91,10 @@ function LeftPanels({
       ) : (
         <div
           onClick={() => setDocsOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 cursor-pointer select-none border-b border-gray-200 shrink-0"
+          className="flex items-center gap-1.5 px-3 py-2 hover:bg-[#fdfcfa] cursor-pointer select-none border-b border-[#e0d8d0] shrink-0"
         >
-          <span className="text-[10px] text-gray-400">▶</span>
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Documents</span>
+          <span className="text-[10px] text-[#9a8a7a]">▶</span>
+          <span className="text-xs font-semibold text-[#7a6a5a] uppercase tracking-wider">Documents</span>
         </div>
       )}
 
@@ -103,11 +103,11 @@ function LeftPanels({
         <div className="flex flex-col min-h-0 flex-1">
           <div
             onClick={() => setCodesOpen(false)}
-            className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer select-none shrink-0"
+            className="flex items-center justify-between px-3 py-2 hover:bg-[#fdfcfa] cursor-pointer select-none shrink-0"
           >
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-gray-400">▼</span>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Code System</span>
+              <span className="text-[10px] text-[#9a8a7a]">▼</span>
+              <span className="text-xs font-semibold text-[#7a6a5a] uppercase tracking-wider">Code System</span>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-2">
@@ -122,10 +122,10 @@ function LeftPanels({
       ) : (
         <div
           onClick={() => setCodesOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 cursor-pointer select-none shrink-0"
+          className="flex items-center gap-1.5 px-3 py-2 hover:bg-[#fdfcfa] cursor-pointer select-none shrink-0"
         >
-          <span className="text-[10px] text-gray-400">▶</span>
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Code System</span>
+          <span className="text-[10px] text-[#9a8a7a]">▶</span>
+          <span className="text-xs font-semibold text-[#7a6a5a] uppercase tracking-wider">Code System</span>
         </div>
       )}
     </div>
@@ -149,11 +149,11 @@ function RightPanel(props: {
   if (!open) {
     return (
       <div
-        className="w-8 bg-white border-l border-gray-200 flex flex-col items-center pt-2 shrink-0 cursor-pointer hover:bg-gray-50"
+        className="w-8 bg-white border-l border-[#e0d8d0] flex flex-col items-center pt-2 shrink-0 cursor-pointer hover:bg-[#fdfcfa]"
         onClick={() => setOpen(true)}
       >
         <span
-          className="text-gray-400 text-[10px]"
+          className="text-[#9a8a7a] text-[10px]"
           style={{ writingMode: "vertical-rl" }}
         >
           Highlights ({props.highlights.length})
@@ -163,13 +163,13 @@ function RightPanel(props: {
   }
 
   return (
-    <div className="flex flex-col border-l border-gray-200 bg-white shrink-0" style={{ width: 280 }}>
+    <div className="flex flex-col border-l border-[#e0d8d0] bg-white shrink-0" style={{ width: 280 }}>
       <div
         onClick={() => setOpen(false)}
-        className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 cursor-pointer select-none border-b border-gray-200 shrink-0"
+        className="flex items-center gap-1.5 px-3 py-2 hover:bg-[#fdfcfa] cursor-pointer select-none border-b border-[#e0d8d0] shrink-0"
       >
-        <span className="text-[10px] text-gray-400">▼</span>
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        <span className="text-[10px] text-[#9a8a7a]">▼</span>
+        <span className="text-xs font-semibold text-[#7a6a5a] uppercase tracking-wider">
           Highlights ({props.highlights.length})
         </span>
       </div>
@@ -480,7 +480,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
     return (
       <div className="text-center py-20">
         <p className="text-red-600 text-lg">Failed to load PDF</p>
-        <p className="text-gray-500 mt-1">{error}</p>
+        <p className="text-[#7a6a5a] mt-1">{error}</p>
       </div>
     );
   }
@@ -531,7 +531,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         )}
 
         <div
-          className={`flex-1 overflow-auto bg-gray-100 flex flex-col items-center py-6 px-4 ${
+          className={`flex-1 overflow-auto bg-[#faf7f0] flex flex-col items-center py-6 px-4 ${
             highlightMode ? "cursor-text" : ""
           }`}
         >
@@ -552,8 +552,8 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
             ))
           ) : !loading && (
             <div className="text-center py-20">
-              <p className="text-gray-500 text-lg">No PDF open</p>
-              <p className="text-gray-400 text-sm mt-1">
+              <p className="text-[#7a6a5a] text-lg">No PDF open</p>
+              <p className="text-[#9a8a7a] text-sm mt-1">
                 Upload a PDF using the Documents panel on the left, then click it to open
               </p>
             </div>
@@ -622,14 +622,14 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
               window.document.addEventListener("mouseup", onUp);
             }}
           >
-            <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 10 10">
+            <svg className="w-3 h-3 text-[#7a6a5a]" fill="currentColor" viewBox="0 0 10 10">
               <circle cx="2" cy="2" r="1.2" /><circle cx="5" cy="2" r="1.2" /><circle cx="2" cy="5" r="1.2" />
             </svg>
           </div>
           {/* Header */}
           <div className="px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-[#111111] rounded-lg flex items-center justify-center">
+              <div className="w-6 h-6 bg-[#1a1208] rounded-lg flex items-center justify-center">
                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
@@ -637,12 +637,12 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
               <span className="text-white text-sm font-semibold">{pdfDisplayName || "PDF"}</span>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={() => setChatMessages([])} className="text-gray-500 hover:text-gray-300 p-1" title="Clear chat">
+              <button onClick={() => setChatMessages([])} className="text-[#7a6a5a] hover:text-[#d4cdc5] p-1" title="Clear chat">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
-              <button onClick={() => setChatOpen(false)} className="text-gray-500 hover:text-gray-300 p-1">
+              <button onClick={() => setChatOpen(false)} className="text-[#7a6a5a] hover:text-[#d4cdc5] p-1">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -654,7 +654,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
           <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3 min-h-[200px]">
             {chatMessages.length === 0 && (
               <div className="py-6">
-                <p className="text-gray-500 text-xs text-center mb-4">Hey, can you tell me what this article is about?</p>
+                <p className="text-[#7a6a5a] text-xs text-center mb-4">Hey, can you tell me what this article is about?</p>
                 <div className="space-y-2">
                   {[
                     "What is this paper about?",
@@ -665,7 +665,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
                     <button
                       key={q}
                       onClick={() => handleChatSend(q)}
-                      className="block w-full text-left text-xs px-3 py-2 bg-[#2A2A3E] text-gray-300 rounded-xl hover:bg-[#3A3A4E] transition-colors"
+                      className="block w-full text-left text-xs px-3 py-2 bg-[#2A2A3E] text-[#d4cdc5] rounded-xl hover:bg-[#3A3A4E] transition-colors"
                     >
                       {q}
                     </button>
@@ -684,10 +684,10 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
                 >
                   {msg.role === "assistant" && (
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">AI</span>
+                      <span className="text-[10px] font-bold text-[#9a8a7a] uppercase tracking-wider">AI</span>
                       <button
                         onClick={() => tts.speak(msg.content)}
-                        className="text-gray-500 hover:text-gray-300"
+                        className="text-[#7a6a5a] hover:text-[#d4cdc5]"
                         title="Read aloud"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -705,7 +705,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
                           h3: ({ children }) => <p className="font-semibold text-[13px] text-gray-200 mt-2 mb-1">{children}</p>,
                           p: ({ children }) => <p className="mb-2">{children}</p>,
                           strong: ({ children }) => <span className="font-bold text-white">{children}</span>,
-                          em: ({ children }) => <span className="italic text-gray-300">{children}</span>,
+                          em: ({ children }) => <span className="italic text-[#d4cdc5]">{children}</span>,
                           ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>,
                           ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>,
                           li: ({ children }) => <li>{children}</li>,
@@ -723,11 +723,11 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
               </div>
             ))}
             {chatLoading && (
-              <div className="flex items-center gap-2 text-xs text-gray-500 py-2">
+              <div className="flex items-center gap-2 text-xs text-[#7a6a5a] py-2">
                 <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div className="w-1.5 h-1.5 bg-[#fdfcfa]0 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-1.5 h-1.5 bg-[#fdfcfa]0 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-1.5 h-1.5 bg-[#fdfcfa]0 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
               </div>
             )}
@@ -749,7 +749,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
               <button
                 onClick={toggleVoiceInput}
                 className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                  isListening ? "bg-red-500 text-white animate-pulse" : "text-gray-500 hover:text-gray-300"
+                  isListening ? "bg-red-500 text-white animate-pulse" : "text-[#7a6a5a] hover:text-[#d4cdc5]"
                 }`}
                 title={isListening ? "Stop listening" : "Voice input"}
               >
@@ -760,7 +760,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
               {/* Close button */}
               <button
                 onClick={() => setChatOpen(false)}
-                className="text-gray-500 hover:text-gray-300"
+                className="text-[#7a6a5a] hover:text-[#d4cdc5]"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

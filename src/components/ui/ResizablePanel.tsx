@@ -62,14 +62,14 @@ export default function ResizablePanel({
   if (!open) {
     return (
       <div
-        className={`w-8 bg-white flex flex-col items-center pt-2 cursor-pointer hover:bg-gray-50 ${
+        className={`w-8 bg-white flex flex-col items-center pt-2 cursor-pointer hover:bg-[#fdfcfa] ${
           side === "left" ? "border-r" : "border-l"
-        } border-gray-200`}
+        } border-[#e0d8d0]`}
         onClick={() => setOpen(true)}
         title={`Show ${title}`}
       >
         <span
-          className="text-gray-400 text-xs"
+          className="text-[#9a8a7a] text-xs"
           style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
         >
           {title}
@@ -80,7 +80,7 @@ export default function ResizablePanel({
 
   return (
     <div
-      className={`relative ${side === "left" ? "border-r" : "border-l"} border-gray-200 bg-white`}
+      className={`relative ${side === "left" ? "border-r" : "border-l"} border-[#e0d8d0] bg-white`}
       style={{ width, minWidth, maxWidth, flexShrink: 0 }}
     >
       {/* Content */}
@@ -100,8 +100,8 @@ export default function ResizablePanel({
         <div
           className={`absolute top-0 bottom-0 transition-all ${
             dragging
-              ? "w-1 bg-[#111111]"
-              : "w-[2px] bg-transparent hover:bg-[#111111]"
+              ? "w-1 bg-[#1a1208]"
+              : "w-[2px] bg-transparent hover:bg-[#1a1208]"
           }`}
           style={{ left: "50%", transform: "translateX(-50%)" }}
         />
@@ -116,7 +116,7 @@ export default function ResizablePanel({
       {/* Collapse button */}
       <button
         onClick={() => setOpen(false)}
-        className={`absolute top-2 text-gray-400 hover:text-gray-600 text-xs z-10 ${
+        className={`absolute top-2 text-[#9a8a7a] hover:text-[#7a6a5a] text-xs z-10 ${
           side === "left" ? "right-2" : "left-2"
         }`}
         title={`Hide ${title}`}

@@ -217,7 +217,7 @@ export default function MethodologyGuide({
         {([1, 1.5, 2, 3] as Step[]).map((s) => (
           <button key={s} onClick={() => setStep(s)}
             className={`px-3 py-1.5 text-xs rounded-full font-medium transition-colors ${
-              step === s ? "bg-[#111111] text-white" : s < step ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+              step === s ? "bg-[#1a1208] text-white" : s < step ? "bg-green-100 text-green-700" : "bg-[#faf7f0] text-[#7a6a5a]"
             }`}>
             {s === 1 ? "1. Hypothesis" : s === 1.5 ? "1.5 Data Sources" : s === 2 ? "2. Map Variables" : "3. Recommendations"}
           </button>
@@ -226,34 +226,34 @@ export default function MethodologyGuide({
 
       {/* ===== STEP 1: Research Question & Hypothesis ===== */}
       {step === 1 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-          <h2 className="font-semibold text-gray-800 text-lg">Step 1: Define Your Research Question & Hypothesis</h2>
+        <div className="bg-white rounded-xl border border-[#e0d8d0] p-6 space-y-5">
+          <h2 className="font-semibold text-[#1a1208] text-lg">Step 1: Define Your Research Question & Hypothesis</h2>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Research Question</label>
+            <label className="text-sm font-medium text-[#5a4a3a] block mb-1">Research Question</label>
             <textarea value={researchQuestion} onChange={e => setResearchQuestion(e.target.value)}
               placeholder="e.g., Does the combination of geopolitical and technological disruption have an additive or compounded effect on student psychological stress?"
-              rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#111111] resize-none" />
+              rows={3} className="w-full px-3 py-2 border border-[#d4cdc5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1208] resize-none" />
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Hypothesis</label>
+            <label className="text-sm font-medium text-[#5a4a3a] block mb-1">Hypothesis</label>
             <textarea value={hypothesisText} onChange={e => setHypothesisText(e.target.value)}
               placeholder="e.g., Students exposed to both geopolitical and technological disruption will report significantly higher psychological stress than those exposed to only one type of disruption."
-              rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#111111] resize-none" />
+              rows={3} className="w-full px-3 py-2 border border-[#d4cdc5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1208] resize-none" />
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">What type of hypothesis is this?</label>
+            <label className="text-sm font-medium text-[#5a4a3a] block mb-2">What type of hypothesis is this?</label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {HYPOTHESIS_TYPES.map(h => (
                 <button key={h.type} onClick={() => setSelectedType(h.type)}
                   className={`text-left p-3 rounded-lg border transition-all ${
-                    selectedType === h.type ? "border-[#111111] bg-pink-50" : "border-gray-200 hover:border-gray-300"
+                    selectedType === h.type ? "border-[#1a1208] bg-pink-50" : "border-[#e0d8d0] hover:border-[#d4cdc5]"
                   }`}>
                   <p className="font-medium text-sm">{h.label}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{h.description}</p>
-                  <p className="text-xs text-gray-400 mt-1 italic">e.g., {h.example.substring(0, 80)}...</p>
+                  <p className="text-xs text-[#7a6a5a] mt-0.5">{h.description}</p>
+                  <p className="text-xs text-[#9a8a7a] mt-1 italic">e.g., {h.example.substring(0, 80)}...</p>
                 </button>
               ))}
             </div>
@@ -262,36 +262,36 @@ export default function MethodologyGuide({
           {selectedType && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
+                <label className="text-sm font-medium text-[#5a4a3a] block mb-1">
                   Independent Variable (IV) — what you think causes the effect
                 </label>
                 <input value={ivName} onChange={e => setIvName(e.target.value)}
                   placeholder="e.g., Geopolitical disruption exposure"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#111111]" />
+                  className="w-full px-3 py-2 border border-[#d4cdc5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1208]" />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
+                <label className="text-sm font-medium text-[#5a4a3a] block mb-1">
                   Dependent Variable (DV) — what you're measuring
                 </label>
                 <input value={dvName} onChange={e => setDvName(e.target.value)}
                   placeholder="e.g., Psychological stress level"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#111111]" />
+                  className="w-full px-3 py-2 border border-[#d4cdc5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1208]" />
               </div>
               {(selectedType === "moderation" || selectedType === "mediation") && (
                 <div className="col-span-2">
-                  <label className="text-sm font-medium text-gray-700 block mb-1">
+                  <label className="text-sm font-medium text-[#5a4a3a] block mb-1">
                     {selectedType === "moderation" ? "Moderator Variable" : "Mediator Variable"}
                   </label>
                   <input value={moderator} onChange={e => setModerator(e.target.value)}
                     placeholder={selectedType === "moderation" ? "e.g., Technology dependence level" : "e.g., Sense of control"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#111111]" />
+                    className="w-full px-3 py-2 border border-[#d4cdc5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1208]" />
                 </div>
               )}
             </div>
           )}
 
           <button onClick={() => setStep(1.5)} disabled={!selectedType || !researchQuestion}
-            className="px-4 py-2 bg-[#111111] text-white text-sm rounded-lg hover:bg-[#000000] disabled:opacity-50">
+            className="px-4 py-2 bg-[#1a1208] text-white text-sm rounded-lg hover:bg-[#000000] disabled:opacity-50">
             Next: Data Source Suggestions &rarr;
           </button>
         </div>
@@ -299,8 +299,8 @@ export default function MethodologyGuide({
 
       {/* ===== STEP 1.5: Data Source Suggestions ===== */}
       {step === 1.5 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-          <h2 className="font-semibold text-gray-800 text-lg">Step 1.5: What Data Do You Need?</h2>
+        <div className="bg-white rounded-xl border border-[#e0d8d0] p-6 space-y-5">
+          <h2 className="font-semibold text-[#1a1208] text-lg">Step 1.5: What Data Do You Need?</h2>
 
           <div className="bg-blue-50 rounded-lg p-4">
             <h3 className="font-medium text-blue-800 mb-2">Based on your hypothesis, your dataset should include:</h3>
@@ -360,8 +360,8 @@ export default function MethodologyGuide({
           )}
 
           <div className="flex gap-3">
-            <button onClick={() => setStep(1)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">&larr; Back</button>
-            <button onClick={() => setStep(2)} className="px-4 py-2 bg-[#111111] text-white text-sm rounded-lg hover:bg-[#000000]">
+            <button onClick={() => setStep(1)} className="px-4 py-2 text-sm text-[#7a6a5a] hover:text-[#1a1208]">&larr; Back</button>
+            <button onClick={() => setStep(2)} className="px-4 py-2 bg-[#1a1208] text-white text-sm rounded-lg hover:bg-[#000000]">
               Next: Map Variables &rarr;
             </button>
           </div>
@@ -370,8 +370,8 @@ export default function MethodologyGuide({
 
       {/* ===== STEP 2: Variable Mapping ===== */}
       {step === 2 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-          <h2 className="font-semibold text-gray-800 text-lg">Step 2: Map Your Variables</h2>
+        <div className="bg-white rounded-xl border border-[#e0d8d0] p-6 space-y-5">
+          <h2 className="font-semibold text-[#1a1208] text-lg">Step 2: Map Your Variables</h2>
 
           {!activeDataset ? (
             <div className="bg-amber-50 rounded-lg p-4">
@@ -379,47 +379,47 @@ export default function MethodologyGuide({
             </div>
           ) : (
             <>
-              <p className="text-sm text-gray-500">Using dataset: <strong>{activeDataset.filename}</strong> ({activeDataset.rows.length} rows, {activeDataset.columns.length} columns)</p>
+              <p className="text-sm text-[#7a6a5a]">Using dataset: <strong>{activeDataset.filename}</strong> ({activeDataset.rows.length} rows, {activeDataset.columns.length} columns)</p>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">
+                  <label className="text-sm font-medium text-[#5a4a3a] block mb-1">
                     IV: {ivName || "Independent Variable"}
                   </label>
                   <select value={ivColumn} onChange={e => setIvColumn(e.target.value)}
-                    className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111111]">
+                    className="w-full px-2 py-2 text-sm border border-[#d4cdc5] rounded-lg focus:ring-2 focus:ring-[#1a1208]">
                     <option value="">Select column...</option>
                     {allCols.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">
+                  <label className="text-sm font-medium text-[#5a4a3a] block mb-1">
                     DV: {dvName || "Dependent Variable"}
                   </label>
                   <select value={dvColumn} onChange={e => setDvColumn(e.target.value)}
-                    className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111111]">
+                    className="w-full px-2 py-2 text-sm border border-[#d4cdc5] rounded-lg focus:ring-2 focus:ring-[#1a1208]">
                     <option value="">Select column...</option>
                     {numericCols.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 {(selectedType === "moderation" || selectedType === "mediation") && (
                   <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-1">
+                    <label className="text-sm font-medium text-[#5a4a3a] block mb-1">
                       {selectedType === "moderation" ? "Moderator" : "Mediator"}: {moderator}
                     </label>
                     <select value={moderatorColumn} onChange={e => setModeratorColumn(e.target.value)}
-                      className="w-full px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#111111]">
+                      className="w-full px-2 py-2 text-sm border border-[#d4cdc5] rounded-lg focus:ring-2 focus:ring-[#1a1208]">
                       <option value="">Select column...</option>
                       {allCols.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                 )}
                 <div className={selectedType === "moderation" || selectedType === "mediation" ? "" : "col-span-2"}>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Covariates (optional)</label>
+                  <label className="text-sm font-medium text-[#5a4a3a] block mb-1">Covariates (optional)</label>
                   <div className="flex flex-wrap gap-1.5">
                     {numericCols.filter(c => c !== ivColumn && c !== dvColumn && c !== moderatorColumn).map(c => (
                       <button key={c} onClick={() => setCovariateColumns(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c])}
-                        className={`px-2 py-0.5 text-xs rounded ${covariateColumns.includes(c) ? "bg-[#111111] text-white" : "bg-gray-100 text-gray-600"}`}>
+                        className={`px-2 py-0.5 text-xs rounded ${covariateColumns.includes(c) ? "bg-[#1a1208] text-white" : "bg-[#faf7f0] text-[#7a6a5a]"}`}>
                         {c}
                       </button>
                     ))}
@@ -428,9 +428,9 @@ export default function MethodologyGuide({
               </div>
 
               <div className="flex gap-3">
-                <button onClick={() => setStep(1.5)} className="px-4 py-2 text-sm text-gray-600">&larr; Back</button>
+                <button onClick={() => setStep(1.5)} className="px-4 py-2 text-sm text-[#7a6a5a]">&larr; Back</button>
                 <button onClick={() => setStep(3)} disabled={!ivColumn || !dvColumn}
-                  className="px-4 py-2 bg-[#111111] text-white text-sm rounded-lg hover:bg-[#000000] disabled:opacity-50">
+                  className="px-4 py-2 bg-[#1a1208] text-white text-sm rounded-lg hover:bg-[#000000] disabled:opacity-50">
                   Next: Get Recommendations &rarr;
                 </button>
               </div>
@@ -442,46 +442,46 @@ export default function MethodologyGuide({
       {/* ===== STEP 3: Recommendations ===== */}
       {step === 3 && (
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="font-semibold text-gray-800 text-lg mb-4">Step 3: Recommended Analysis Plan</h2>
+          <div className="bg-white rounded-xl border border-[#e0d8d0] p-6">
+            <h2 className="font-semibold text-[#1a1208] text-lg mb-4">Step 3: Recommended Analysis Plan</h2>
 
             {!recommendations ? (
-              <p className="text-sm text-gray-500">Complete Steps 1 and 2 first.</p>
+              <p className="text-sm text-[#7a6a5a]">Complete Steps 1 and 2 first.</p>
             ) : (
               <div className="space-y-6">
                 {/* Data summary */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="font-medium text-gray-800 mb-2">Data Summary</h3>
+                <div className="bg-[#fdfcfa] rounded-lg p-4">
+                  <h3 className="font-medium text-[#1a1208] mb-2">Data Summary</h3>
                   <div className="grid grid-cols-4 gap-3 text-sm">
-                    <div><span className="text-gray-500">N:</span> <strong>{recommendations.n}</strong></div>
-                    <div><span className="text-gray-500">DV Mean:</span> <strong>{recommendations.dvMean.toFixed(2)}</strong></div>
-                    <div><span className="text-gray-500">DV SD:</span> <strong>{recommendations.dvSD.toFixed(2)}</strong></div>
-                    <div><span className="text-gray-500">Normality:</span> <strong className={recommendations.isNormal ? "text-green-600" : "text-amber-600"}>{recommendations.isNormal ? "Normal" : "Non-normal"}</strong> (skew={recommendations.skewness.toFixed(2)})</div>
+                    <div><span className="text-[#7a6a5a]">N:</span> <strong>{recommendations.n}</strong></div>
+                    <div><span className="text-[#7a6a5a]">DV Mean:</span> <strong>{recommendations.dvMean.toFixed(2)}</strong></div>
+                    <div><span className="text-[#7a6a5a]">DV SD:</span> <strong>{recommendations.dvSD.toFixed(2)}</strong></div>
+                    <div><span className="text-[#7a6a5a]">Normality:</span> <strong className={recommendations.isNormal ? "text-green-600" : "text-amber-600"}>{recommendations.isNormal ? "Normal" : "Non-normal"}</strong> (skew={recommendations.skewness.toFixed(2)})</div>
                   </div>
                   {recommendations.ivIsCategorical && (
-                    <p className="text-sm mt-2"><span className="text-gray-500">IV Groups:</span> <strong>{recommendations.ivGroups}</strong></p>
+                    <p className="text-sm mt-2"><span className="text-[#7a6a5a]">IV Groups:</span> <strong>{recommendations.ivGroups}</strong></p>
                   )}
                 </div>
 
                 {/* Recommended tests */}
                 <div>
-                  <h3 className="font-medium text-gray-800 mb-3">Recommended Statistical Tests</h3>
+                  <h3 className="font-medium text-[#1a1208] mb-3">Recommended Statistical Tests</h3>
                   <div className="space-y-2">
                     {recommendations.tests.map((t, i) => (
                       <div key={i} className={`p-3 rounded-lg border ${
                         t.priority === "recommended" ? "border-green-200 bg-green-50" :
                         t.priority === "alternative" ? "border-amber-200 bg-amber-50" :
-                        "border-gray-200 bg-gray-50"
+                        "border-[#e0d8d0] bg-[#fdfcfa]"
                       }`}>
                         <div className="flex items-center gap-2">
                           <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
                             t.priority === "recommended" ? "bg-green-200 text-green-800" :
                             t.priority === "alternative" ? "bg-amber-200 text-amber-800" :
-                            "bg-gray-200 text-gray-700"
+                            "bg-gray-200 text-[#5a4a3a]"
                           }`}>{t.priority}</span>
                           <span className="font-medium text-sm">{t.name}</span>
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">{t.reason}</p>
+                        <p className="text-xs text-[#7a6a5a] mt-1">{t.reason}</p>
                       </div>
                     ))}
                   </div>
@@ -489,7 +489,7 @@ export default function MethodologyGuide({
 
                 {/* Recommended visualizations */}
                 <div>
-                  <h3 className="font-medium text-gray-800 mb-3">Recommended Visualizations</h3>
+                  <h3 className="font-medium text-[#1a1208] mb-3">Recommended Visualizations</h3>
                   <div className="grid grid-cols-2 gap-2">
                     {recommendations.visualizations.map((v, i) => (
                       <div key={i} className="p-3 rounded-lg border border-blue-200 bg-blue-50">
@@ -502,16 +502,16 @@ export default function MethodologyGuide({
 
                 {/* Methodology write-up */}
                 <div>
-                  <h3 className="font-medium text-gray-800 mb-3">Draft Methodology Write-Up</h3>
-                  <div className="bg-white border border-gray-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed space-y-2">
+                  <h3 className="font-medium text-[#1a1208] mb-3">Draft Methodology Write-Up</h3>
+                  <div className="bg-white border border-[#e0d8d0] rounded-lg p-4 text-sm text-[#5a4a3a] leading-relaxed space-y-2">
                     <p><strong>Participants.</strong> The sample consisted of N = {recommendations.n} participants from the dataset ({activeDataset?.filename}).</p>
                     <p><strong>Measures.</strong> The independent variable was {ivName || ivColumn} ({recommendations.ivIsCategorical ? `categorical, ${recommendations.ivGroups} groups` : "continuous"}). The dependent variable was {dvName || dvColumn} (M = {recommendations.dvMean.toFixed(2)}, SD = {recommendations.dvSD.toFixed(2)}).{moderator ? ` The ${selectedType === "moderation" ? "moderator" : "mediator"} variable was ${moderator}.` : ""}{covariateColumns.length > 0 ? ` Covariates included: ${covariateColumns.join(", ")}.` : ""}</p>
                     <p><strong>Analysis Plan.</strong> {recommendations.tests.filter(t => t.priority === "recommended").map(t => t.name).join(" and ")} {recommendations.tests.filter(t => t.priority === "recommended").length === 1 ? "was" : "were"} conducted to test the hypothesis. {!recommendations.isNormal ? `Due to non-normal distribution (skewness = ${recommendations.skewness.toFixed(2)}), ${recommendations.tests.find(t => t.priority === "alternative")?.name || "non-parametric alternatives"} was also considered. ` : ""}Statistical significance was set at p &lt; .05.</p>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">This is a draft — edit it to match your specific study context.</p>
+                  <p className="text-xs text-[#9a8a7a] mt-2">This is a draft — edit it to match your specific study context.</p>
                 </div>
 
-                <button onClick={() => setStep(1)} className="px-4 py-2 text-sm text-gray-600">&larr; Start Over</button>
+                <button onClick={() => setStep(1)} className="px-4 py-2 text-sm text-[#7a6a5a]">&larr; Start Over</button>
               </div>
             )}
           </div>

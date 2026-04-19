@@ -54,12 +54,12 @@ export default function ProjectLiteratureReviewPage() {
   return (
     <div>
       <div className="mb-4">
-        <Link href={`/dashboard/project/${projectId}`} className="text-sm text-gray-500 hover:text-[#111111]">
+        <Link href={`/dashboard/project/${projectId}`} className="text-sm text-[#7a6a5a] hover:text-[#1a1208]">
           &larr; Back to project
         </Link>
       </div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Synthesized Literature Review</h1>
+        <h1 className="text-2xl font-bold text-[#1a1208]">Synthesized Literature Review</h1>
         <ExportButton entries={filtered} />
       </div>
       <div className="mb-4">
@@ -82,7 +82,7 @@ export default function ProjectLiteratureReviewPage() {
           <button
             onClick={loadMore}
             disabled={loadingMore}
-            className="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="px-6 py-2.5 border border-gray-300 text-[#5a4a3a] font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
             {loadingMore ? "Loading..." : "Load more entries"}
           </button>
