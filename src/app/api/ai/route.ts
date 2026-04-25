@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Too many requests. Please wait a moment." }, { status: 429 });
     }
 
-    const { messages, task, paper, mainAnswer } = await req.json();
+    const body = await req.json();
+    const { messages, task, paper, mainAnswer } = body;
 
     if (!OLLAMA_API_KEY) {
       return NextResponse.json({ error: "AI not configured" }, { status: 500 });
@@ -99,6 +100,42 @@ Be specific about the paper's methodology and findings. Reference specific claim
       }
     }
 
+    // Generate APA citation from PDF first-page text
+    if (task === "generate_apa") {
+      const { pdfText, filename } = body;
+
+      const apaPrompt = `You are an academic citation expert. Extract bibliographic information from the text below (taken from the first pages of a PDF) and generate a single APA 7th edition reference.
+
+Rules:
+- Return ONLY the APA reference string, nothing else — no explanation, no label, no quotes
+- Format: Author, A. B., & Author, C. D. (Year). Title of the article. Journal Name, Volume(Issue), Pages. https://doi.org/xxx
+- If information is missing, use what you can find. If you can't determine the year, use (n.d.)
+- For the title, use sentence case (only capitalize first word and proper nouns)
+- The filename is: ${filename || ""}
+
+PDF text from first pages:
+${(pdfText || "").slice(0, 3000)}`;
+
+      try {
+        const res = await fetch(OLLAMA_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${OLLAMA_API_KEY}` },
+          body: JSON.stringify({
+            model: OLLAMA_MODEL,
+            messages: [{ role: "system", content: "You generate APA citations. Return ONLY the citation string." }, { role: "user", content: apaPrompt }],
+            stream: false,
+          }),
+          signal: AbortSignal.timeout(30000),
+        });
+        if (!res.ok) return NextResponse.json({ apa: "" });
+        const data = await res.json();
+        const apa = (data.message?.content || "").trim().replace(/^["']|["']$/g, "");
+        return NextResponse.json({ apa });
+      } catch {
+        return NextResponse.json({ apa: "" });
+      }
+    }
+
     // Generic AI tasks (summarize, ask, explain, etc.)
     switch (task) {
       case "summarize":
@@ -107,6 +144,20 @@ Be specific about the paper's methodology and findings. Reference specific claim
       case "suggest_keywords":
         systemPrompt = "Based on the research topic, suggest 5-8 search queries. Return ONLY queries, one per line.";
         break;
+      case "learning_coach": {
+        // Cerise — research-learning coach for the /my-learning/notes coach panel.
+        // Reads the student's actual notes (passed in body.notesContext) so it
+        // can ground its answers in what the student has actually written.
+        const ctx = (body.notesContext || "").slice(0, 6000);
+        systemPrompt =
+          "You are Cerise, the user's research learning coach. " +
+          "Your job is to help them organize and connect the notes they've written while watching course lessons. " +
+          "Be warm, concise, and concrete. Always end your reply with a follow-up question to make the student think — not just receive.\n\n" +
+          (ctx
+            ? `The student's current notes (grouped by module) are below. Reason about THESE — do not invent new content.\n\n${ctx}`
+            : "The student has not written any notes yet. Encourage them to start with one short note per lesson.");
+        break;
+      }
       default:
         systemPrompt = "You are a helpful academic research assistant.";
     }

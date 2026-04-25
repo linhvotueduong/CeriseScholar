@@ -2,7 +2,7 @@
 
 > This file is kept up to date as the project evolves. It describes every folder and file so you always know what's where.
 
-**Last updated:** 2026-04-01
+**Last updated:** 2026-04-24
 
 ---
 
@@ -40,7 +40,13 @@ CeriseScholar/
 │   ├── 001_initial_schema.sql          # pdfs, highlights, annotations, literature_review_entries + RLS
 │   ├── 002_code_system.sql             # codes table + code_id/code_name columns
 │   ├── 003_projects.sql                # projects table + project_id on pdfs/codes/lit review
-│   └── 004_paper_sections.sql          # paper_sections table (project_id, section_key, content)
+│   ├── 004_paper_sections.sql          # paper_sections table (project_id, section_key, content)
+│   ├── 005_indexes.sql                 # Query perf indexes
+│   ├── 006_meta_analysis.sql           # Meta-analysis tables
+│   ├── 007_codes_unique.sql            # Unique constraint fix for codes
+│   ├── 008_scholar_space.sql           # Cerise Space forum (posts, comments, topics)
+│   ├── 009_courses.sql                 # Courses: course_modules, course_videos, course_progress + admin RLS
+│   └── 010_course_notes.sql            # Student notes (course_notes) + admin_notes column on course_videos
 │
 ├── public/
 │   └── pdf.worker.min.mjs             # PDF.js web worker (copied via postinstall)
@@ -59,13 +65,20 @@ CeriseScholar/
 │   │   ├── signup/page.tsx             # Signup page
 │   │   ├── about/page.tsx              # About page
 │   │   ├── research-guidance/page.tsx  # Step-by-step research guide
+│   │   ├── courses/
+│   │   │   ├── page.tsx                # Public course landing page: hero, sticky CTA, scroll-spy nav, About / Modules / What you'll learn / FAQ
+│   │   │   └── learn/page.tsx          # Student learning experience: YouTube embed, progress, From Cerise card, auto-saving notes panel, ?video= deep link
+│   │   ├── admin/courses/page.tsx      # Admin courses manager (cerisescholar@gmail.com): modules, videos, per-video admin notes
+│   │   ├── my-learning/
+│   │   │   ├── page.tsx                # My Learning dashboard: stat cards, progress, module breakdown, notes preview, streak
+│   │   │   └── notes/page.tsx          # Notes manager: search/highlight, filter, sort, export, group-by-module, Cerise coach
 │   │   ├── auth/callback/route.ts      # Email confirmation → session exchange
 │   │   │
 │   │   ├── api/
 │   │   │   ├── auth/callback/route.ts  # OAuth callback handler
 │   │   │   ├── ocr/route.ts            # Server-side OCR (pdfjs + tesseract, 300s timeout)
 │   │   │   ├── research/route.ts       # ScholarAsk: 6 queries → OpenAlex → Ollama synthesis
-│   │   │   └── ai/route.ts             # Generic AI: summarize, suggest_keywords, paper_analysis
+│   │   │   └── ai/route.ts             # Generic AI: summarize, suggest_keywords, paper_analysis, learning_coach
 │   │   │
 │   │   └── dashboard/
 │   │       ├── layout.tsx              # Dashboard layout (Navbar + Sidebar)
@@ -99,8 +112,14 @@ CeriseScholar/
 │   │   │   ├── LoginForm.tsx           # Email/password login
 │   │   │   └── SignupForm.tsx          # Signup form
 │   │   ├── layout/
-│   │   │   ├── Navbar.tsx              # Top navigation bar
-│   │   │   └── Sidebar.tsx             # Dashboard sidebar
+│   │   │   ├── Navbar.tsx              # Top nav (Home, About, Guidance, Cerise Space, Projects, Courses, My Learning, Admin)
+│   │   │   ├── Sidebar.tsx             # Dashboard sidebar
+│   │   │   └── AdminNavLink.tsx        # "Admin" link, only renders for cerisescholar@gmail.com
+│   │   ├── courses/
+│   │   │   ├── CoursesTabs.tsx         # Pill tabs ("Video + notes" / "My learning dashboard") on /courses/learn + /my-learning
+│   │   │   ├── CourseSectionNav.tsx    # Sticky scroll-spy nav for /courses landing (About / Modules / What you'll learn / FAQ)
+│   │   │   ├── CourseFaq.tsx           # Accordion FAQ component for /courses landing (smooth grid-template-rows transition)
+│   │   │   └── CeriseCoach.tsx         # Floating AI coach panel on /my-learning/notes (localStorage history, suggested prompts)
 │   │   ├── ui/
 │   │   │   ├── Spinner.tsx             # Loading spinner
 │   │   │   ├── CollapsibleSection.tsx  # Collapsible container
@@ -163,7 +182,8 @@ CeriseScholar/
 │       ├── code.ts                    # Code type + DEFAULT_CODES (7 paper sections)
 │       ├── literature-review.ts       # LiteratureReviewEntry type
 │       ├── paper-section.ts           # PaperSection + SECTION_LABELS + SECTION_GUIDANCE
-│       └── project.ts                # Project type (name, description, color)
+│       ├── project.ts                 # Project type (name, description, color)
+│       └── course.ts                  # CourseModule, CourseVideo (+admin_notes), CourseProgress, CourseNote, ModuleWithVideos, ADMIN_EMAIL
 ```
 
 ---

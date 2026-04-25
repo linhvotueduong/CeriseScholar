@@ -49,6 +49,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // /admin/* is for the site admin only. Redirect everyone else to /dashboard.
+  // Logged-out users get sent to /login first so they can sign in.
+  if (path.startsWith("/admin")) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+    if (user.email?.toLowerCase() !== "cerisescholar@gmail.com") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+  }
+
   // If user IS logged in and trying to access /login or /signup, redirect to /dashboard
   if (user && (path === "/login" || path === "/signup")) {
     const url = request.nextUrl.clone();
@@ -61,5 +76,5 @@ export async function middleware(request: NextRequest) {
 
 // Only run middleware on these paths (skip static files, images, etc.)
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/signup"],
 };

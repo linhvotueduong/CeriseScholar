@@ -1,9 +1,12 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import Link from "next/link";
+import HEDGEHOG from "@/lib/hedgehog";
+import AdminNavLink from "@/components/layout/AdminNavLink";
 
 export default function Navbar() {
   const { user } = useUser();
@@ -17,7 +20,22 @@ export default function Navbar() {
   }
 
   return (
-    <div style={{ padding: "12px 24px 0" }}>
+    <div style={{ padding: "12px 24px 0", position: "relative" }}>
+      {/* Hedgehog mascot beside navbar pill */}
+      <img
+        src={HEDGEHOG.hedgehog01Start}
+        alt=""
+        className="pointer-events-none hidden lg:block"
+        style={{
+          position: "absolute",
+          left: "calc(50% - 550px - 60px)",
+          top: "8px",
+          height: "52px",
+          width: "auto",
+          objectFit: "contain",
+          zIndex: 10,
+        }}
+      />
       <nav
         style={{
           maxWidth: "1100px",
@@ -92,11 +110,29 @@ export default function Navbar() {
             Guidance
           </Link>
 
+          <Link href="/dashboard/space" className="hover:opacity-70" style={{ color: "#1a1208", textDecoration: "none" }}>
+            Cerise Space
+          </Link>
+
           {user && (
             <Link href="/dashboard" className="hover:opacity-70" style={{ color: "#1a1208", textDecoration: "none", fontWeight: 600 }}>
               Projects
             </Link>
           )}
+
+          {user && (
+            <Link href="/courses" className="hover:opacity-70" style={{ color: "#1a1208", textDecoration: "none", fontWeight: 600 }}>
+              Courses
+            </Link>
+          )}
+
+          {user && (
+            <Link href="/my-learning" className="hover:opacity-70" style={{ color: "#1a1208", textDecoration: "none", fontWeight: 600 }}>
+              My Learning
+            </Link>
+          )}
+
+          <AdminNavLink />
         </div>
 
         {/* Right side: auth */}
