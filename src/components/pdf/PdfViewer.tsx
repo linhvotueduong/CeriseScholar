@@ -272,16 +272,42 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
     [reHighlightId]
   );
 
+  // Extract first 2 pages for APA citation generation
+  const firstPagesTextRef = useRef<string>("");
+  const firstPagesPdfIdRef = useRef<string>("");
+
+  const getFirstPagesText = useCallback(async () => {
+    if (firstPagesTextRef.current && firstPagesPdfIdRef.current === pdfId) return firstPagesTextRef.current;
+    if (!document) return "";
+    const texts: string[] = [];
+    for (let i = 1; i <= Math.min(totalPages, 2); i++) {
+      try { const t = await extractPageText(document, i); if (t) texts.push(t); } catch {}
+    }
+    const result = texts.join("\n\n").slice(0, 3000);
+    firstPagesTextRef.current = result;
+    firstPagesPdfIdRef.current = pdfId;
+    return result;
+  }, [document, totalPages, pdfId]);
+
   // When user saves from the new-highlight modal (with color, code, + optional note)
+  const savingRef = useRef(false);
   const handleSaveNewHighlight = useCallback(
     async (noteContent: string, color?: string, codeId?: string, codeName?: string) => {
-      if (!pendingHighlight) return;
+      if (!pendingHighlight || savingRef.current) return;
+      savingRef.current = true;
+
+      // Capture and clear immediately to prevent double-save
+      const pending = pendingHighlight;
+      setPendingHighlight(null);
+
+      // Get first pages text for APA citation (cached, fast)
+      const pdfFirstPagesText = await getFirstPagesText();
 
       const highlight = await createHighlight({
         pdfId,
-        pageNumber: pendingHighlight.pageNumber,
-        highlightedText: pendingHighlight.text,
-        rects: pendingHighlight.rects,
+        pageNumber: pending.pageNumber,
+        highlightedText: pending.text,
+        rects: pending.rects,
         color: color || "#FFD700",
         pdfDisplayName,
         pdfAuthor,
@@ -290,12 +316,13 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         codeName,
         noteContent,
         projectId,
+        pdfFirstPagesText,
       });
 
       if (highlight && noteContent) {
         await createAnnotation({
           pdfId,
-          pageNumber: pendingHighlight.pageNumber,
+          pageNumber: pending.pageNumber,
           content: noteContent,
           positionX: 0,
           positionY: 0,
@@ -303,9 +330,9 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         });
       }
 
-      setPendingHighlight(null);
+      savingRef.current = false;
     },
-    [pdfId, pdfDisplayName, pendingHighlight, createHighlight, createAnnotation]
+    [pdfId, pdfDisplayName, pendingHighlight, createHighlight, createAnnotation, getFirstPagesText]
   );
 
   // Add note to an existing highlight from sidebar

@@ -52,8 +52,11 @@ export default function HighlightLayer({
     const textLayerDiv = pageContainer.querySelector(".textLayer");
     if (!textLayerDiv) return;
 
+    // Both anchor and focus must be in this page's text layer
     const selectionAnchor = selection.anchorNode;
+    const selectionFocus = selection.focusNode;
     if (!selectionAnchor || !textLayerDiv.contains(selectionAnchor)) return;
+    if (!selectionFocus || !textLayerDiv.contains(selectionFocus)) return;
 
     const range = selection.getRangeAt(0);
     const clientRects = range.getClientRects();
@@ -62,10 +65,29 @@ export default function HighlightLayer({
     // Measure relative to the canvas — most reliable reference
     const canvasRect = canvas.getBoundingClientRect();
 
+    // Collect all span rects within the text layer that intersect with the selection
+    // This prevents over-selection by only including rects from actual selected spans
+    const selectedSpans = new Set<Element>();
+    const treeWalker = window.document.createTreeWalker(
+      range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+        ? range.commonAncestorContainer
+        : range.commonAncestorContainer.parentElement!,
+      NodeFilter.SHOW_TEXT,
+    );
+    let node: Node | null;
+    while ((node = treeWalker.nextNode())) {
+      if (range.intersectsNode(node) && node.parentElement) {
+        selectedSpans.add(node.parentElement);
+      }
+    }
+
     const rects: { x: number; y: number; width: number; height: number }[] = [];
     for (let i = 0; i < clientRects.length; i++) {
       const r = clientRects[i];
       if (r.width <= 0 || r.height <= 0) continue;
+
+      // Skip rects that are wider than 95% of canvas — likely over-selection artifacts
+      if (r.width > canvasRect.width * 0.95 && clientRects.length > 1) continue;
 
       // Position as percentage of canvas dimensions
       let x = ((r.left - canvasRect.left) / canvasRect.width) * 100;
@@ -84,9 +106,26 @@ export default function HighlightLayer({
       }
     }
 
-    if (rects.length === 0) return;
+    // Deduplicate rects that overlap significantly (same line, overlapping x ranges)
+    const merged: typeof rects = [];
+    for (const rect of rects) {
+      const existing = merged.find(
+        (m) => Math.abs(m.y - rect.y) < 1 && m.x < rect.x + rect.width && rect.x < m.x + m.width
+      );
+      if (existing) {
+        const minX = Math.min(existing.x, rect.x);
+        const maxX = Math.max(existing.x + existing.width, rect.x + rect.width);
+        existing.x = minX;
+        existing.width = maxX - minX;
+        existing.height = Math.max(existing.height, rect.height);
+      } else {
+        merged.push({ ...rect });
+      }
+    }
 
-    onCreateHighlight(text, rects);
+    if (merged.length === 0) return;
+
+    onCreateHighlight(text, merged);
     selection.removeAllRanges();
   }, [highlightMode, onCreateHighlight]);
 

@@ -17,6 +17,8 @@ interface CreateHighlightParams {
   codeName?: string;
   noteContent?: string;
   projectId?: string;
+  /** Text from first pages of the PDF — used for AI APA citation generation */
+  pdfFirstPagesText?: string;
 }
 
 export function useHighlights(pdfId: string) {
@@ -64,7 +66,7 @@ export function useHighlights(pdfId: string) {
 
       if (highlightError || !highlight) return null;
 
-      // 2. Build APA reference from PDF metadata if available
+      // 2. Build basic APA reference from PDF metadata
       let apaRef = "";
       if (params.pdfAuthor || params.pdfTitle) {
         const parts: string[] = [];
@@ -74,7 +76,7 @@ export function useHighlights(pdfId: string) {
       }
 
       // 3. Create a literature review entry
-      await supabase.from("literature_review_entries").insert({
+      const { data: litEntry } = await supabase.from("literature_review_entries").insert({
         user_id: user.id,
         pdf_id: params.pdfId,
         highlight_id: highlight.id,
@@ -86,9 +88,34 @@ export function useHighlights(pdfId: string) {
         user_notes: params.noteContent || "",
         apa_reference: apaRef,
         project_id: params.projectId || null,
-      });
+      }).select("id").single();
 
-      // 3. Update local state
+      // 4. Fire-and-forget: ask AI to generate proper APA citation from PDF text
+      if (litEntry && params.pdfFirstPagesText) {
+        fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task: "generate_apa",
+            pdfText: params.pdfFirstPagesText,
+            filename: params.pdfDisplayName,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.apa) {
+              // Update the lit review entry with AI-generated APA
+              supabase
+                .from("literature_review_entries")
+                .update({ apa_reference: data.apa, authors: data.apa.split("(")[0]?.trim() || params.pdfAuthor || "" })
+                .eq("id", litEntry.id)
+                .then(() => {});
+            }
+          })
+          .catch(() => {}); // silently fail — the basic ref is already saved
+      }
+
+      // 5. Update local state
       setHighlights((prev) => [...prev, highlight as Highlight]);
       return highlight as Highlight;
     },
