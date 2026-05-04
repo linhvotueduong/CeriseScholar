@@ -30,5 +30,20 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    ".next/cache",
+    ".next/server",
+    ".next/static",
+    ".next/types/**/* 2.ts",
+    ".next/types/**/* 3.ts",
+    ".next/types/**/* 4.ts",
+    ".next/types/**/* 5.ts",
+    ".next/dev/types/**/* 2.ts",
+    ".next/dev/types/**/* 3.ts",
+    ".next/dev/types/**/* 4.ts",
+    ".next/dev/types/**/* 5.ts",
+    "src/.next",
+    ".local-artifacts"
+  ]
 }

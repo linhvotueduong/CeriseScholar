@@ -3,6 +3,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
 import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
+import { rejectIfBetaAccessMissing } from "@/lib/beta/api";
+import { rejectIfLegalConsentMissing } from "@/lib/legal/api";
 
 // Vercel serverless: allow up to 60s for long-text synthesis.
 // The Edge TTS WebSocket stream is slow enough that 10s default can cut off 5000-char jobs.
@@ -53,6 +55,12 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    const betaResponse = await rejectIfBetaAccessMissing(supabase, user);
+    if (betaResponse) return betaResponse;
+
+    const consentResponse = await rejectIfLegalConsentMissing(supabase, user.id);
+    if (consentResponse) return consentResponse;
 
     // Rate limit: 20 TTS requests per minute per user
     if (!checkRateLimit(user.id, "tts", 20, 60_000)) {

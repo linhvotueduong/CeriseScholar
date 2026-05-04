@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const ADMIN_EMAIL = "cerisescholar@gmail.com";
+
 /**
  * Middleware that runs on every request.
  * Kept as `middleware` (not `proxy`) because Next 16.2.1's dev runtime
@@ -10,6 +12,15 @@ import { NextResponse, type NextRequest } from "next/server";
  * - Redirects logged-in users away from /login and /signup pages
  */
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const hasSupabaseAuthCookie = request.cookies
+    .getAll()
+    .some((cookie) => cookie.name.startsWith("sb-"));
+
+  if (!hasSupabaseAuthCookie && (path === "/login" || path === "/signup")) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -40,8 +51,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
-
   // If user is NOT logged in and trying to access /dashboard, redirect to /login
   if (!user && path.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
@@ -57,7 +66,7 @@ export async function middleware(request: NextRequest) {
       url.pathname = "/login";
       return NextResponse.redirect(url);
     }
-    if (user.email?.toLowerCase() !== "cerisescholar@gmail.com") {
+    if (user.email?.toLowerCase() !== ADMIN_EMAIL) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);

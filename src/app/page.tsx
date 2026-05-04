@@ -10,8 +10,8 @@ import {
   Poppins,
   Bebas_Neue,
   Fredoka,
-} from "next/font/google";
-import HEDGEHOG from "../lib/hedgehog_images.js";
+} from "@/lib/localFonts";
+import HEDGEHOG from "@/lib/hedgehog";
 import PipelineCart from "../components/PipelineCart";
 import LiveDemo from "../components/LiveDemo";
 import ShiftingGrid from "../components/ShiftingGrid";
@@ -122,9 +122,10 @@ export default function DesignPreviewHomepage() {
         >
           <div className="group" style={{ position: "relative" }}>
             <span className="hover:opacity-70 cursor-pointer" style={{ color: palette.ink, textDecoration: "none" }}>About</span>
-            <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: "8px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", padding: "8px", minWidth: "120px", zIndex: 200 }}>
+            <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: "8px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", padding: "8px", minWidth: "170px", zIndex: 200 }}>
               <Link href="/about/features" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: palette.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Features</Link>
               <Link href="/about/mission" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: palette.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Mission</Link>
+              <Link href="/about/privacy-security" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: palette.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Privacy & Security</Link>
             </div>
           </div>
           <Link href="/research-guidance" className="hover:opacity-70" style={{ color: palette.ink, textDecoration: "none" }}>Guidance</Link>
@@ -516,6 +517,7 @@ export default function DesignPreviewHomepage() {
                 <Link href="/about" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">About</Link>
                 <Link href="/research-guidance" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">Research Guide</Link>
                 <Link href="/projects-preview" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">Projects</Link>
+                <Link href="/legal" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">Legal</Link>
                 <a href="https://github.com/linhvotueduong/CeriseScholar" target="_blank" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">GitHub ↗</a>
               </div>
             </div>
@@ -540,6 +542,13 @@ export default function DesignPreviewHomepage() {
             </span>
             <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: "11px", color: "#a09080" }}>
               Built for researchers
+            </span>
+            <span style={{ display: "flex", gap: "12px", flexWrap: "wrap", fontFamily: "var(--font-dm-sans)", fontSize: "11px" }}>
+              <Link href="/terms" style={{ color: "#a09080", textDecoration: "none" }}>Terms</Link>
+              <Link href="/privacy" style={{ color: "#a09080", textDecoration: "none" }}>Privacy</Link>
+              <Link href="/ai-data-use" style={{ color: "#a09080", textDecoration: "none" }}>AI Data</Link>
+              <Link href="/beta-terms" style={{ color: "#a09080", textDecoration: "none" }}>Beta</Link>
+              <Link href="/about/privacy-security" style={{ color: "#a09080", textDecoration: "none" }}>Security</Link>
             </span>
           </div>
         </div>

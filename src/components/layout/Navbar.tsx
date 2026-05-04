@@ -93,7 +93,7 @@ export default function Navbar() {
                 borderRadius: "12px",
                 boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                 padding: "8px",
-                minWidth: "120px",
+                minWidth: "170px",
                 zIndex: 200,
               }}
             >
@@ -102,6 +102,9 @@ export default function Navbar() {
               </Link>
               <Link href="/about/mission" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: "#1a1208", textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>
                 Mission
+              </Link>
+              <Link href="/about/privacy-security" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: "#1a1208", textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>
+                Privacy & Security
               </Link>
             </div>
           </div>

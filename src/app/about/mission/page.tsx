@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DM_Serif_Display, DM_Sans, Playfair_Display, Noto_Sans, Fredoka } from "next/font/google";
-import HEDGEHOG from "../../../lib/hedgehog_images.js";
+import { DM_Serif_Display, DM_Sans, Playfair_Display, Noto_Sans, Fredoka } from "@/lib/localFonts";
+import HEDGEHOG from "@/lib/hedgehog";
 
 export const metadata: Metadata = {
   title: "Mission — Cerise Scholar",
@@ -37,7 +37,7 @@ export default function MissionPage() {
           <Link href="/" style={{ fontFamily: "var(--font-playfair)", fontSize: "15px", color: p.ink, textDecoration: "none" }}>Cerise Scholar</Link>
           <div style={{ display: "flex", alignItems: "center", gap: "20px", fontFamily: "var(--font-noto)", fontSize: "11px" }}>
             <Link href="/" className="hover:opacity-70" style={{ color: p.ink, textDecoration: "none" }}>Home</Link>
-            <div className="group" style={{ position: "relative" }}><span className="cursor-pointer" style={{ color: p.cerise, fontWeight: 600 }}>About</span><div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: "8px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", padding: "8px", minWidth: "120px", zIndex: 200 }}><Link href="/about/features" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: p.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Features</Link><Link href="/about/mission" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: p.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Mission</Link></div></div>
+            <div className="group" style={{ position: "relative" }}><span className="cursor-pointer" style={{ color: p.cerise, fontWeight: 600 }}>About</span><div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: "8px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", padding: "8px", minWidth: "170px", zIndex: 200 }}><Link href="/about/features" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: p.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Features</Link><Link href="/about/mission" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: p.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Mission</Link><Link href="/about/privacy-security" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: p.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Privacy & Security</Link></div></div>
             <Link href="/research-guidance" className="hover:opacity-70" style={{ color: p.ink, textDecoration: "none" }}>Research Guide</Link>
             <Link href="/projects-preview" className="hover:opacity-70" style={{ color: p.ink, textDecoration: "none" }}>Projects</Link>
           </div>
@@ -216,6 +216,7 @@ export default function MissionPage() {
                 <Link href="/about/features" style={{ color: p.muted, textDecoration: "none" }}>Features</Link>
                 <Link href="/about/mission" style={{ color: p.muted, textDecoration: "none" }}>Mission</Link>
                 <Link href="/research-guidance" style={{ color: p.muted, textDecoration: "none" }}>Research Guide</Link>
+                <Link href="/legal" style={{ color: p.muted, textDecoration: "none" }}>Legal</Link>
               </div>
             </div>
             <div>
@@ -229,7 +230,13 @@ export default function MissionPage() {
           </div>
           <div style={{ borderTop: `1px solid ${p.rule}`, paddingTop: "16px", paddingBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: "10px", color: p.faint }}>© 2025 Cerise Scholar · All rights reserved</span>
-            <span style={{ fontSize: "10px", color: p.faint }}>Built for researchers</span>
+            <span style={{ display: "flex", gap: "10px", flexWrap: "wrap", fontSize: "10px" }}>
+              <Link href="/terms" style={{ color: p.faint, textDecoration: "none" }}>Terms</Link>
+              <Link href="/privacy" style={{ color: p.faint, textDecoration: "none" }}>Privacy</Link>
+              <Link href="/ai-data-use" style={{ color: p.faint, textDecoration: "none" }}>AI Data</Link>
+              <Link href="/beta-terms" style={{ color: p.faint, textDecoration: "none" }}>Beta</Link>
+              <Link href="/about/privacy-security" style={{ color: p.faint, textDecoration: "none" }}>Security</Link>
+            </span>
           </div>
         </div>
       </footer>

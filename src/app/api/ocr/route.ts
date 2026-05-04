@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
+import { rejectIfBetaAccessMissing } from "@/lib/beta/api";
+import { rejectIfLegalConsentMissing } from "@/lib/legal/api";
 
 export const maxDuration = 300;
 
@@ -43,6 +45,12 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    const betaResponse = await rejectIfBetaAccessMissing(supabase, user);
+    if (betaResponse) return betaResponse;
+
+    const consentResponse = await rejectIfLegalConsentMissing(supabase, user.id);
+    if (consentResponse) return consentResponse;
 
     // Rate limit: 5 OCR requests per hour per user
     if (!checkRateLimit(user.id, "ocr", 5, 3_600_000)) {
@@ -96,8 +104,8 @@ export async function POST(request: Request) {
         const page = await doc.getPage(i);
         const textContent = await page.getTextContent();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const pageText = textContent.items
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .map((item: any) => item.str || "")
           .join(" ")
           .trim();

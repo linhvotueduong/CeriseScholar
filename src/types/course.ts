@@ -38,4 +38,4 @@ export interface ModuleWithVideos extends CourseModule {
   videos: CourseVideo[];
 }
 
-export const ADMIN_EMAIL = "cerisescholar@gmail.com";
+export { ADMIN_EMAIL } from "@/lib/admin/config";

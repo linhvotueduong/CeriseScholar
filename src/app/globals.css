@@ -35,9 +35,18 @@
   --danger:       #dc2626;
 
   /* -- Typography -- */
-  --font-body:    var(--font-body), "DM Sans", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: var(--font-display), "DM Serif Display", "Montserrat", Georgia, serif;
-  --font-mono:    var(--font-mono), "PT Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-body:    "DM Sans", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "DM Serif Display", "Montserrat", Georgia, serif;
+  --font-mono:    "PT Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-dm-sans: var(--font-body);
+  --font-dm-serif: var(--font-display);
+  --font-playfair: "Playfair Display", Georgia, serif;
+  --font-noto: "Noto Sans", var(--font-body);
+  --font-fredoka: "Fredoka", var(--font-body);
+  --font-schoolbell: "Schoolbell", "Comic Sans MS", cursive;
+  --font-roboto: "Roboto", var(--font-body);
+  --font-poppins: "Poppins", var(--font-body);
+  --font-bebas: "Bebas Neue", Impact, sans-serif;
 
   /* -- Radius -- */
   --radius-sm: 4px;

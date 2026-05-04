@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
+import { rejectIfBetaAccessMissing } from "@/lib/beta/api";
+import { rejectIfLegalConsentMissing } from "@/lib/legal/api";
 
 const OLLAMA_API_URL = "https://ollama.com/api/chat";
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || "";
@@ -39,6 +41,12 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    const betaResponse = await rejectIfBetaAccessMissing(supabase, user);
+    if (betaResponse) return betaResponse;
+
+    const consentResponse = await rejectIfLegalConsentMissing(supabase, user.id);
+    if (consentResponse) return consentResponse;
 
     // Rate limit: 15 AI requests per minute per user
     if (!checkRateLimit(user.id, "ai", 15, 60_000)) {

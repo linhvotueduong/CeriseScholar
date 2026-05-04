@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, DM_Serif_Display, PT_Mono, Playfair_Display, Noto_Sans } from "next/font/google";
+import { DM_Sans, DM_Serif_Display, PT_Mono, Playfair_Display, Noto_Sans } from "@/lib/localFonts";
 import "./globals.css";
 import FlowGuide from "../components/FlowGuide";
 

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
+import AdminSectionNav from "@/components/admin/AdminSectionNav";
 import Navbar from "@/components/layout/Navbar";
 import GoldStars from "@/components/doodles/GoldStars";
 import type { CourseModule, CourseVideo } from "@/types/course";
@@ -242,6 +243,7 @@ export default function AdminCoursesPage() {
   return (
     <div style={{ minHeight: "100vh", background: p.bg, position: "relative" }}>
       <Navbar />
+      <AdminSectionNav active="courses" />
       <GoldStars stars={stars} />
 
       {/* Header */}
