@@ -162,6 +162,7 @@ const ResponseContent = React.memo(function ResponseContent({
           tbody: ({ children }) => <tbody className="divide-y divide-gray-100">{children}</tbody>,
           tr: ({ children }) => <tr className="hover:bg-[#fdfcfa]">{children}</tr>,
           td: ({ children }) => <td className="px-4 py-2.5 text-[#5a4a3a]">{children}</td>,
+          hr: () => null,
           a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#1a1208] hover:underline">{children}</a>,
         }}
       >
