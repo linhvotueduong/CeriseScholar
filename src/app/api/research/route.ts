@@ -2,12 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
+import { callOllamaChat, OllamaError } from "@/lib/server/ollama";
 
-const OLLAMA_API_URL = "https://ollama.com/api/chat";
-const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || "";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "kimi-k2.5";
 const OPENALEX_TIMEOUT_MS = 8000;
-const AI_TIMEOUT_MS = 45000;
+const AI_TIMEOUT_MS = 25000;
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -133,16 +131,12 @@ export async function POST(req: NextRequest) {
 
     const { query, followUp, previousAnswer, deepResearch } = await req.json();
 
-    if (!OLLAMA_API_KEY) {
-      return NextResponse.json({ error: "AI not configured" }, { status: 500 });
-    }
-
     // Step 1: Generate 6 search queries
     const searchQueries = generateSearchQueries(query);
 
     // Keep this fast enough for Azure Static Web Apps' managed backend.
     const searchResults = await Promise.all(
-      searchQueries.slice(0, deepResearch ? 4 : 3).map((q) => searchOpenAlex(q, deepResearch ? 16 : 12))
+      searchQueries.slice(0, deepResearch ? 4 : 3).map((q) => searchOpenAlex(q, deepResearch ? 14 : 10))
     );
 
     // Step 3: Merge, deduplicate, sort by citations
@@ -160,16 +154,16 @@ export async function POST(req: NextRequest) {
     allPapers.sort((a, b) => (b.citationCount || 0) - (a.citationCount || 0));
 
     // Keep enough references for source exploration, but do not overfeed the AI prompt.
-    const papers = allPapers.slice(0, deepResearch ? 40 : 28);
+    const papers = allPapers.slice(0, deepResearch ? 32 : 24);
     papers.forEach((p, i) => (p.num = i + 1));
 
     // Papers with abstracts for AI. A concise first answer is more reliable on Azure Free.
     const papersWithAbstracts = papers.filter((p) => p.abstract && p.abstract.length > 30);
-    const aiPapers = papersWithAbstracts.slice(0, deepResearch ? 8 : 5);
+    const aiPapers = papersWithAbstracts.slice(0, deepResearch ? 6 : 4);
 
     // Step 4: Full context with proper abstracts
     const papersContext = aiPapers
-      .map((p) => `[${p.num}] ${p.authors.slice(0, 2).join(", ")}${p.authors.length > 2 ? " et al." : ""} (${p.year || "n.d."}). "${p.title}". ${p.journal}.\nFindings: ${p.abstract.slice(0, 180)}`)
+      .map((p) => `[${p.num}] ${p.authors.slice(0, 2).join(", ")}${p.authors.length > 2 ? " et al." : ""} (${p.year || "n.d."}). "${p.title}". ${p.journal}.\nFindings: ${p.abstract.slice(0, 150)}`)
       .join("\n\n");
 
     // Step 5: Professor-level prompt — detailed, multi-source citations
@@ -198,47 +192,33 @@ ANALYSIS REQUIREMENTS:
       messages.push({ role: "user", content: query });
     }
 
-    // Step 6: Call AI. Azure can return a plain "Backend call failure" if this runs too long.
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
-
     try {
-      const aiRes = await fetch(OLLAMA_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${OLLAMA_API_KEY}` },
-        body: JSON.stringify({
-          model: OLLAMA_MODEL,
-          messages,
-          stream: false,
-          options: {
-            temperature: 0.2,
-            num_predict: deepResearch ? 1400 : 900,
-          },
-        }),
-        signal: controller.signal,
+      const answer = await callOllamaChat({
+        route: "research",
+        messages,
+        timeoutMs: AI_TIMEOUT_MS,
+        numPredict: deepResearch ? 800 : 600,
       });
-      clearTimeout(timeout);
-
-      if (!aiRes.ok) {
-        console.error("AI upstream error:", aiRes.status, await aiRes.text());
-        return NextResponse.json({ error: "Research analysis failed. Please try again." }, { status: 500 });
-      }
-
-      const aiData = await aiRes.json();
       return NextResponse.json({
-        answer: aiData.message?.content || "",
+        answer,
         references: papers,
         paperCount: aiPapers.length,
         totalFound: papers.length,
       });
     } catch (err) {
-      clearTimeout(timeout);
-      if (err instanceof Error && err.name === "AbortError") {
-        return NextResponse.json({ error: "AI took too long. Try a shorter question or turn off Deep research." }, { status: 504 });
+      if (err instanceof OllamaError) {
+        const message =
+          err.status === 504
+            ? "AI took too long. Try a shorter question or turn off Deep research."
+            : err.message;
+        return NextResponse.json({ error: message }, { status: err.status });
       }
       throw err;
     }
   } catch (err) {
+    if (err instanceof OllamaError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error("Research route error:", err);
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { readApiResponse } from "@/lib/utils/readApiResponse";
 
 const p = {
   ink: "#1a1208",
@@ -130,13 +131,12 @@ export default function CeriseCoach({ notes }: { notes: NoteForContext[] }) {
         setSending(false);
         return;
       }
+      const data = await readApiResponse<{ content?: string; error?: string }>(res);
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setError(body.error || "Cerise couldn't reply just now. Try again.");
+        setError(data.error || "Cerise couldn't reply just now. Try again.");
         setSending(false);
         return;
       }
-      const data = await res.json();
       const reply = (data.content || "").trim();
       if (!reply) {
         setError("Cerise returned an empty reply. Try rephrasing your question.");

@@ -45,6 +45,8 @@ const VOICES: Record<string, string> = {
   amber: "en-US-AmberNeural",
 };
 
+const TTS_TIMEOUT_MS = 25000;
+
 export async function POST(req: NextRequest) {
   try {
     // Verify user is authenticated
@@ -75,14 +77,24 @@ export async function POST(req: NextRequest) {
 
     const { audioStream } = tts.toStream(cleanText, { rate });
 
-    // Collect audio chunks
+    // Collect audio chunks, but do not let the backend hang forever on Azure.
     const chunks: Buffer[] = [];
-    await new Promise<void>((resolve, reject) => {
-      audioStream.on("data", (chunk: Buffer) => chunks.push(chunk));
-      audioStream.on("end", resolve);
-      audioStream.on("close", resolve);
-      audioStream.on("error", reject);
-    });
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        new Promise<void>((resolve, reject) => {
+          audioStream.on("data", (chunk: Buffer) => chunks.push(chunk));
+          audioStream.on("end", resolve);
+          audioStream.on("close", resolve);
+          audioStream.on("error", reject);
+        }),
+        new Promise<void>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error("TTS timed out")), TTS_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
 
     const audioBuffer = Buffer.concat(chunks);
 

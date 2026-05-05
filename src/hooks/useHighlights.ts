@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { readApiResponse } from "@/lib/utils/readApiResponse";
 import type { Highlight } from "@/types/annotation";
 
 interface CreateHighlightParams {
@@ -101,7 +102,10 @@ export function useHighlights(pdfId: string) {
             filename: params.pdfDisplayName,
           }),
         })
-          .then((res) => res.json())
+          .then(async (res) => {
+            const data = await readApiResponse<{ apa?: string; error?: string }>(res);
+            return res.ok ? data : {};
+          })
           .then((data) => {
             if (data.apa) {
               // Update the lit review entry with AI-generated APA
