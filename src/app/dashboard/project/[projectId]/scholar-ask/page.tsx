@@ -274,8 +274,9 @@ export default function ScholarAskPage() {
         });
         const data = await readApiResponse<{ content?: string; error?: string }>(res);
         if (!res.ok) throw new Error(data.error || "Analysis request failed");
-        if (data.content) {
-          setPaperAnalysis((prev) => ({ ...prev, [paper.num]: data.content }));
+        const analysis = data.content;
+        if (analysis) {
+          setPaperAnalysis((prev) => ({ ...prev, [paper.num]: analysis }));
         }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
