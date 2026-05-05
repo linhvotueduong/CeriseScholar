@@ -6,6 +6,8 @@ import { checkRateLimit } from "@/lib/utils/rateLimit";
 const OLLAMA_API_URL = "https://ollama.com/api/chat";
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || "";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "kimi-k2.5";
+const OPENALEX_TIMEOUT_MS = 8000;
+const AI_TIMEOUT_MS = 45000;
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -87,7 +89,7 @@ async function searchOpenAlex(query: string, limit = 25): Promise<PaperRef[]> {
   try {
     const res = await fetch(
       `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per_page=${limit}&sort=relevance_score:desc&mailto=cerisescholar@gmail.com`,
-      { signal: AbortSignal.timeout(12000) }
+      { signal: AbortSignal.timeout(OPENALEX_TIMEOUT_MS) }
     );
     if (!res.ok) return [];
     const data = await res.json();
@@ -138,9 +140,9 @@ export async function POST(req: NextRequest) {
     // Step 1: Generate 6 search queries
     const searchQueries = generateSearchQueries(query);
 
-    // Step 2: Search top 4 queries in parallel
+    // Keep this fast enough for Azure Static Web Apps' managed backend.
     const searchResults = await Promise.all(
-      searchQueries.slice(0, 4).map((q) => searchOpenAlex(q, 20))
+      searchQueries.slice(0, deepResearch ? 4 : 3).map((q) => searchOpenAlex(q, deepResearch ? 16 : 12))
     );
 
     // Step 3: Merge, deduplicate, sort by citations
@@ -157,17 +159,17 @@ export async function POST(req: NextRequest) {
     }
     allPapers.sort((a, b) => (b.citationCount || 0) - (a.citationCount || 0));
 
-    // Keep papers that are relevant (up to 50)
-    const papers = allPapers.slice(0, 50);
+    // Keep enough references for source exploration, but do not overfeed the AI prompt.
+    const papers = allPapers.slice(0, deepResearch ? 40 : 28);
     papers.forEach((p, i) => (p.num = i + 1));
 
-    // Papers with abstracts for AI — 10 papers with full detail
+    // Papers with abstracts for AI. A concise first answer is more reliable on Azure Free.
     const papersWithAbstracts = papers.filter((p) => p.abstract && p.abstract.length > 30);
-    const aiPapers = papersWithAbstracts.slice(0, deepResearch ? 12 : 10);
+    const aiPapers = papersWithAbstracts.slice(0, deepResearch ? 8 : 5);
 
     // Step 4: Full context with proper abstracts
     const papersContext = aiPapers
-      .map((p) => `[${p.num}] ${p.authors.slice(0, 2).join(", ")}${p.authors.length > 2 ? " et al." : ""} (${p.year || "n.d."}). "${p.title}". ${p.journal}.\nFindings: ${p.abstract.slice(0, 250)}`)
+      .map((p) => `[${p.num}] ${p.authors.slice(0, 2).join(", ")}${p.authors.length > 2 ? " et al." : ""} (${p.year || "n.d."}). "${p.title}". ${p.journal}.\nFindings: ${p.abstract.slice(0, 180)}`)
       .join("\n\n");
 
     // Step 5: Professor-level prompt — detailed, multi-source citations
@@ -176,15 +178,14 @@ export async function POST(req: NextRequest) {
 ${papersContext}
 
 ANALYSIS REQUIREMENTS:
-1. "## Summary Answer" — 3-4 sentence synthesis identifying the dominant theoretical framework and key mechanisms.
-2. 3-5 thematic sections using ## headers. Each section = a distinct mechanism, pathway, or perspective.
-3. CRITICAL: Every claim MUST be backed by 3-5 different sources. Write like: "Multiple studies confirm that X leads to Y [${aiPapers[0]?.num || 1}] [${aiPapers[1]?.num || 2}] [${aiPapers[2]?.num || 3}] [${aiPapers[3]?.num || 4}]." Single-source claims are NOT acceptable.
-4. Identify contradictions between studies and methodological limitations.
-5. Include a markdown table: | Mechanism/Factor | Key Finding | Supporting Evidence | Methodological Note |
-6. "**Confidence:** High/Medium/Low" — explain evidence consistency and study quality.
-7. End with 3 follow-up research questions starting with "→ ".
-8. Cite ALL ${aiPapers.length} sources. Spread citations broadly — every source must appear at least twice.
-9. Write analytically as a professor: connect findings across studies, identify patterns, explain WHY the evidence converges or diverges.`;
+1. "## Summary Answer" — 3-4 sentence synthesis identifying the key relationship and mechanism.
+2. 2-3 thematic sections using ## headers. Each section = a distinct mechanism, pathway, or perspective.
+3. Support important claims with multiple bracket citations like [1] [3]. Use at least ${Math.min(aiPapers.length, 4)} different sources overall.
+4. Briefly identify any contradictions, missing evidence, or methodological limits.
+5. Include a compact markdown table: | Mechanism/Factor | Key Finding | Supporting Evidence |
+6. "**Confidence:** High/Medium/Low" — explain evidence consistency in 1-2 sentences.
+7. End with 2 follow-up research questions starting with "→ ".
+8. Keep the whole answer concise enough to finish quickly on a serverless backend.`;
 
     const messages: { role: string; content: string }[] = [
       { role: "system", content: systemPrompt },
@@ -197,15 +198,23 @@ ANALYSIS REQUIREMENTS:
       messages.push({ role: "user", content: query });
     }
 
-    // Step 6: Call AI (3 minute timeout — Kimi K2.5 needs time for deep analysis)
+    // Step 6: Call AI. Azure can return a plain "Backend call failure" if this runs too long.
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 180000);
+    const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
 
     try {
       const aiRes = await fetch(OLLAMA_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${OLLAMA_API_KEY}` },
-        body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream: false }),
+        body: JSON.stringify({
+          model: OLLAMA_MODEL,
+          messages,
+          stream: false,
+          options: {
+            temperature: 0.2,
+            num_predict: deepResearch ? 1400 : 900,
+          },
+        }),
         signal: controller.signal,
       });
       clearTimeout(timeout);
@@ -225,7 +234,7 @@ ANALYSIS REQUIREMENTS:
     } catch (err) {
       clearTimeout(timeout);
       if (err instanceof Error && err.name === "AbortError") {
-        return NextResponse.json({ error: "AI took too long. Try a shorter question." }, { status: 504 });
+        return NextResponse.json({ error: "AI took too long. Try a shorter question or turn off Deep research." }, { status: 504 });
       }
       throw err;
     }

@@ -61,6 +61,19 @@ interface Conversation {
   messages: Message[];
 }
 
+async function readApiResponse<T extends { error?: string }>(res: Response): Promise<T> {
+  const contentType = res.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return res.json() as Promise<T>;
+  }
+
+  const text = (await res.text()).trim();
+  return {
+    error: text || "The server returned an unexpected response. Please try again.",
+  } as T;
+}
+
 // ============================================================
 // Memoized Markdown renderer — NEVER re-renders unless content changes
 // This is the key fix: the response div is isolated from panel state
@@ -259,8 +272,8 @@ export default function ScholarAskPage() {
           }),
           signal: controller.signal,
         });
-        if (!res.ok) throw new Error("Analysis request failed");
-        const data = await res.json();
+        const data = await readApiResponse<{ content?: string; error?: string }>(res);
+        if (!res.ok) throw new Error(data.error || "Analysis request failed");
         if (data.content) {
           setPaperAnalysis((prev) => ({ ...prev, [paper.num]: data.content }));
         }
@@ -327,13 +340,19 @@ export default function ScholarAskPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
+      const data = await readApiResponse<{
+        answer?: string;
+        references?: PaperRef[];
+        paperCount?: number;
+        totalFound?: number;
+        error?: string;
+      }>(res);
       if (!res.ok) throw new Error(data.error || "Research failed");
 
       updateConv(convId!, (c) => ({
         ...c,
         messages: c.messages.map((m) =>
-          m.loading ? { role: "assistant", content: data.answer, references: data.references, paperCount: data.paperCount, totalFound: data.totalFound } : m
+          m.loading ? { role: "assistant", content: data.answer || "", references: data.references, paperCount: data.paperCount, totalFound: data.totalFound } : m
         ),
       }));
     } catch (err) {
