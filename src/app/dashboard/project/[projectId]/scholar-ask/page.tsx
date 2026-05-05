@@ -444,8 +444,8 @@ export default function ScholarAskPage() {
                 <h1 className="mb-2 text-4xl font-bold text-[#1a1208] 2xl:text-5xl">Discover <em>deeper</em> insights</h1>
                 <p className="mb-10 text-[#7a6a5a] 2xl:text-lg">Powered by OpenAlex and AI synthesis</p>
                 <div className="w-full max-w-2xl 2xl:max-w-3xl">
-                  <div className="bg-white border border-[#d4cdc5] rounded-2xl p-4 shadow-sm 2xl:p-5">
-                    <textarea ref={inputRef} value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="What would you like to learn more about?" rows={2} className="w-full resize-none text-sm text-[#1a1208] placeholder-[#9a8a7a] focus:outline-none 2xl:text-base" />
+                  <div className="bg-white border border-[#d4cdc5] rounded-2xl p-4 shadow-sm transition-shadow focus-within:border-[#b9afa4] focus-within:shadow-[0_4px_18px_rgba(26,18,8,0.08)] 2xl:p-5">
+                    <textarea ref={inputRef} value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="What would you like to learn more about?" rows={2} className="w-full resize-none text-sm text-[#1a1208] placeholder-[#9a8a7a] focus:outline-none focus-visible:!outline-none focus-visible:!ring-0 2xl:text-base" />
                     <div className="flex items-center justify-between mt-2">
                       <label className="flex items-center gap-2 cursor-pointer select-none">
                         <div onClick={() => setDeepResearch(!deepResearch)} className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${deepResearch ? "bg-[#1a1208]" : "bg-gray-300"}`}>
