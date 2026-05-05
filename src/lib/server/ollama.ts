@@ -11,9 +11,27 @@ type OllamaChatOptions = {
   numPredict?: number;
 };
 
+type OllamaResponse = {
+  message?: {
+    content?: string;
+    thinking?: string;
+  };
+  response?: string;
+  choices?: Array<{
+    message?: { content?: string };
+    text?: string;
+  }>;
+  error?: string;
+};
+
 const OLLAMA_API_URL = "https://ollama.com/api/chat";
-const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || "";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "kimi-k2.5";
+
+function getOllamaConfig() {
+  return {
+    apiKey: process.env.OLLAMA_API_KEY || "",
+    model: process.env.OLLAMA_MODEL || "kimi-k2.5",
+  };
+}
 
 export class OllamaError extends Error {
   status: number;
@@ -26,9 +44,19 @@ export class OllamaError extends Error {
 }
 
 export function assertOllamaConfigured() {
-  if (!OLLAMA_API_KEY) {
+  if (!getOllamaConfig().apiKey) {
     throw new OllamaError("AI not configured", 500);
   }
+}
+
+function extractOllamaContent(data: OllamaResponse | null): string {
+  return (
+    data?.message?.content ||
+    data?.response ||
+    data?.choices?.[0]?.message?.content ||
+    data?.choices?.[0]?.text ||
+    ""
+  );
 }
 
 export async function callOllamaChat({
@@ -39,6 +67,7 @@ export async function callOllamaChat({
   numPredict = 700,
 }: OllamaChatOptions): Promise<string> {
   assertOllamaConfigured();
+  const { apiKey, model } = getOllamaConfig();
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -49,12 +78,13 @@ export async function callOllamaChat({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OLLAMA_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: OLLAMA_MODEL,
+        model,
         messages,
         stream: false,
+        think: false,
         options: {
           temperature,
           num_predict: numPredict,
@@ -65,11 +95,11 @@ export async function callOllamaChat({
 
     const contentType = res.headers.get("content-type") || "";
     const text = await res.text();
-    let data: { message?: { content?: string }; error?: string } | null = null;
+    let data: OllamaResponse | null = null;
 
     if (contentType.includes("application/json") && text) {
       try {
-        data = JSON.parse(text) as { message?: { content?: string }; error?: string };
+        data = JSON.parse(text) as OllamaResponse;
       } catch {
         data = null;
       }
@@ -86,12 +116,15 @@ export async function callOllamaChat({
       throw new OllamaError(data?.error || "AI service error. Please try again.", 502);
     }
 
-    const content = data?.message?.content || "";
+    const content = extractOllamaContent(data);
     if (!content.trim()) {
       console.error("Ollama empty response", {
         route,
         contentType,
         durationMs: Date.now() - startedAt,
+        hasThinking: Boolean(data?.message?.thinking),
+        hasResponse: Boolean(data?.response),
+        hasChoices: Boolean(data?.choices?.length),
         bodyPrefix: text.slice(0, 160),
       });
       throw new OllamaError("AI returned an empty response. Please try again.", 502);
