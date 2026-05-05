@@ -134,9 +134,10 @@ export async function POST(req: NextRequest) {
     // Step 1: Generate 6 search queries
     const searchQueries = generateSearchQueries(query);
 
-    // Keep this fast enough for Azure Static Web Apps' managed backend.
+    // Keep this fast enough for Azure Static Web Apps' managed backend while
+    // still preserving the richer ScholarAsk answer shape.
     const searchResults = await Promise.all(
-      searchQueries.slice(0, deepResearch ? 4 : 3).map((q) => searchOpenAlex(q, deepResearch ? 14 : 10))
+      searchQueries.slice(0, deepResearch ? 4 : 3).map((q) => searchOpenAlex(q, deepResearch ? 16 : 12))
     );
 
     // Step 3: Merge, deduplicate, sort by citations
@@ -154,16 +155,17 @@ export async function POST(req: NextRequest) {
     allPapers.sort((a, b) => (b.citationCount || 0) - (a.citationCount || 0));
 
     // Keep enough references for source exploration, but do not overfeed the AI prompt.
-    const papers = allPapers.slice(0, deepResearch ? 32 : 24);
+    const papers = allPapers.slice(0, deepResearch ? 40 : 28);
     papers.forEach((p, i) => (p.num = i + 1));
 
-    // Papers with abstracts for AI. A concise first answer is more reliable on Azure Free.
+    // Use enough abstracts for a professor-style synthesis, but keep the prompt
+    // bounded so Azure Free does not return a backend timeout.
     const papersWithAbstracts = papers.filter((p) => p.abstract && p.abstract.length > 30);
-    const aiPapers = papersWithAbstracts.slice(0, deepResearch ? 6 : 4);
+    const aiPapers = papersWithAbstracts.slice(0, deepResearch ? 8 : 5);
 
     // Step 4: Full context with proper abstracts
     const papersContext = aiPapers
-      .map((p) => `[${p.num}] ${p.authors.slice(0, 2).join(", ")}${p.authors.length > 2 ? " et al." : ""} (${p.year || "n.d."}). "${p.title}". ${p.journal}.\nFindings: ${p.abstract.slice(0, 150)}`)
+      .map((p) => `[${p.num}] ${p.authors.slice(0, 2).join(", ")}${p.authors.length > 2 ? " et al." : ""} (${p.year || "n.d."}). "${p.title}". ${p.journal}.\nFindings: ${p.abstract.slice(0, 220)}`)
       .join("\n\n");
 
     // Step 5: Professor-level prompt — detailed, multi-source citations
@@ -172,14 +174,21 @@ export async function POST(req: NextRequest) {
 ${papersContext}
 
 ANALYSIS REQUIREMENTS:
-1. "## Summary Answer" — 3-4 sentence synthesis identifying the key relationship and mechanism.
-2. 2-3 thematic sections using ## headers. Each section = a distinct mechanism, pathway, or perspective.
-3. Support important claims with multiple bracket citations like [1] [3]. Use at least ${Math.min(aiPapers.length, 4)} different sources overall.
-4. Briefly identify any contradictions, missing evidence, or methodological limits.
-5. Include a compact markdown table: | Mechanism/Factor | Key Finding | Supporting Evidence |
-6. "**Confidence:** High/Medium/Low" — explain evidence consistency in 1-2 sentences.
-7. End with 2 follow-up research questions starting with "→ ".
-8. Keep the whole answer concise enough to finish quickly on a serverless backend.`;
+Write in the detailed ScholarAsk format:
+
+1. "## Summary Answer" — 4-6 sentences. Directly answer the question, name the likely relationship, and explain the core causal/behavioral mechanism.
+2. "## Key Mechanisms" — 3 subsections using "###" headings. Each subsection should be a distinct mechanism, pathway, or theory. Give concrete explanation, not just labels.
+3. "## What the Evidence Suggests" — synthesize agreements and differences across sources. Mention when a source is indirect or when evidence is only correlational.
+4. "## Evidence Map" — include a markdown table with these columns exactly: | Theme | What It Means | Evidence | Caveat |
+5. "## Limitations and Gaps" — explain missing evidence, measurement limits, population limits, and what cannot be concluded yet.
+6. "**Confidence:** High/Medium/Low" — explain evidence consistency in 2-3 sentences.
+7. End with exactly 3 follow-up research questions starting with "→ ".
+
+CITATION RULES:
+- Support major claims with bracket citations like [1] [3].
+- Use at least ${Math.min(aiPapers.length, 5)} different sources overall.
+- Do not invent source numbers that are not listed above.
+- Prefer depth and clarity over a tiny answer, but stay focused enough to finish on a serverless backend.`;
 
     const messages: { role: string; content: string }[] = [
       { role: "system", content: systemPrompt },
@@ -197,7 +206,7 @@ ANALYSIS REQUIREMENTS:
         route: "research",
         messages,
         timeoutMs: AI_TIMEOUT_MS,
-        numPredict: deepResearch ? 800 : 600,
+        numPredict: deepResearch ? 1200 : 900,
       });
       return NextResponse.json({
         answer,
