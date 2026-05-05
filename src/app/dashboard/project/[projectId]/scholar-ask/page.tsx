@@ -438,13 +438,13 @@ export default function ScholarAskPage() {
                   src="/assets/characters/lightbulb2_nobg.png"
                   alt=""
                   aria-hidden="true"
-                  className="pointer-events-none absolute bottom-[max(4.5rem,11vh)] left-1/2 h-auto w-[min(20rem,36vw)] -translate-x-1/2 opacity-90 2xl:bottom-[max(3.5rem,8vh)] 2xl:w-[min(30rem,30vw)]"
+                  className="pointer-events-none absolute bottom-[max(4.5rem,11vh)] left-1/2 h-auto w-[min(20rem,36vw)] -translate-x-1/2 opacity-90 2xl:bottom-[max(2rem,4vh)] 2xl:w-[min(24rem,24vw)]"
                 />
                 <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-[max(14.5rem,30vh)] 2xl:pb-[max(12rem,24vh)]">
                 <h1 className="mb-2 text-4xl font-bold text-[#1a1208] 2xl:text-5xl">Discover <em>deeper</em> insights</h1>
                 <p className="mb-10 text-[#7a6a5a] 2xl:text-lg">Powered by OpenAlex and AI synthesis</p>
-                <div className="w-full max-w-2xl 2xl:max-w-4xl">
-                  <div className="bg-white border border-[#d4cdc5] rounded-2xl p-4 shadow-sm 2xl:p-6">
+                <div className="w-full max-w-2xl 2xl:max-w-3xl">
+                  <div className="bg-white border border-[#d4cdc5] rounded-2xl p-4 shadow-sm 2xl:p-5">
                     <textarea ref={inputRef} value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="What would you like to learn more about?" rows={2} className="w-full resize-none text-sm text-[#1a1208] placeholder-[#9a8a7a] focus:outline-none 2xl:text-base" />
                     <div className="flex items-center justify-between mt-2">
                       <label className="flex items-center gap-2 cursor-pointer select-none">
