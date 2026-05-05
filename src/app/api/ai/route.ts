@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
-
-const OLLAMA_API_URL = "https://ollama.com/api/chat";
-const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || "";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "kimi-k2.5";
+import { callOllamaChat, OllamaError } from "@/lib/server/ollama";
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -46,11 +43,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { messages, task, paper, mainAnswer } = body;
-
-    if (!OLLAMA_API_KEY) {
-      return NextResponse.json({ error: "AI not configured" }, { status: 500 });
-    }
+    const { task, paper, mainAnswer } = body;
+    const messages = Array.isArray(body.messages) ? body.messages : [];
 
     let systemPrompt = "";
 
@@ -71,30 +65,17 @@ Be specific about the paper's methodology and findings. Reference specific claim
         },
       ];
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 40000);
-
       try {
-        const res = await fetch(OLLAMA_API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${OLLAMA_API_KEY}`,
-          },
-          body: JSON.stringify({ model: OLLAMA_MODEL, messages: allMessages, stream: false }),
-          signal: controller.signal,
+        const content = await callOllamaChat({
+          route: "paper_analysis",
+          messages: allMessages,
+          timeoutMs: 25000,
+          numPredict: 500,
         });
-        clearTimeout(timeout);
-
-        if (!res.ok) {
-          return NextResponse.json({ error: "AI error" }, { status: 500 });
-        }
-        const data = await res.json();
-        return NextResponse.json({ content: data.message?.content || "" });
+        return NextResponse.json({ content });
       } catch (err) {
-        clearTimeout(timeout);
-        if (err instanceof Error && err.name === "AbortError") {
-          return NextResponse.json({ error: "Analysis timed out" }, { status: 504 });
+        if (err instanceof OllamaError) {
+          return NextResponse.json({ error: err.message }, { status: err.status });
         }
         throw err;
       }
@@ -117,19 +98,13 @@ PDF text from first pages:
 ${(pdfText || "").slice(0, 3000)}`;
 
       try {
-        const res = await fetch(OLLAMA_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${OLLAMA_API_KEY}` },
-          body: JSON.stringify({
-            model: OLLAMA_MODEL,
-            messages: [{ role: "system", content: "You generate APA citations. Return ONLY the citation string." }, { role: "user", content: apaPrompt }],
-            stream: false,
-          }),
-          signal: AbortSignal.timeout(30000),
+        const content = await callOllamaChat({
+          route: "generate_apa",
+          messages: [{ role: "system", content: "You generate APA citations. Return ONLY the citation string." }, { role: "user", content: apaPrompt }],
+          timeoutMs: 20000,
+          numPredict: 220,
         });
-        if (!res.ok) return NextResponse.json({ apa: "" });
-        const data = await res.json();
-        const apa = (data.message?.content || "").trim().replace(/^["']|["']$/g, "");
+        const apa = content.trim().replace(/^["']|["']$/g, "");
         return NextResponse.json({ apa });
       } catch {
         return NextResponse.json({ apa: "" });
@@ -164,22 +139,17 @@ ${(pdfText || "").slice(0, 3000)}`;
 
     const allMessages = [{ role: "system", content: systemPrompt }, ...messages];
 
-    const res = await fetch(OLLAMA_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OLLAMA_API_KEY}`,
-      },
-      body: JSON.stringify({ model: OLLAMA_MODEL, messages: allMessages, stream: false }),
+    const content = await callOllamaChat({
+      route: task || "generic_ai",
+      messages: allMessages,
+      timeoutMs: task === "learning_coach" ? 25000 : 22000,
+      numPredict: task === "learning_coach" ? 700 : 500,
     });
-
-    if (!res.ok) {
-      return NextResponse.json({ error: "AI error" }, { status: 500 });
-    }
-
-    const data = await res.json();
-    return NextResponse.json({ content: data.message?.content || "" });
+    return NextResponse.json({ content });
   } catch (err) {
+    if (err instanceof OllamaError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error("AI route error:", err);
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },

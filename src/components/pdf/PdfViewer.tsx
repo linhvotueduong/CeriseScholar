@@ -7,6 +7,7 @@ import { useAnnotations } from "@/hooks/useAnnotations";
 import { useCodes } from "@/hooks/useCodes";
 import { useTts } from "@/hooks/useTts";
 import { extractPageText } from "@/lib/pdf/extractText";
+import { readApiResponse } from "@/lib/utils/readApiResponse";
 import PdfPage from "./PdfPage";
 import PdfToolbar from "./PdfToolbar";
 import TtsWidget from "@/components/tts/TtsWidget";
@@ -431,10 +432,17 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
           ],
         }),
       });
-      const data = await res.json();
+      const data = await readApiResponse<{ content?: string; error?: string }>(res);
+      if (!res.ok) throw new Error(data.error || "AI request failed");
       setChatMessages((prev) => [...prev, { role: "assistant", content: data.content || "Sorry, I could not answer that." }]);
-    } catch {
-      setChatMessages((prev) => [...prev, { role: "assistant", content: "Something went wrong. Please try again." }]);
+    } catch (err) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+        },
+      ]);
     }
     setChatLoading(false);
   }, [chatInput, chatLoading, document, chatMessages, getDocumentContext]);

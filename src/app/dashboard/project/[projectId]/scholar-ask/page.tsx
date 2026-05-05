@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { readApiResponse } from "@/lib/utils/readApiResponse";
 
 // ============================================================
 // Error Boundary
@@ -59,19 +60,6 @@ interface Conversation {
   id: string;
   title: string;
   messages: Message[];
-}
-
-async function readApiResponse<T extends { error?: string }>(res: Response): Promise<T> {
-  const contentType = res.headers.get("content-type") || "";
-
-  if (contentType.includes("application/json")) {
-    return res.json() as Promise<T>;
-  }
-
-  const text = (await res.text()).trim();
-  return {
-    error: text || "The server returned an unexpected response. Please try again.",
-  } as T;
 }
 
 // ============================================================
