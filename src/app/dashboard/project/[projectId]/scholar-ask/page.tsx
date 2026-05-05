@@ -438,9 +438,9 @@ export default function ScholarAskPage() {
                   src="/assets/characters/lightbulb2_nobg.png"
                   alt=""
                   aria-hidden="true"
-                  className="pointer-events-none absolute bottom-[max(6.25rem,15vh)] left-1/2 h-auto w-[min(20rem,36vw)] -translate-x-1/2 opacity-90"
+                  className="pointer-events-none absolute bottom-[max(4.5rem,11vh)] left-1/2 h-auto w-[min(20rem,36vw)] -translate-x-1/2 opacity-90"
                 />
-                <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-[max(17.5rem,35vh)]">
+                <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-[max(14.5rem,30vh)]">
                 <h1 className="text-4xl font-bold text-[#1a1208] mb-2">Discover <em>deeper</em> insights</h1>
                 <p className="text-[#7a6a5a] mb-10">Powered by OpenAlex and AI synthesis</p>
                 <div className="w-full max-w-2xl">
