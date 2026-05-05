@@ -433,7 +433,14 @@ export default function ScholarAskPage() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full px-6">
+              <div className="relative flex flex-col items-center justify-center h-full px-6 overflow-hidden">
+                <img
+                  src="/assets/characters/lightbulb2_nobg.png"
+                  alt=""
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-1/2 top-1/2 h-auto w-[min(32rem,52vw)] -translate-x-1/2 -translate-y-[68%] opacity-90"
+                />
+                <div className="relative z-10 flex w-full flex-col items-center">
                 <h1 className="text-4xl font-bold text-[#1a1208] mb-2">Discover <em>deeper</em> insights</h1>
                 <p className="text-[#7a6a5a] mb-10">Powered by OpenAlex and AI synthesis</p>
                 <div className="w-full max-w-2xl">
@@ -456,6 +463,7 @@ export default function ScholarAskPage() {
                       <button key={label} onClick={() => { setQuery({ "Explore topics": "What are the main research topics in ", "Find experts": "Who are the leading researchers studying ", "Literature review": "Provide a literature review on " }[label] || ""); inputRef.current?.focus(); }} className="text-xs text-[#7a6a5a] hover:text-[#1a1208] transition-colors">{label}</button>
                     ))}
                   </div>
+                </div>
                 </div>
               </div>
             ) : (
