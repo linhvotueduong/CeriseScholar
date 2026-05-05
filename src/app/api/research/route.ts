@@ -177,6 +177,7 @@ ANALYSIS REQUIREMENTS:
 Write in the detailed ScholarAsk format below. Finish every section. If space is tight,
 shorten paragraphs instead of dropping sections or ending mid-sentence.
 Target 900-1,150 words total. Keep every sentence complete.
+Do not use markdown horizontal rules, divider lines, or standalone "---" separators.
 
 1. "## Summary Answer" — exactly 4 sentences. Directly answer the question, name the likely relationship, and explain the core causal/behavioral mechanism.
 2. "## Key Mechanisms" — exactly 3 subsections using "###" headings. Each subsection should be one focused paragraph of 3-4 sentences that explains a distinct mechanism, pathway, or theory.
