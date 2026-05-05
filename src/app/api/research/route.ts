@@ -176,14 +176,15 @@ ${papersContext}
 ANALYSIS REQUIREMENTS:
 Write in the detailed ScholarAsk format below. Finish every section. If space is tight,
 shorten paragraphs instead of dropping sections or ending mid-sentence.
+Target 900-1,150 words total. Keep every sentence complete.
 
-1. "## Summary Answer" — 3-4 sentences. Directly answer the question, name the likely relationship, and explain the core causal/behavioral mechanism.
-2. "## Key Mechanisms" — exactly 3 subsections using "###" headings. Each subsection should be one focused paragraph that explains a distinct mechanism, pathway, or theory.
-3. "## Evidence Map" — include a markdown table with these columns exactly: | Theme | What It Means | Evidence | Caveat |. Use 4-5 rows.
-4. "## What the Evidence Suggests" — synthesize agreements and differences across sources in 2 concise paragraphs. Mention when a source is indirect or when evidence is only correlational.
-5. "## Limitations and Gaps" — explain missing evidence, measurement limits, population limits, and what cannot be concluded yet.
-6. "**Confidence:** High/Medium/Low" — explain evidence consistency in 2 concise sentences.
-7. End with exactly 3 follow-up research questions starting with "→ ".
+1. "## Summary Answer" — exactly 4 sentences. Directly answer the question, name the likely relationship, and explain the core causal/behavioral mechanism.
+2. "## Key Mechanisms" — exactly 3 subsections using "###" headings. Each subsection should be one focused paragraph of 3-4 sentences that explains a distinct mechanism, pathway, or theory.
+3. "## Evidence Map" — include a markdown table with these columns exactly: | Theme | What It Means | Evidence | Caveat |. Use exactly 4 rows and keep cells concise.
+4. "## What the Evidence Suggests" — synthesize agreements and differences across sources in exactly 2 paragraphs of 3-4 sentences each. Mention when a source is indirect or when evidence is only correlational.
+5. "## Limitations and Gaps" — use exactly 4 bullets. Each bullet should be one sentence covering missing evidence, measurement limits, population limits, or what cannot be concluded yet.
+6. "**Confidence:** High/Medium/Low" — explain evidence consistency in exactly 2 sentences.
+7. End with exactly 3 follow-up research questions starting with "→ ". Do not add anything after the third question.
 
 CITATION RULES:
 - Support major claims with bracket citations like [1] [3].
@@ -207,7 +208,7 @@ CITATION RULES:
         route: "research",
         messages,
         timeoutMs: AI_TIMEOUT_MS,
-        numPredict: deepResearch ? 1900 : 1400,
+        numPredict: deepResearch ? 2600 : 2200,
       });
       return NextResponse.json({
         answer,
