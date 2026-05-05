@@ -174,14 +174,15 @@ export async function POST(req: NextRequest) {
 ${papersContext}
 
 ANALYSIS REQUIREMENTS:
-Write in the detailed ScholarAsk format:
+Write in the detailed ScholarAsk format below. Finish every section. If space is tight,
+shorten paragraphs instead of dropping sections or ending mid-sentence.
 
-1. "## Summary Answer" — 4-6 sentences. Directly answer the question, name the likely relationship, and explain the core causal/behavioral mechanism.
-2. "## Key Mechanisms" — 3 subsections using "###" headings. Each subsection should be a distinct mechanism, pathway, or theory. Give concrete explanation, not just labels.
-3. "## What the Evidence Suggests" — synthesize agreements and differences across sources. Mention when a source is indirect or when evidence is only correlational.
-4. "## Evidence Map" — include a markdown table with these columns exactly: | Theme | What It Means | Evidence | Caveat |
+1. "## Summary Answer" — 3-4 sentences. Directly answer the question, name the likely relationship, and explain the core causal/behavioral mechanism.
+2. "## Key Mechanisms" — exactly 3 subsections using "###" headings. Each subsection should be one focused paragraph that explains a distinct mechanism, pathway, or theory.
+3. "## Evidence Map" — include a markdown table with these columns exactly: | Theme | What It Means | Evidence | Caveat |. Use 4-5 rows.
+4. "## What the Evidence Suggests" — synthesize agreements and differences across sources in 2 concise paragraphs. Mention when a source is indirect or when evidence is only correlational.
 5. "## Limitations and Gaps" — explain missing evidence, measurement limits, population limits, and what cannot be concluded yet.
-6. "**Confidence:** High/Medium/Low" — explain evidence consistency in 2-3 sentences.
+6. "**Confidence:** High/Medium/Low" — explain evidence consistency in 2 concise sentences.
 7. End with exactly 3 follow-up research questions starting with "→ ".
 
 CITATION RULES:
@@ -206,7 +207,7 @@ CITATION RULES:
         route: "research",
         messages,
         timeoutMs: AI_TIMEOUT_MS,
-        numPredict: deepResearch ? 1200 : 900,
+        numPredict: deepResearch ? 1900 : 1400,
       });
       return NextResponse.json({
         answer,
