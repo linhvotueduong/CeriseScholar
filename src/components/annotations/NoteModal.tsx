@@ -46,25 +46,25 @@ export default function NoteModal({
     );
   }
 
-  function handleSkip() {
-    const code = codes.find((c) => c.id === selectedCodeId);
-    onSave(
-      "",
-      showColorPicker ? selectedColor : undefined,
-      selectedCodeId || undefined,
-      code?.name || undefined
-    );
-  }
-
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <form
         onSubmit={handleSubmit}
         className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4"
       >
-        <h3 className="text-lg font-semibold text-[#1a1208] mb-1">
-          Add a Note
-        </h3>
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold text-[#1a1208]">
+            Add a Note
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[#7a6a5a] hover:bg-[#faf7f0] hover:text-[#1a1208]"
+            aria-label="Cancel highlight"
+          >
+            ×
+          </button>
+        </div>
 
         {highlightText && (
           <p className="text-sm text-[#7a6a5a] mb-3 bg-yellow-50 p-2 rounded border-l-4 border-yellow-400 line-clamp-3">
@@ -148,16 +148,16 @@ export default function NoteModal({
         <div className="flex justify-end gap-2 mt-4">
           <button
             type="button"
-            onClick={handleSkip}
+            onClick={onClose}
             className="px-4 py-2 text-sm text-[#7a6a5a] hover:text-[#1a1208]"
           >
-            {content.trim() ? "Cancel" : "Skip Note"}
+            Cancel
           </button>
           <button
             type="submit"
             className="px-4 py-2 text-sm bg-[#1a1208] text-white rounded-lg hover:bg-[#000000]"
           >
-            Save Note
+            {content.trim() ? "Save Note" : showColorPicker ? "Skip Note" : "Save"}
           </button>
         </div>
       </form>

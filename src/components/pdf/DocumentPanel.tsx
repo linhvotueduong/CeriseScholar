@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
+import { runOcr } from "@/lib/ocr/runOcr";
 import type { Pdf } from "@/types/pdf";
 
 interface DocumentPanelProps {
@@ -68,7 +69,10 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
       .select()
       .single();
 
-    if (newPdf) setPdfs((prev) => [newPdf as Pdf, ...prev]);
+    if (newPdf) {
+      setPdfs((prev) => [newPdf as Pdf, ...prev]);
+      void runOcr(fileId);
+    }
     setUploading(false);
   }
 

@@ -546,7 +546,11 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
           onGoToPage={handleGoToPage}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
-          onToggleHighlightMode={() => setHighlightMode((m) => !m)}
+          onToggleHighlightMode={() => {
+            window.getSelection()?.removeAllRanges();
+            setPendingHighlight(null);
+            setHighlightMode((m) => !m);
+          }}
           onReadPage={handleReadPage}
           onReadSelection={handleReadSelection}
           onToggleChat={() => setChatOpen((o) => !o)}
@@ -810,7 +814,10 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
       {pendingHighlight && (
         <NoteModal
           onSave={handleSaveNewHighlight}
-          onClose={() => setPendingHighlight(null)}
+          onClose={() => {
+            window.getSelection()?.removeAllRanges();
+            setPendingHighlight(null);
+          }}
           highlightText={pendingHighlight.text}
           showColorPicker
           showCodeSelector

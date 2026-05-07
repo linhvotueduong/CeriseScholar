@@ -4,6 +4,16 @@ import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
 
 export const maxDuration = 300;
+export const runtime = "nodejs";
+
+type CanvasFactoryEntry = {
+  canvas: {
+    width: number;
+    height: number;
+    getContext: (contextId: "2d") => unknown;
+  };
+  context: unknown;
+};
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -30,8 +40,10 @@ async function getSupabase() {
 }
 
 export async function POST(request: Request) {
+  let pdfId: string | undefined;
+
   try {
-    const { pdfId } = await request.json();
+    ({ pdfId } = await request.json());
     if (!pdfId) {
       return NextResponse.json({ error: "pdfId is required" }, { status: 400 });
     }
@@ -78,15 +90,41 @@ export async function POST(request: Request) {
     const arrayBuffer = await fileData.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Load the PDF with PDF.js (server-side legacy build)
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const doc = await pdfjs.getDocument({ data: uint8Array }).promise;
-    const pageCount = doc.numPages;
-    const allPageTexts: string[] = [];
-
     // Check which pages need OCR (scanned) vs have embedded text
+    const { mkdir } = await import("node:fs/promises");
     const { createWorker } = await import("tesseract.js");
     const { createCanvas } = await import("canvas");
+    const tesseractCachePath = "/tmp/cerise-scholar-tesseract";
+    await mkdir(tesseractCachePath, { recursive: true });
+
+    class CanvasFactory {
+      create(width: number, height: number): CanvasFactoryEntry {
+        const canvas = createCanvas(width, height);
+        return { canvas, context: canvas.getContext("2d") };
+      }
+
+      reset(canvasAndContext: CanvasFactoryEntry, width: number, height: number) {
+        canvasAndContext.canvas.width = width;
+        canvasAndContext.canvas.height = height;
+      }
+
+      destroy(canvasAndContext: CanvasFactoryEntry) {
+        canvasAndContext.canvas.width = 0;
+        canvasAndContext.canvas.height = 0;
+      }
+    }
+
+    // Load the PDF with PDF.js. Force PDF.js to use node-canvas for its
+    // internal image canvases too; otherwise scanned-image pages can mix
+    // canvas implementations and fail before Tesseract gets an image.
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const doc = await (pdfjs.getDocument as any)({
+      data: uint8Array,
+      CanvasFactory,
+    }).promise;
+    const pageCount = doc.numPages;
+    const allPageTexts: string[] = [];
 
     // Create ONE reusable Tesseract worker for all scanned pages
     let ocrWorker: Awaited<ReturnType<typeof createWorker>> | null = null;
@@ -110,7 +148,9 @@ export async function POST(request: Request) {
           try {
             // Lazily create worker on first scanned page, reuse for the rest
             if (!ocrWorker) {
-              ocrWorker = await createWorker("eng");
+              ocrWorker = await createWorker("eng", undefined, {
+                cachePath: tesseractCachePath,
+              });
             }
 
             const viewport = page.getViewport({ scale: 2.0 });
@@ -161,16 +201,26 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("OCR route error:", error);
 
-    try {
-      const body = await request.clone().json();
-      if (body.pdfId) {
+    if (pdfId) {
+      try {
         const supabase = await getSupabase();
-        await supabase.from("pdfs").update({ ocr_status: "failed" }).eq("id", body.pdfId);
+        await supabase.from("pdfs").update({ ocr_status: "failed" }).eq("id", pdfId);
+      } catch {
+        // Ignore cleanup errors
       }
-    } catch {
-      // Ignore cleanup errors
     }
 
-    return NextResponse.json({ error: "OCR processing failed" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "OCR processing failed",
+        details:
+          process.env.NODE_ENV === "development"
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : undefined,
+      },
+      { status: 500 }
+    );
   }
 }

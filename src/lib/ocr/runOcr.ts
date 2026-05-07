@@ -11,9 +11,9 @@ export async function runOcr(pdfId: string) {
       body: JSON.stringify({ pdfId }),
     });
     if (!res.ok) {
-      console.error("OCR trigger failed:", res.status, await res.text().catch(() => ""));
+      console.warn("OCR trigger failed:", res.status, await res.text().catch(() => ""));
     }
   } catch (error) {
-    console.error("Failed to trigger OCR:", error);
+    console.warn("Failed to trigger OCR:", error);
   }
 }

@@ -24,11 +24,47 @@ export default function HighlightLayer({
   onCreateHighlight,
 }: HighlightLayerProps) {
   const layerRef = useRef<HTMLDivElement>(null);
+  const pointerStartedInTextLayerRef = useRef(false);
 
   const pageHighlights = highlights.filter((h) => h.page_number === pageNumber);
 
-  const handleMouseUp = useCallback(() => {
+  const getPageSelectionContext = useCallback(() => {
+    const layer = layerRef.current;
+    if (!layer) return null;
+
+    const pageContainer = layer.closest("[data-page-number]");
+    if (!pageContainer) return null;
+
+    const canvas = pageContainer.querySelector("canvas");
+    const textLayerDiv = pageContainer.querySelector(".textLayer");
+    if (!canvas || !textLayerDiv) return null;
+
+    return { canvas, pageContainer, textLayerDiv };
+  }, []);
+
+  const handlePointerDown = useCallback((event: PointerEvent) => {
+    pointerStartedInTextLayerRef.current = false;
+    if (!highlightMode || event.button !== 0) return;
+
+    const context = getPageSelectionContext();
+    const target = event.target;
+    if (!context || !(target instanceof Node)) return;
+
+    window.getSelection()?.removeAllRanges();
+    pointerStartedInTextLayerRef.current = context.textLayerDiv.contains(target);
+  }, [getPageSelectionContext, highlightMode]);
+
+  const handleMouseUp = useCallback((event: MouseEvent) => {
+    const pointerStartedInTextLayer = pointerStartedInTextLayerRef.current;
+    pointerStartedInTextLayerRef.current = false;
+
     if (!highlightMode) return;
+    if (!pointerStartedInTextLayer) return;
+
+    const context = getPageSelectionContext();
+    const target = event.target;
+    if (!context || !(target instanceof Node)) return;
+    if (!context.textLayerDiv.contains(target)) return;
 
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !selection.toString().trim()) return;
@@ -38,48 +74,18 @@ export default function HighlightLayer({
     const text = selection.toString().replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
     if (text.length < 2) return;
 
-    const layer = layerRef.current;
-    if (!layer) return;
-
-    // Get the page container and its canvas for reference measurements
-    const pageContainer = layer.closest("[data-page-number]");
-    if (!pageContainer) return;
-
-    const canvas = pageContainer.querySelector("canvas");
-    if (!canvas) return;
-
-    // Check the selection is within this page's text layer
-    const textLayerDiv = pageContainer.querySelector(".textLayer");
-    if (!textLayerDiv) return;
-
     // Both anchor and focus must be in this page's text layer
     const selectionAnchor = selection.anchorNode;
     const selectionFocus = selection.focusNode;
-    if (!selectionAnchor || !textLayerDiv.contains(selectionAnchor)) return;
-    if (!selectionFocus || !textLayerDiv.contains(selectionFocus)) return;
+    if (!selectionAnchor || !context.textLayerDiv.contains(selectionAnchor)) return;
+    if (!selectionFocus || !context.textLayerDiv.contains(selectionFocus)) return;
 
     const range = selection.getRangeAt(0);
     const clientRects = range.getClientRects();
     if (clientRects.length === 0) return;
 
     // Measure relative to the canvas — most reliable reference
-    const canvasRect = canvas.getBoundingClientRect();
-
-    // Collect all span rects within the text layer that intersect with the selection
-    // This prevents over-selection by only including rects from actual selected spans
-    const selectedSpans = new Set<Element>();
-    const treeWalker = window.document.createTreeWalker(
-      range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
-        ? range.commonAncestorContainer
-        : range.commonAncestorContainer.parentElement!,
-      NodeFilter.SHOW_TEXT,
-    );
-    let node: Node | null;
-    while ((node = treeWalker.nextNode())) {
-      if (range.intersectsNode(node) && node.parentElement) {
-        selectedSpans.add(node.parentElement);
-      }
-    }
+    const canvasRect = context.canvas.getBoundingClientRect();
 
     const rects: { x: number; y: number; width: number; height: number }[] = [];
     for (let i = 0; i < clientRects.length; i++) {
@@ -127,12 +133,16 @@ export default function HighlightLayer({
 
     onCreateHighlight(text, merged);
     selection.removeAllRanges();
-  }, [highlightMode, onCreateHighlight]);
+  }, [getPageSelectionContext, highlightMode, onCreateHighlight]);
 
   useEffect(() => {
+    document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("mouseup", handleMouseUp);
-    return () => document.removeEventListener("mouseup", handleMouseUp);
-  }, [handleMouseUp]);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [handleMouseUp, handlePointerDown]);
 
   return (
     <div
