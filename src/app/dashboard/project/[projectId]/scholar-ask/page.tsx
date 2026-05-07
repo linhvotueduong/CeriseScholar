@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, Component, type ReactNode } from "react";
+import React, { useState, useRef, useEffect, useCallback, Component, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Markdown from "react-markdown";
@@ -60,6 +60,60 @@ interface Conversation {
   id: string;
   title: string;
   messages: Message[];
+}
+
+type AnswerMode = "research_answer" | "research_journey";
+type JourneyIntent = "general_journey" | "find_bridge" | "narrow_question" | "map_evidence";
+
+const answerModeOptions: { value: AnswerMode; label: string }[] = [
+  { value: "research_answer", label: "Research Answer" },
+  { value: "research_journey", label: "Research Journey" },
+];
+
+const starterPrompts = [
+  {
+    label: "Find the bridge",
+    intent: "find_bridge" as const,
+    prompt: "Help me find the bridge for this idea: ",
+  },
+  {
+    label: "Narrow my question",
+    intent: "narrow_question" as const,
+    prompt: "Here is my rough idea in under 150 words. Help me narrow it: ",
+  },
+  {
+    label: "Map the evidence",
+    intent: "map_evidence" as const,
+    prompt: "Help me map the evidence for this topic: ",
+  },
+];
+
+function AnswerModeControl({
+  answerMode,
+  onChange,
+}: {
+  answerMode: AnswerMode;
+  onChange: (mode: AnswerMode) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 rounded-full border border-[#e0d8d0] bg-[#faf7f0] p-0.5" aria-label="ScholarAsk answer style">
+      {answerModeOptions.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          aria-pressed={answerMode === option.value}
+          className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
+            answerMode === option.value
+              ? "bg-[#1a1208] text-white shadow-sm"
+              : "text-[#7a6a5a] hover:text-[#1a1208]"
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 // ============================================================
@@ -172,9 +226,6 @@ const ResponseContent = React.memo(function ResponseContent({
   );
 });
 
-// Need to import React for React.memo
-import React from "react";
-
 // ============================================================
 // Main Page
 // ============================================================
@@ -184,7 +235,8 @@ export default function ScholarAskPage() {
 
   const storageKey = `scholarask_${projectId}`;
   const [query, setQuery] = useState("");
-  const [deepResearch, setDeepResearch] = useState(false);
+  const [answerMode, setAnswerMode] = useState<AnswerMode>("research_answer");
+  const [journeyIntent, setJourneyIntent] = useState<JourneyIntent>("general_journey");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [showRefs, setShowRefs] = useState(false);
@@ -286,6 +338,8 @@ export default function ScholarAskPage() {
   function newConversation() {
     setActiveConvId(null);
     setQuery("");
+    setAnswerMode("research_answer");
+    setJourneyIntent("general_journey");
     setShowRefs(false);
     setSelectedPaper(null);
   }
@@ -319,7 +373,7 @@ export default function ScholarAskPage() {
     setSelectedPaper(null);
 
     try {
-      const body: Record<string, unknown> = { query: q, deepResearch };
+      const body: Record<string, unknown> = { query: q, answerMode, journeyIntent };
       if (isFollowUp && lastAssistantMsg) {
         body.followUp = q;
         body.previousAnswer = lastAssistantMsg.content;
@@ -371,6 +425,18 @@ export default function ScholarAskPage() {
     setQuery(e.target.value);
     e.target.style.height = "auto";
     e.target.style.height = Math.min(e.target.scrollHeight, 150) + "px";
+  }
+
+  function handleAnswerModeChange(mode: AnswerMode) {
+    setAnswerMode(mode);
+    if (mode === "research_answer") setJourneyIntent("general_journey");
+  }
+
+  function handleStarterPrompt(starter: (typeof starterPrompts)[number]) {
+    setQuery(starter.prompt);
+    setAnswerMode("research_journey");
+    setJourneyIntent(starter.intent);
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   // Pre-compute refNums so it's stable for React.memo
@@ -450,26 +516,23 @@ export default function ScholarAskPage() {
                   className="pointer-events-none absolute bottom-[max(4.5rem,11vh)] left-1/2 h-auto w-[min(20rem,36vw)] -translate-x-1/2 opacity-90 2xl:bottom-[max(2rem,4vh)] 2xl:w-[min(24rem,24vw)]"
                 />
                 <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-[max(14.5rem,30vh)] 2xl:pb-[max(12rem,24vh)]">
-                <h1 className="mb-2 text-4xl font-bold text-[#1a1208] 2xl:text-5xl">Discover <em>deeper</em> insights</h1>
-                <p className="mb-10 text-[#7a6a5a] 2xl:text-lg">Powered by OpenAlex and AI synthesis</p>
+                <h1 className="mb-2 text-4xl font-bold text-[#1a1208] 2xl:text-5xl">Discover <em>your</em> question</h1>
+                <p className="mb-10 text-[#7a6a5a] 2xl:text-lg">Bridge your idea to sources, concepts, and a researchable path.</p>
                 <div className="w-full max-w-2xl 2xl:max-w-3xl">
                   <div className="bg-white border border-[#d4cdc5] rounded-2xl p-4 shadow-sm transition-shadow focus-within:border-[#b9afa4] focus-within:shadow-[0_4px_18px_rgba(26,18,8,0.08)] 2xl:p-5">
                     <textarea ref={inputRef} value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="What would you like to learn more about?" rows={2} className="w-full resize-none text-sm text-[#1a1208] placeholder-[#9a8a7a] focus:outline-none focus-visible:!outline-none focus-visible:!ring-0 2xl:text-base" />
-                    <div className="flex items-center justify-between mt-2">
-                      <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <div onClick={() => setDeepResearch(!deepResearch)} className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${deepResearch ? "bg-[#1a1208]" : "bg-gray-300"}`}>
-                          <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow ${deepResearch ? "translate-x-4" : "translate-x-0.5"}`} />
-                        </div>
-                        <span className="text-xs text-[#7a6a5a]">Deep research</span>
-                      </label>
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <AnswerModeControl answerMode={answerMode} onChange={handleAnswerModeChange} />
+                      </div>
                       <button onClick={() => handleSubmit()} disabled={!query.trim()} className="w-8 h-8 bg-[#1a1208] text-white rounded-lg flex items-center justify-center hover:bg-[#000000] disabled:opacity-30 transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                       </button>
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-6 mt-6">
-                    {["Explore topics", "Find experts", "Literature review"].map((label) => (
-                      <button key={label} onClick={() => { setQuery({ "Explore topics": "What are the main research topics in ", "Find experts": "Who are the leading researchers studying ", "Literature review": "Provide a literature review on " }[label] || ""); inputRef.current?.focus(); }} className="text-xs text-[#7a6a5a] hover:text-[#1a1208] transition-colors">{label}</button>
+                    {starterPrompts.map((starter) => (
+                      <button key={starter.label} onClick={() => handleStarterPrompt(starter)} className="text-xs text-[#7a6a5a] hover:text-[#1a1208] transition-colors">{starter.label}</button>
                     ))}
                   </div>
                 </div>
@@ -566,11 +629,16 @@ export default function ScholarAskPage() {
           {messages.length > 0 && (
             <div className="border-t border-[#e0d8d0] bg-white px-6 py-3 shrink-0">
               <div className="max-w-3xl mx-auto">
-                <div className="bg-white border border-[#d4cdc5] rounded-2xl px-4 py-3 flex items-end gap-2">
-                  <textarea value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="Ask a follow-up question" rows={1} disabled={isLoading} className="flex-1 resize-none text-sm text-[#1a1208] placeholder-[#9a8a7a] focus:outline-none disabled:opacity-50" />
-                  <button onClick={() => handleSubmit()} disabled={!query.trim() || isLoading} className="w-8 h-8 bg-[#1a1208] text-white rounded-lg flex items-center justify-center hover:bg-[#000000] disabled:opacity-30 transition-colors shrink-0">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
-                  </button>
+                <div className="bg-white border border-[#d4cdc5] rounded-2xl px-4 py-3">
+                  <div className="flex items-end gap-2">
+                    <textarea value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="Ask a follow-up question" rows={1} disabled={isLoading} className="flex-1 resize-none text-sm text-[#1a1208] placeholder-[#9a8a7a] focus:outline-none focus-visible:!outline-none focus-visible:!ring-0 disabled:opacity-50" />
+                    <button onClick={() => handleSubmit()} disabled={!query.trim() || isLoading} className="w-8 h-8 bg-[#1a1208] text-white rounded-lg flex items-center justify-center hover:bg-[#000000] disabled:opacity-30 transition-colors shrink-0">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                    </button>
+                  </div>
+                  <div className="mt-3 flex justify-start">
+                    <AnswerModeControl answerMode={answerMode} onChange={handleAnswerModeChange} />
+                  </div>
                 </div>
                 <p className="text-[10px] text-[#9a8a7a] text-center mt-1.5">ScholarAsk is powered by OpenAlex and AI. Responses may vary in quality.</p>
               </div>
@@ -605,7 +673,7 @@ export default function ScholarAskPage() {
                 )}
               </div>
               <div>
-                <h5 className="text-xs font-semibold text-[#5a4a3a] mb-1">How this paper supports the answer</h5>
+                <h5 className="text-xs font-semibold text-[#5a4a3a] mb-1">How this paper connects to the answer</h5>
                 {analyzingPaper === selectedPaper.num ? (
                   <div className="flex items-center gap-2 text-xs text-[#9a8a7a] py-2">
                     <div className="animate-spin rounded-full h-3 w-3 border border-[#d4cdc5] border-t-[#1a1208]" />

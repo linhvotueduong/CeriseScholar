@@ -7,6 +7,42 @@ import { callOllamaChat, OllamaError } from "@/lib/server/ollama";
 const OPENALEX_TIMEOUT_MS = 8000;
 const AI_TIMEOUT_MS = 25000;
 
+type AnswerMode = "research_answer" | "research_journey";
+type JourneyIntent = "general_journey" | "find_bridge" | "narrow_question" | "map_evidence";
+
+function normalizeAnswerMode(value: unknown): AnswerMode {
+  return value === "research_journey" ? "research_journey" : "research_answer";
+}
+
+function normalizeJourneyIntent(value: unknown): JourneyIntent {
+  if (
+    value === "find_bridge" ||
+    value === "narrow_question" ||
+    value === "map_evidence"
+  ) {
+    return value;
+  }
+  return "general_journey";
+}
+
+function cleanResearchJourneyAnswer(answer: string) {
+  return answer
+    .replace(/\bthe mechanism you describe\b/gi, "the described mechanism")
+    .replace(/\byour ([a-z][a-z -]{1,80}?) intuition\b/gi, "this $1 intuition")
+    .replace(/\byour intuition\b/gi, "this intuition")
+    .replace(/\byour work\b/gi, "this project")
+    .replace(/\byour framework\b/gi, "this framework")
+    .replace(/\byour proposed\b/gi, "the proposed")
+    .replace(/\byour argument\b/gi, "the argument")
+    .replace(/\byour research question\b/gi, "this research question")
+    .replace(/\byour question\b/gi, "this question")
+    .replace(/\byour idea\b/gi, "this idea")
+    .replace(/\byour research time\b/gi, "the research time you want to spend")
+    .replace(/\s*->\s*/g, " to ")
+    .replace(/\s*→\s*/g, " to ")
+    .replace(/—/g, ", ");
+}
+
 async function getSupabase() {
   const cookieStore = await cookies();
   return createServerClient(
@@ -23,7 +59,7 @@ async function getSupabase() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Ignore — cookies can't be set in API routes after streaming starts
+            // Ignore: cookies can't be set in API routes after streaming starts.
           }
         },
       },
@@ -129,7 +165,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Too many requests. Please wait a moment." }, { status: 429 });
     }
 
-    const { query, followUp, previousAnswer, deepResearch } = await req.json();
+    const body = await req.json();
+    const { query, followUp, previousAnswer } = body;
+    const answerMode = normalizeAnswerMode(body.answerMode);
+    const journeyIntent = normalizeJourneyIntent(body.journeyIntent);
+    const isResearchJourney = answerMode === "research_journey";
 
     // Step 1: Generate 6 search queries
     const searchQueries = generateSearchQueries(query);
@@ -137,7 +177,7 @@ export async function POST(req: NextRequest) {
     // Keep this fast enough for Azure Static Web Apps' managed backend while
     // still preserving the richer ScholarAsk answer shape.
     const searchResults = await Promise.all(
-      searchQueries.slice(0, deepResearch ? 4 : 3).map((q) => searchOpenAlex(q, deepResearch ? 16 : 12))
+      searchQueries.slice(0, 3).map((q) => searchOpenAlex(q, 12))
     );
 
     // Step 3: Merge, deduplicate, sort by citations
@@ -155,36 +195,41 @@ export async function POST(req: NextRequest) {
     allPapers.sort((a, b) => (b.citationCount || 0) - (a.citationCount || 0));
 
     // Keep enough references for source exploration, but do not overfeed the AI prompt.
-    const papers = allPapers.slice(0, deepResearch ? 40 : 28);
+    const papers = allPapers.slice(0, 28);
     papers.forEach((p, i) => (p.num = i + 1));
 
     // Use enough abstracts for a professor-style synthesis, but keep the prompt
     // bounded so Azure Free does not return a backend timeout.
     const papersWithAbstracts = papers.filter((p) => p.abstract && p.abstract.length > 30);
-    const aiPapers = papersWithAbstracts.slice(0, deepResearch ? 8 : 5);
+    const aiPapers = papersWithAbstracts.slice(0, 5);
 
     // Step 4: Full context with proper abstracts
     const papersContext = aiPapers
-      .map((p) => `[${p.num}] ${p.authors.slice(0, 2).join(", ")}${p.authors.length > 2 ? " et al." : ""} (${p.year || "n.d."}). "${p.title}". ${p.journal}.\nFindings: ${p.abstract.slice(0, 220)}`)
+      .map((p) => `[${p.num}] ${p.authors.slice(0, 2).join(", ")}${p.authors.length > 2 ? " et al." : ""} (${p.year || "n.d."}). "${p.title}". ${p.journal}.\nFindings: ${p.abstract.slice(0, isResearchJourney ? 180 : 220)}`)
       .join("\n\n");
 
-    // Step 5: Professor-level prompt — detailed, multi-source citations
-    const systemPrompt = `You are a senior professor conducting a systematic literature review. You have ${aiPapers.length} peer-reviewed sources:
+    // Step 5: Professor-level prompt with detailed, multi-source citations.
+    const researchAnswerPrompt = `You are a senior professor conducting a systematic literature review. You have ${aiPapers.length} peer-reviewed sources:
 
 ${papersContext}
 
 ANALYSIS REQUIREMENTS:
+Write a cautious evidence synthesis, not an argument trying to prove the student's idea.
+First judge whether the provided sources are direct evidence, adjacent evidence, or background context.
+Do not claim causality, bidirectionality, mediation, or a precise mechanism unless the cited sources directly measure that relationship.
+If the best support is adjacent, say so gently and frame the answer as a plausible research bridge.
 Write in the detailed ScholarAsk format below. Finish every section. If space is tight,
 shorten paragraphs instead of dropping sections or ending mid-sentence.
 Target 900-1,150 words total. Keep every sentence complete.
 Do not use markdown horizontal rules, divider lines, or standalone "---" separators.
+Avoid dash-heavy AI-style prose. Do not use em dashes. Prefer periods, commas, colons, or short separate sentences.
 
-1. "## Summary Answer" — exactly 4 sentences. Directly answer the question, name the likely relationship, and explain the core causal/behavioral mechanism.
-2. "## Key Mechanisms" — exactly 3 subsections using "###" headings. Each subsection should be one focused paragraph of 3-4 sentences that explains a distinct mechanism, pathway, or theory.
-3. "## Evidence Map" — include a markdown table with these columns exactly: | Theme | What It Means | Evidence | Caveat |. Use exactly 4 rows and keep cells concise.
-4. "## What the Evidence Suggests" — synthesize agreements and differences across sources in exactly 2 paragraphs of 3-4 sentences each. Mention when a source is indirect or when evidence is only correlational.
-5. "## Limitations and Gaps" — use exactly 4 bullets. Each bullet should be one sentence covering missing evidence, measurement limits, population limits, or what cannot be concluded yet.
-6. "**Confidence:** High/Medium/Low" — explain evidence consistency in exactly 2 sentences.
+1. "## Summary Answer": exactly 4 sentences. Directly answer the question, but qualify the answer if the sources are adjacent or correlational.
+2. "## Key Mechanisms": exactly 3 subsections using "###" headings. Each subsection should be one focused paragraph of 3-4 sentences that explains a distinct mechanism, pathway, or theory; state when the mechanism is inferred rather than directly demonstrated.
+3. "## Evidence Map": include a markdown table with these columns exactly: | Theme | What It Means | Evidence | Caveat |. Use exactly 4 rows and keep cells concise. The Caveat column must identify whether the evidence is direct, adjacent, background, correlational, population-limited, or method-limited.
+4. "## What the Evidence Suggests": synthesize agreements and differences across sources in exactly 2 paragraphs of 3-4 sentences each. Mention when a source is indirect, adjacent, background context, or only correlational.
+5. "## Limitations and Gaps": use exactly 4 bullets. Each bullet should be one sentence covering missing evidence, measurement limits, population limits, or what cannot be concluded yet.
+6. "**Confidence:** High/Medium/Low": explain evidence consistency in exactly 2 sentences. Use Medium or Low when direct studies are missing, even if the idea is promising.
 7. End with exactly 3 follow-up research questions starting with "→ ". Do not add anything after the third question.
 
 CITATION RULES:
@@ -192,6 +237,63 @@ CITATION RULES:
 - Use at least ${Math.min(aiPapers.length, 5)} different sources overall.
 - Do not invent source numbers that are not listed above.
 - Prefer depth and clarity over a tiny answer, but stay focused enough to finish on a serverless backend.`;
+
+    const journeyIntentInstructions: Record<JourneyIntent, string> = {
+      general_journey:
+        "The student selected Research Journey without a starter button. Treat this as open mentor mode: diagnose what kind of support would help, then choose the best-fit path among bridging, narrowing, mapping evidence, theory, method, or argument support.",
+      find_bridge:
+        "The student chose Find the bridge. Focus on helping them connect a real idea to related concepts, adjacent literatures, useful theories, search terms, and a strategy for source scarcity. This is not only about translating to academic terms; it is about solving the student's struggle when direct literature is limited or named differently.",
+      narrow_question:
+        "The student chose Narrow my question. Treat their prompt as a rough idea, even if it is messy or short. Translate it into researchable pathways with possible variables, scope choices, 2-3 possible research questions, and guidance on which path fits the student's likely goal.",
+      map_evidence:
+        "The student chose Map the evidence. Focus on separating direct evidence, adjacent or indirect evidence, gaps, confidence, and what the student can safely claim from the current literature.",
+    };
+
+    const researchJourneyPrompt = `You are a warm, serious research mentor helping a student move through a real research journey. You have ${aiPapers.length} peer-reviewed sources:
+
+${papersContext}
+
+JOURNEY INTENT:
+${journeyIntentInstructions[journeyIntent]}
+
+MENTORING PRINCIPLES:
+- Diagnose the student's research state before giving strategy, but make the diagnosis feel like guidance, not grading.
+- Match your strategy to the research situation rather than forcing one preferred topic.
+- Preserve the student's agency. Offer paths and tradeoffs; do not decide their thesis for them.
+- Use evidence carefully. If evidence is indirect, correlational, population-limited, or conceptually adjacent, say so clearly.
+- Validate the research idea before suggesting refinements. Use plain, encouraging academic language.
+- Frame gaps as normal research boundaries and strategy choices, never as a personal deficit.
+- Use depersonalized diagnostic language. When evaluating readiness, evidence, fit, limitations, or gaps, say "this question", "this idea", "this project", or "this research path". Avoid possessive wording that makes the evaluation feel personal.
+- Use "you" only for agency, choice, and encouragement, such as "if you want to explore..." or "you could choose...".
+- Outside the Reflective Question section, prefer "this framework", "this research question", "this project", and "the argument" when referring to the work itself.
+- Do not write "your intuition", "your work", "your framework", "your proposed", "your argument", "your research question", "your question", or "your idea". Use "this intuition", "this project", "this framework", "the proposed relationship", "the argument", "this research question", "this question", or "this idea" instead.
+- Prefer "there is room to...", "this could be strengthened by...", and "a helpful next support is..." instead of corrective language like "you need help" or "this idea needs...".
+- Avoid dash-heavy AI-style prose. Do not use em dashes. Prefer periods, commas, colons, or short separate sentences.
+- If direct sources are scarce, use this exact sentence when it fits: "This may be an emerging question, so the strongest strategy is to build a careful bridge from nearby studies."
+- Do not use markdown horizontal rules, divider lines, or standalone "---" separators.
+
+RESEARCH JOURNEY FORMAT:
+Write a serious but gentle mentor-style answer in the exact format below. Target 650-850 words total. Keep every section short and complete.
+
+1. "## Research Readiness": choose exactly one: **Early-stage**, **Developing-stage**, or **Strong-stage**. Explain in 1 soft sentence. Use "This is..." language rather than grading the student. Example tone: "Developing-stage: This is a clear, arguable claim with identifiable constructs, and there is room to improve how the intuitive framework is translated into precise academic language and testable relationships."
+2. "## Literature Fit": choose exactly one: **Direct**, **Adjacent**, or **Emerging**. Explain in 1 sentence using "this question" or "this idea" language.
+3. "## Research State Diagnosis": 2 sentences identifying whether this idea is in exploration, narrowing, academic language-building, evidence-connecting, theory-seeking, method-seeking, or claim-checking.
+4. "## Support Opportunities": name exactly 2 support opportunities using gentle bold labels from this list: Vocabulary support, Scope support, Evidence support, Theory support, Method support, Argument support, Confidence support. Explain each in one sentence without saying "you need" or making the support feel personal.
+5. "## Direct Answer": exactly 3 sentences answering this question with careful citations and no overclaiming.
+6. "## Concept Bridge": include exactly 3 bullets. Format each bullet as: "**Original phrase:** ... **Academic language:** ... **Why it matters:** ..." Do not use arrow notation.
+7. "## Evidence Map": include a markdown table with these columns exactly: | Path | What It Helps Explain | Evidence | Caution |. Use exactly 3 rows.
+8. "## Research Strategy": give exactly 3 bullets using these exact labels: "**Search phrases:**", "**Theory anchors:**", and "**Source strategy and safest claim:**". Do not add a fourth bullet.
+9. "## Possible Research Pathways": use exactly three mini-paragraphs with these exact labels: "**Path 1:**", "**Path 2:**", and "**Path 3:**". Each path must contain one research question and one separate sentence beginning "This path fits if...". Do not use markdown numbered lists.
+10. "## Next Best Step": one short paragraph naming one concrete action that would move this project forward. Use "this framework", "this project", or "this research question" rather than possessive wording for the work itself.
+11. "## Reflective Question": end with exactly one question that helps the student choose their own path. This is the main place where "you" language is welcome. Do not add anything after this question.
+
+CITATION RULES:
+- Support major claims with bracket citations like [1] [3].
+- Use at least ${Math.min(aiPapers.length, 5)} different sources overall.
+- Do not invent source numbers that are not listed above.
+- If the sources are only adjacent to the student's question, say "the best current bridge is..." instead of pretending the literature is direct.`;
+
+    const systemPrompt = answerMode === "research_journey" ? researchJourneyPrompt : researchAnswerPrompt;
 
     const messages: { role: string; content: string }[] = [
       { role: "system", content: systemPrompt },
@@ -209,10 +311,12 @@ CITATION RULES:
         route: "research",
         messages,
         timeoutMs: AI_TIMEOUT_MS,
-        numPredict: deepResearch ? 2600 : 2200,
+        numPredict: answerMode === "research_journey" ? 1700 : 2200,
       });
+      const cleanedAnswer = isResearchJourney ? cleanResearchJourneyAnswer(answer) : answer;
+
       return NextResponse.json({
-        answer,
+        answer: cleanedAnswer,
         references: papers,
         paperCount: aiPapers.length,
         totalFound: papers.length,
@@ -221,7 +325,7 @@ CITATION RULES:
       if (err instanceof OllamaError) {
         const message =
           err.status === 504
-            ? "AI took too long. Try a shorter question or turn off Deep research."
+            ? "AI took too long. Try a shorter question or use Research Answer."
             : err.message;
         return NextResponse.json({ error: message }, { status: err.status });
       }
