@@ -49,19 +49,19 @@ export async function POST(req: NextRequest) {
     let systemPrompt = "";
 
     if (task === "paper_analysis" && paper && mainAnswer) {
-      // Generate analysis of how a specific paper supports the main answer
+      // Generate analysis of how a specific paper connects to the main answer.
       systemPrompt = `You are an academic research assistant. The user asked a research question and received an answer that cited a specific paper. Explain in ONE paragraph (4-5 sentences) exactly:
 1. What this paper found
-2. How and what part of this paper supports the points in the main answer
+2. Whether the paper is direct evidence, adjacent evidence, or background context for the points in the main answer
 3. From what angle/perspective this paper contributes
 
-Be specific about the paper's methodology and findings. Reference specific claims from the answer that this paper supports.`;
+Be specific about the paper's methodology and findings. Do not force a support claim. If the paper does not directly support a claim in the answer, say that clearly and explain the safer connection.`;
 
       const allMessages = [
         { role: "system", content: systemPrompt },
         {
           role: "user",
-          content: `Main research answer (excerpt):\n${mainAnswer.slice(0, 500)}\n\nPaper to analyze:\nTitle: ${paper.title}\nAuthors: ${paper.authors?.join(", ")}\nYear: ${paper.year}\nJournal: ${paper.journal}\nAbstract: ${paper.abstract}\n\nExplain how this paper supports the points in the answer above.`,
+          content: `Main research answer (excerpt):\n${mainAnswer.slice(0, 500)}\n\nPaper to analyze:\nTitle: ${paper.title}\nAuthors: ${paper.authors?.join(", ")}\nYear: ${paper.year}\nJournal: ${paper.journal}\nAbstract: ${paper.abstract}\n\nExplain how this paper connects to the points in the answer above.`,
         },
       ];
 
