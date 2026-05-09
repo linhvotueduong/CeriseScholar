@@ -1,20 +1,15 @@
+import AuthShell from "@/components/auth/AuthShell";
 import LoginForm from "@/components/auth/LoginForm";
-import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#fefefe", padding: "0 16px" }}>
-      <div style={{ marginBottom: "32px", textAlign: "center" }}>
-        <Link href="/" style={{ textDecoration: "none" }}>
-          <h1 style={{ fontFamily: "var(--font-playfair), 'Playfair Display', Georgia, serif", fontSize: "24px", fontWeight: 400, color: "#1a1208", margin: "0 0 8px" }}>
-            Cerise Scholar
-          </h1>
-        </Link>
-        <p style={{ fontFamily: "var(--font-body)", fontSize: "14px", color: "#7a6a5a" }}>
-          Sign in to your research workspace
-        </p>
-      </div>
+    <AuthShell
+      eyebrow="Welcome back"
+      mode="login"
+      subtitle="Sign in to continue your scholar journey with Cerise Scholar."
+      title="Sign in to Cerise Scholar"
+    >
       <LoginForm />
-    </div>
+    </AuthShell>
   );
 }
