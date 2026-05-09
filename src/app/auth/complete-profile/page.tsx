@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const PENDING_GOOGLE_PROFILE_KEY = "cerise_pending_google_signup_profile";
+const ADMIN_EMAIL = "cerisescholar@gmail.com";
 
 export default function CompleteProfilePage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function CompleteProfilePage() {
           const { data } = await supabase.auth.getUser();
           const parsedProfile = JSON.parse(pendingProfile) as Record<string, unknown>;
 
-          if (data.user) {
+          if (data.user && data.user.email?.toLowerCase() !== ADMIN_EMAIL) {
             await supabase.auth.updateUser({
               data: {
                 ...data.user.user_metadata,
