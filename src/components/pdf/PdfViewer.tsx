@@ -7,13 +7,19 @@ import { useAnnotations } from "@/hooks/useAnnotations";
 import { useCodes } from "@/hooks/useCodes";
 import { useTts } from "@/hooks/useTts";
 import { extractPageText } from "@/lib/pdf/extractText";
-import { readApiResponse } from "@/lib/utils/readApiResponse";
+import { useLocalAgentStatus } from "@/hooks/useLocalAgentStatus";
+import {
+  callLocalAgentChat,
+  LOCAL_AGENT_REQUIRED_MESSAGE,
+  LOCAL_AI_UNAVAILABLE_MESSAGE,
+} from "@/lib/local-agent/client";
 import PdfPage from "./PdfPage";
 import PdfToolbar from "./PdfToolbar";
 import TtsWidget from "@/components/tts/TtsWidget";
 import Markdown from "react-markdown";
 import AnnotationSidebar from "@/components/annotations/AnnotationSidebar";
 import CodeSystemPanel from "@/components/codes/CodeSystemPanel";
+import LaptopRequiredMobileSheet from "@/components/mobile/LaptopRequiredMobileSheet";
 import DocumentPanel from "@/components/pdf/DocumentPanel";
 import NoteModal from "@/components/annotations/NoteModal";
 import Spinner from "@/components/ui/Spinner";
@@ -26,6 +32,34 @@ interface PdfViewerProps {
   pdfTitle?: string;
   projectId?: string;
 }
+
+type SpeechRecognitionEventLike = {
+  results: {
+    0: {
+      0: {
+        transcript: string;
+      };
+    };
+  };
+};
+
+type SpeechRecognitionLike = {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
 
 // Left panels — Documents and Code System, independently open/closeable
 function LeftPanels({
@@ -208,6 +242,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   const { annotations, createAnnotation, updateAnnotation } = useAnnotations(pdfId);
   const { codes, createCode, updateCode, deleteCode } = useCodes(projectId);
   const tts = useTts();
+  const localAgent = useLocalAgentStatus();
 
   const [highlightMode, setHighlightMode] = useState(false);
   const [reHighlightId, setReHighlightId] = useState<string | null>(null);
@@ -229,8 +264,8 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   const [chatLoading, setChatLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [chatSize, setChatSize] = useState({ w: 380, h: 480 });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
+  const [laptopRequiredOpen, setLaptopRequiredOpen] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -413,28 +448,44 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   const handleChatSend = useCallback(async (overrideText?: string) => {
     const text = overrideText || chatInput.trim();
     if (!text || chatLoading || !document) return;
+
+    if (!localAgent.canUseLocalAi && localAgent.mobile) {
+      setLaptopRequiredOpen(true);
+      return;
+    }
+
     setChatInput("");
     setChatMessages((prev) => [...prev, { role: "user", content: text }]);
     setChatLoading(true);
 
     try {
+      if (!localAgent.canUseLocalAi) {
+        throw new Error(
+          localAgent.mobile
+            ? LOCAL_AGENT_REQUIRED_MESSAGE
+            : localAgent.ui.status === "needs-ollama"
+              ? LOCAL_AI_UNAVAILABLE_MESSAGE
+              : localAgent.ui.detail || LOCAL_AGENT_REQUIRED_MESSAGE
+        );
+      }
+
       const docContext = await getDocumentContext();
       const context = docContext ? `\n\nDocument content:\n${docContext}` : "";
 
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task: "ask",
-          messages: [
-            ...chatMessages.slice(-6),
-            { role: "user", content: text + context },
-          ],
-        }),
+      const reply = await callLocalAgentChat({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are Cerise Scholar's PDF research assistant. Answer using the provided document context when available. Be concise, specific, and honest when the document does not contain enough evidence.",
+          },
+          ...chatMessages.slice(-6),
+          { role: "user", content: text + context },
+        ],
+        query: text,
+        timeoutMs: 45000,
       });
-      const data = await readApiResponse<{ content?: string; error?: string }>(res);
-      if (!res.ok) throw new Error(data.error || "AI request failed");
-      setChatMessages((prev) => [...prev, { role: "assistant", content: data.content || "Sorry, I could not answer that." }]);
+      setChatMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (err) {
       setChatMessages((prev) => [
         ...prev,
@@ -445,7 +496,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
       ]);
     }
     setChatLoading(false);
-  }, [chatInput, chatLoading, document, chatMessages, getDocumentContext]);
+  }, [chatInput, chatLoading, document, chatMessages, getDocumentContext, localAgent.canUseLocalAi, localAgent.mobile, localAgent.ui.detail, localAgent.ui.status]);
 
   // Voice input — speech-to-text using browser API
   const toggleVoiceInput = useCallback(() => {
@@ -455,8 +506,8 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const speechWindow = window as SpeechWindow;
+    const SR = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
     if (!SR) return;
 
     const recognition = new SR();
@@ -465,7 +516,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
     recognition.maxAlternatives = 1;
     recognitionRef.current = recognition;
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
       const transcript = event.results[0][0].transcript;
       if (transcript.trim()) {
         handleChatSend(transcript.trim());
@@ -833,6 +884,13 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
           highlightText={existingNoteModal.highlightText}
         />
       )}
+      <LaptopRequiredMobileSheet
+        open={laptopRequiredOpen}
+        onClose={() => setLaptopRequiredOpen(false)}
+        title="Use your laptop for PDF AI"
+        body="You can keep reading and highlighting on mobile. Asking AI about the document uses local file text, so for this beta it runs from the Cerise Scholar Local Agent on your trusted laptop."
+        primaryLabel="I’ll use my laptop"
+      />
     </div>
   );
 }

@@ -3,7 +3,22 @@ import { createClient } from "@/lib/supabase/server";
 
 const ADMIN_EMAIL = "cerisescholar@gmail.com";
 
+function isLocalOrigin(origin: string) {
+  try {
+    const hostname = new URL(origin).hostname;
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
 function getSiteOrigin(request: Request) {
+  const requestOrigin = new URL(request.url).origin;
+
+  if (isLocalOrigin(requestOrigin)) {
+    return requestOrigin;
+  }
+
   const configuredOrigin =
     process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
 

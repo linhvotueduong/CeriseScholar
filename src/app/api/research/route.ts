@@ -9,6 +9,7 @@ const AI_TIMEOUT_MS = 25000;
 
 type AnswerMode = "research_answer" | "research_journey";
 type JourneyIntent = "general_journey" | "find_bridge" | "narrow_question" | "map_evidence";
+type ResearchMessage = { role: "system" | "user" | "assistant"; content: string };
 
 function normalizeAnswerMode(value: unknown): AnswerMode {
   return value === "research_journey" ? "research_journey" : "research_answer";
@@ -295,7 +296,7 @@ CITATION RULES:
 
     const systemPrompt = answerMode === "research_journey" ? researchJourneyPrompt : researchAnswerPrompt;
 
-    const messages: { role: string; content: string }[] = [
+    const messages: ResearchMessage[] = [
       { role: "system", content: systemPrompt },
     ];
 
@@ -304,6 +305,21 @@ CITATION RULES:
       messages.push({ role: "user", content: followUp });
     } else {
       messages.push({ role: "user", content: query });
+    }
+
+    if (body.localAgent === true) {
+      return NextResponse.json({
+        localAgent: {
+          route: "research",
+          messages,
+          query: String(query || ""),
+          answerMode,
+          journeyIntent,
+        },
+        references: papers,
+        paperCount: aiPapers.length,
+        totalFound: papers.length,
+      });
     }
 
     try {

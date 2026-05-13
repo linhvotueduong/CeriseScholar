@@ -4,9 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
+    "dev:local": "node scripts/dev-local.mjs",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "next start",
     "lint": "eslint",
+    "local-agent": "node scripts/local-agent.mjs",
+    "local-agent:doctor": "node scripts/local-agent-doctor.mjs",
+    "mock:local-agent": "node scripts/mock-local-agent.mjs",
+    "setup:laptop": "node scripts/local-agent-doctor.mjs",
+    "check:legacy": "node scripts/check-legacy-references.mjs",
+    "check:ollama-security": "node scripts/check-ollama-security-gate.mjs",
+    "check:storage-strategy": "node scripts/check-storage-strategy.mjs",
     "postinstall": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs"
   },
   "dependencies": {

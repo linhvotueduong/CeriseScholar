@@ -1,5 +1,12 @@
+import type { Viewport } from "next";
 import AuthShell from "@/components/auth/AuthShell";
 import SignupForm from "@/components/auth/SignupForm";
+
+export const viewport: Viewport = {
+  colorScheme: "dark",
+  themeColor: "#000000",
+  viewportFit: "cover",
+};
 
 export default function SignupPage() {
   return (
