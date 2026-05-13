@@ -83,6 +83,20 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@media (max-width: 767px) {
+  html.cerise-mobile-auth-active,
+  body.cerise-mobile-auth-active,
+  html:has(.cerise-mobile-auth-shell),
+  body:has(.cerise-mobile-auth-shell) {
+    min-height: 100%;
+    background: #030303 !important;
+    background-color: #030303 !important;
+    color-scheme: dark;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}
+
 /* Display type */
 h1, h2, h3, .display {
   font-family: var(--font-display);

@@ -1,65 +1,70 @@
-# Deploying Cerise Scholar with Cloudflare Tunnel
+# Deploying Cerise Scholar
 
-Follow these steps when you're ready to make your app accessible on the internet.
+Cerise Scholar currently deploys to Azure Static Web Apps Free.
 
-## Prerequisites
+Before changing deployment, DNS, Azure, Cloudflare, billing-sensitive resources, or preview-server behavior, read:
 
-1. A **Cloudflare account** (free) — https://dash.cloudflare.com/sign-up
-2. A **domain name** registered with or transferred to Cloudflare (~$10/year)
-3. **cloudflared** installed — already done: `brew install cloudflared`
+- `docs/azure-static-webapps-safety-protocol.md`
+- `docs/legacy-vite-quarantine.md`
 
-## Step-by-step
+## Current Live Target
 
-### 1. Log in to Cloudflare from terminal
+- Azure Static Web App: `cerise-scholar-main`
+- Resource group: `cerise-scholar-free-rg`
+- SKU: Free
+- Azure default URL: `https://thankful-desert-03241fd0f.7.azurestaticapps.net`
+- Custom subdomain: `https://app.cerisescholar.com`
+
+Do not use the older wrong Static Web App for the real app:
+
+- `cerise-scholar`
+- the sibling Vite repo named `Website`
+- the older lowercase GitHub repo with the same app-like name
+
+## Required Safety Flow
+
+1. Run and review a local preview first.
+2. Use a unique local port if another Codex/chat session is active.
+3. Verify the change remains inside Azure Static Web Apps Free limits.
+4. Confirm no paid Azure resources are being created or upgraded.
+5. Ask the user for explicit final approval before deploying.
+6. After deployment, verify both the Azure default URL and `https://app.cerisescholar.com`.
+
+## Local Preview
+
+Check for active preview servers first:
+
 ```bash
-cloudflared tunnel login
+lsof -nP -iTCP -sTCP:LISTEN | grep -E ':(3000|3001|3002|3003|3004)'
 ```
-This opens your browser. Authorize the connection.
 
-### 2. Create a tunnel
+Start on a free port:
+
 ```bash
-cloudflared tunnel create cerise-scholar
+npm run dev -- -p 3001
 ```
-Note the **Tunnel ID** that gets printed.
 
-### 3. Create the config file
-Create `~/.cloudflared/config.yml`:
-```yaml
-tunnel: YOUR_TUNNEL_ID
-credentials-file: /Users/mrperfect/.cloudflared/YOUR_TUNNEL_ID.json
+If `3001` is already used by another session, choose the next free port and tell the user which preview belongs to this session.
 
-ingress:
-  - hostname: your-domain.com
-    service: http://localhost:3000
-  - service: http_status:404
-```
-Replace `YOUR_TUNNEL_ID` and `your-domain.com` with your actual values.
+## Pre-deploy Checks
 
-### 4. Set up DNS
 ```bash
-cloudflared tunnel route dns cerise-scholar your-domain.com
+git status --short
+npm run lint
+npm run check:legacy
+npm run build
+du -sh .next
+find .next -type f | wc -l
 ```
 
-### 5. Build and run the production app
-```bash
-npm run build -- --webpack
-npm run start
-```
+Do not stage unrelated dirty files. This project may contain cleanup changes, generated folders, or work from another session.
 
-### 6. Start the tunnel (in a separate terminal)
-```bash
-cloudflared tunnel run cerise-scholar
-```
+## After Feature Work
 
-### 7. Keep your Mac awake
-```bash
-caffeinate -s
-```
-This prevents your Mac from sleeping and killing the tunnel.
+To save Mac storage, offer safe generated-cache cleanup after the user is done previewing. Safe examples include `.next/cache` or temporary build caches. Do not delete source code, assets, PDFs, `.env*`, Supabase data, docs, or anything with unclear ownership.
 
-## Quick start (development mode)
-For local development without Cloudflare:
-```bash
-./start.sh
-```
-Then open http://localhost:3000
+## Legacy Cloudflare Tunnel Note
+
+The old Cloudflare Tunnel setup was replaced for `app.cerisescholar.com`. Do not restore the tunnel route unless the user explicitly requests a rollback plan.
+
+`cerisescholar.com` root and `www` are intentionally reserved for later and must not be switched without explicit approval.

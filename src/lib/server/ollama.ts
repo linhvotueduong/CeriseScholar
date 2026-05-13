@@ -28,6 +28,7 @@ const OLLAMA_API_URL = "https://ollama.com/api/chat";
 
 function getOllamaConfig() {
   return {
+    cloudFallbackEnabled: process.env.ENABLE_CLOUD_AI_FALLBACK === "true",
     apiKey: process.env.OLLAMA_API_KEY || "",
     model: process.env.OLLAMA_MODEL || "kimi-k2.5",
   };
@@ -44,7 +45,14 @@ export class OllamaError extends Error {
 }
 
 export function assertOllamaConfigured() {
-  if (!getOllamaConfig().apiKey) {
+  const config = getOllamaConfig();
+  if (!config.cloudFallbackEnabled) {
+    throw new OllamaError(
+      "Cloud AI fallback is disabled. Use the Cerise Scholar Local Agent on your laptop.",
+      503
+    );
+  }
+  if (!config.apiKey) {
     throw new OllamaError("AI not configured", 500);
   }
 }

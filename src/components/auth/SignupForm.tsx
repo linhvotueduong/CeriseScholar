@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { requestLocalSetupPrompt } from "@/lib/local-agent/client";
 import Link from "next/link";
 import GoogleButton from "./GoogleButton";
 
@@ -114,6 +115,7 @@ export default function SignupForm() {
   const [profile, setProfile] = useState<SignupProfile>(emptySignupProfile);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mobileEmailOpen, setMobileEmailOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -204,6 +206,7 @@ export default function SignupForm() {
     }
 
     if (data.session) {
+      requestLocalSetupPrompt("email-signup");
       router.push("/dashboard");
       router.refresh();
       return;
@@ -248,6 +251,7 @@ export default function SignupForm() {
     setPendingAction(null);
     setPendingGoogleStart(null);
     if (startGoogle) {
+      requestLocalSetupPrompt("google-signup");
       window.localStorage.setItem(PENDING_GOOGLE_PROFILE_KEY, JSON.stringify(getProfileMetadata()));
       await startGoogle();
     }
@@ -293,22 +297,124 @@ export default function SignupForm() {
 
   return (
     <div className="w-full space-y-5">
-      <GoogleButton
-        label="Create account with Google"
-        onBeforeStart={(startGoogle) => {
-          setPendingGoogleStart(() => startGoogle);
-          openDetails("google");
-          return false;
-        }}
-      />
+      <div className="space-y-2 md:hidden">
+        <GoogleButton
+          compact
+          label="Continue with Google"
+          onBeforeStart={(startGoogle) => {
+            setPendingGoogleStart(() => startGoogle);
+            openDetails("google");
+            return false;
+          }}
+        />
 
-      <div className="flex items-center gap-3 text-xs font-medium text-[#9a8a7a]">
-        <span className="h-px flex-1 bg-[#e0d8d0]" />
-        <span>or create your account with email</span>
-        <span className="h-px flex-1 bg-[#e0d8d0]" />
+        {!mobileEmailOpen ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setMobileEmailOpen(true)}
+              className="min-h-9 w-full rounded-[8px] bg-[#f0ece8] px-3 py-1.5 text-[10.5px] font-bold text-[#1a1208] transition-colors hover:bg-[#e8e2dc]"
+            >
+              Continue with Email
+            </button>
+            <p className="px-3 pt-1.5 text-center text-[8.8px] leading-[1.45] text-[#9a8a7a]">
+              Start your account here. The deeper research tools will meet you on the trusted
+              laptop where your files and local AI live.
+            </p>
+          </>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileEmailOpen(false);
+                setError(null);
+              }}
+              className="text-xs font-semibold text-[#7a6a5a] hover:text-[#1a1208]"
+            >
+              Back to sign-up choices
+            </button>
+
+            <div>
+              <label
+                htmlFor="mobile-signup-email"
+                className="mb-1.5 block text-[12px] font-semibold text-[#5f5248]"
+              >
+                Email
+              </label>
+              <input
+                id="mobile-signup-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                className="min-h-10 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-3 py-2 text-[12px] text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="mobile-signup-password"
+                className="mb-1.5 block text-[12px] font-semibold text-[#5f5248]"
+              >
+                Password
+              </label>
+              <input
+                id="mobile-signup-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                className="min-h-10 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-3 py-2 text-[12px] text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
+                placeholder="At least 8 characters"
+              />
+            </div>
+
+            {error && (
+              <p className="rounded-[8px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="min-h-10 w-full rounded-[10px] bg-[#1a1208] px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-black disabled:opacity-50"
+            >
+              {loading ? "Creating account..." : "Next"}
+            </button>
+          </form>
+        )}
+
+        <p className="text-center text-[11px] leading-4 text-[#7a6a5a]">
+          Already have an account?{" "}
+          <Link href="/login" className="font-semibold text-[#1a1208] hover:underline">
+            Sign in
+          </Link>
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="hidden space-y-5 md:block">
+        <GoogleButton
+          label="Continue with Google"
+          onBeforeStart={(startGoogle) => {
+            setPendingGoogleStart(() => startGoogle);
+            openDetails("google");
+            return false;
+          }}
+        />
+
+        <div className="flex items-center gap-3 text-xs font-medium text-[#9a8a7a]">
+          <span className="h-px flex-1 bg-[#e0d8d0]" />
+          <span>or create your account with email</span>
+          <span className="h-px flex-1 bg-[#e0d8d0]" />
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label htmlFor="email" className="mb-2 block text-sm font-semibold text-[#5f5248]">
             Email
@@ -369,7 +475,8 @@ export default function SignupForm() {
             Sign in
           </Link>
         </p>
-      </form>
+        </form>
+      </div>
 
       {detailsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1a1208]/45 px-4 py-6 backdrop-blur-sm">
@@ -385,9 +492,11 @@ export default function SignupForm() {
                 onClick={handleDetailsCancel}
                 disabled={loading}
                 aria-label="Close account details"
-                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#d4cdc5] bg-white text-xl leading-none text-[#1a1208] transition-colors hover:border-[#1a1208] disabled:opacity-50"
+                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#e0d8d0] bg-white text-[#7a6a5a] shadow-[0_6px_16px_rgba(26,18,8,0.08)] transition-colors hover:border-[#cfc4b8] hover:bg-[#fbf7f0] hover:text-[#1a1208] disabled:opacity-50"
               >
-                ×
+                <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 16 16">
+                  <path d="M4.5 4.5L11.5 11.5M11.5 4.5L4.5 11.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                </svg>
               </button>
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#c0392b]">
                 Cerise Scholar public laptop beta

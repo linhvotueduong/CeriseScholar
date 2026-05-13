@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { requestLocalSetupPrompt } from "@/lib/local-agent/client";
 
 const PENDING_GOOGLE_PROFILE_KEY = "cerise_pending_google_signup_profile";
 const ADMIN_EMAIL = "cerisescholar@gmail.com";
@@ -27,9 +28,15 @@ export default function CompleteProfilePage() {
                 ...parsedProfile,
               },
             });
+            requestLocalSetupPrompt("auth-callback-profile");
           }
         } finally {
           window.localStorage.removeItem(PENDING_GOOGLE_PROFILE_KEY);
+        }
+      } else {
+        const { data } = await supabase.auth.getUser();
+        if (data.user && data.user.email?.toLowerCase() !== ADMIN_EMAIL) {
+          requestLocalSetupPrompt("auth-callback");
         }
       }
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { readApiResponse } from "@/lib/utils/readApiResponse";
+import { callLocalAgentChat } from "@/lib/local-agent/client";
 import type { Highlight } from "@/types/annotation";
 
 interface CreateHighlightParams {
@@ -39,7 +39,11 @@ export function useHighlights(pdfId: string) {
   }, [pdfId]);
 
   useEffect(() => {
-    fetchHighlights();
+    const timer = window.setTimeout(() => {
+      void fetchHighlights();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [fetchHighlights]);
 
   const createHighlight = useCallback(
@@ -91,27 +95,33 @@ export function useHighlights(pdfId: string) {
         project_id: params.projectId || null,
       }).select("id").single();
 
-      // 4. Fire-and-forget: ask AI to generate proper APA citation from PDF text
+      // 4. Fire-and-forget: ask the laptop Local Agent to generate proper APA citation from PDF text
       if (litEntry && params.pdfFirstPagesText) {
-        fetch("/api/ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            task: "generate_apa",
-            pdfText: params.pdfFirstPagesText,
-            filename: params.pdfDisplayName,
-          }),
+        callLocalAgentChat({
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are an academic citation expert. Return only one APA 7th edition reference string. Do not add explanation, labels, bullets, or quotes.",
+            },
+            {
+              role: "user",
+              content: `Extract bibliographic information from the text below and generate a single APA 7th edition reference.\n\nFilename: ${params.pdfDisplayName || ""}\n\nPDF text from first pages:\n${params.pdfFirstPagesText.slice(0, 3000)}`,
+            },
+          ],
+          query: params.pdfDisplayName,
+          timeoutMs: 20000,
         })
-          .then(async (res) => {
-            const data = await readApiResponse<{ apa?: string; error?: string }>(res);
-            return res.ok ? data : {};
-          })
-          .then((data) => {
-            if (data.apa) {
+          .then((apa) => {
+            const cleanApa = apa.trim().replace(/^["']|["']$/g, "");
+            if (cleanApa) {
               // Update the lit review entry with AI-generated APA
               supabase
                 .from("literature_review_entries")
-                .update({ apa_reference: data.apa, authors: data.apa.split("(")[0]?.trim() || params.pdfAuthor || "" })
+                .update({
+                  apa_reference: cleanApa,
+                  authors: cleanApa.split("(")[0]?.trim() || params.pdfAuthor || "",
+                })
                 .eq("id", litEntry.id)
                 .then(() => {});
             }
