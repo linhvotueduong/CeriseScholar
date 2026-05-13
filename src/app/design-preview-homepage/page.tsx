@@ -11,7 +11,7 @@ import {
   Bebas_Neue,
   Fredoka,
 } from "next/font/google";
-import HEDGEHOG from "../../lib/hedgehog_images.js";
+import HEDGEHOG from "@/lib/hedgehog";
 
 /* -------- Fonts -------- */
 const dmSerif = DM_Serif_Display({ weight: "400", style: ["normal", "italic"], subsets: ["latin"], variable: "--font-dm-serif", display: "swap" });

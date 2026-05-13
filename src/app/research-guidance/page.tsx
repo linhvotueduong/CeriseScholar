@@ -7,7 +7,7 @@ import {
   Noto_Sans,
   Fredoka,
 } from "next/font/google";
-import HEDGEHOG from "../../lib/hedgehog_images.js";
+import HEDGEHOG from "@/lib/hedgehog";
 import StepFolders from "../../components/StepFolders";
 
 export const metadata: Metadata = {

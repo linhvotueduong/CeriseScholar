@@ -11,7 +11,7 @@ import {
   Bebas_Neue,
   Fredoka,
 } from "next/font/google";
-import HEDGEHOG from "../lib/hedgehog_images.js";
+import HEDGEHOG from "@/lib/hedgehog";
 import PipelineCart from "../components/PipelineCart";
 import LiveDemo from "../components/LiveDemo";
 import ShiftingGrid from "../components/ShiftingGrid";

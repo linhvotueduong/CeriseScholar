@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { DM_Serif_Display, DM_Sans, Playfair_Display, Noto_Sans, Fredoka } from "next/font/google";
-import HEDGEHOG from "../../lib/hedgehog_images.js";
+import HEDGEHOG from "@/lib/hedgehog";
 
 const dmSerif = DM_Serif_Display({ weight: "400", style: ["normal", "italic"], subsets: ["latin"], variable: "--font-dm-serif", display: "swap" });
 const dmSans = DM_Sans({ weight: ["400", "500", "600", "700"], subsets: ["latin"], variable: "--font-dm-sans", display: "swap" });

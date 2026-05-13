@@ -1,5 +1,5 @@
 /**
- * Hedgehog mascot image paths — lightweight replacement for hedgehog_images.js.
+ * Hedgehog mascot image paths.
  * Images are served as static files from public/assets/hedgehogs/ instead of
  * being bundled as 2MB+ of base64 into the JS bundle.
  */
