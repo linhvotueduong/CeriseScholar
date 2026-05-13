@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DM_Serif_Display, DM_Sans, Playfair_Display, Noto_Sans, Fredoka } from "next/font/google";
-import HEDGEHOG from "../../../lib/hedgehog_images.js";
+import HEDGEHOG from "@/lib/hedgehog";
 
 export const metadata: Metadata = {
   title: "Features — Cerise Scholar",
