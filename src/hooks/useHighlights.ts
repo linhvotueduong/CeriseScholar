@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { logDashboardActivity } from "@/lib/dashboard/activity";
 import { callLocalAgentChat } from "@/lib/local-agent/client";
 import type { Highlight } from "@/types/annotation";
 
@@ -131,6 +132,20 @@ export function useHighlights(pdfId: string) {
 
       // 5. Update local state
       setHighlights((prev) => [...prev, highlight as Highlight]);
+      await logDashboardActivity({
+        projectId: params.projectId,
+        eventType: "highlight_created",
+        sectionId: "workspace",
+        label: "Created highlight",
+      });
+      if (params.noteContent) {
+        await logDashboardActivity({
+          projectId: params.projectId,
+          eventType: "note_created",
+          sectionId: "workspace",
+          label: "Created note",
+        });
+      }
       return highlight as Highlight;
     },
     []

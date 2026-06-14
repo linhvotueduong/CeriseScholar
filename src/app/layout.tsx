@@ -53,9 +53,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${dmSans.variable} ${dmSerif.variable} ${ptMono.variable} ${playfair.variable} ${notoSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-paper text-ink">{children}<FlowGuide /></body>
+      <body className="min-h-full flex flex-col bg-paper text-ink" suppressHydrationWarning>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('cerise-night-mode')==='true'){document.documentElement.classList.add('cerise-night-mode');document.body.classList.add('cerise-night-mode')}}catch(e){}",
+          }}
+        />
+        {children}
+        <FlowGuide />
+      </body>
     </html>
   );
 }

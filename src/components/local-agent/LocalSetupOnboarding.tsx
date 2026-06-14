@@ -67,6 +67,13 @@ function readDismissed() {
   }
 }
 
+function formatSetupTimeLeft(seconds: number) {
+  const clampedSeconds = Math.max(0, Math.ceil(seconds));
+  const minutes = Math.floor(clampedSeconds / 60);
+  const remainingSeconds = clampedSeconds % 60;
+  return `${minutes}:${String(remainingSeconds).padStart(2, "0")} left`;
+}
+
 export default function LocalSetupOnboarding() {
   const { user } = useUser();
   const localAgent = useLocalAgentStatus();
@@ -81,6 +88,14 @@ export default function LocalSetupOnboarding() {
   const ready = localAgent.canUseLocalAi;
 
   const statusCopy = useMemo(() => {
+    if (localAgent.hostedAiBypass) {
+      return {
+        eyebrow: "Hosted AI enabled",
+        title: "AI agents are ready for this account",
+        body: "This beta account can use hosted AI agents without setting up the Cerise Scholar Local Agent on this laptop.",
+      };
+    }
+
     if (ready) {
       return {
         eyebrow: "Laptop AI ready",
@@ -118,16 +133,25 @@ export default function LocalSetupOnboarding() {
       title: "Choose how you want to start",
       body: "Cerise Scholar is ready for your account. The full private research workflow needs the Local Agent and Ollama on a personal or trusted laptop.",
     };
-  }, [localAgent.health?.ollama?.selectedModel, localAgent.mobile, localAgent.ui.detail, localAgent.ui.status, ready]);
+  }, [localAgent.health?.ollama?.selectedModel, localAgent.hostedAiBypass, localAgent.mobile, localAgent.ui.detail, localAgent.ui.status, ready]);
 
   useEffect(() => {
     if (!user) return;
+    if (localAgent.hostedAiBypass) {
+      try {
+        window.localStorage.removeItem(LOCAL_SETUP_PROMPT_STORAGE_KEY);
+      } catch {
+        // The hosted bypass still works even if local storage is unavailable.
+      }
+      setOpen(false);
+      return;
+    }
     if (readDismissed()) return;
 
     if (readPromptRequested() || !ready) {
       setOpen(true);
     }
-  }, [ready, user]);
+  }, [localAgent.hostedAiBypass, ready, user]);
 
   useEffect(() => {
     if (!open || ready) return;
@@ -251,13 +275,13 @@ export default function LocalSetupOnboarding() {
       ? timedSetupProgress
       : 0;
   const setupProgressLabel = ready ? "100%" : `${setupProgress}%`;
-  const setupMinutesLeft =
-    setupMode === "setup"
-      ? Math.max(1, Math.ceil((estimatedSetupSeconds - setupElapsedSeconds) / 60))
-      : setupEstimate.minMinutes;
-  const setupTimeLabel = ready
-    ? "0 min left"
-    : `${setupMinutesLeft} ${setupMinutesLeft === 1 ? "min" : "mins"} left`;
+  const setupSecondsLeft =
+    ready
+      ? 0
+      : setupMode === "setup"
+        ? estimatedSetupSeconds - setupElapsedSeconds
+        : estimatedSetupSeconds;
+  const setupTimeLabel = formatSetupTimeLeft(setupSecondsLeft);
   const primaryActionLabel = ready ? "Get Started!" : setupMode === "setup" ? "Check setup" : "Get Started!";
 
   return (

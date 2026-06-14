@@ -8,6 +8,8 @@ import {
   Fredoka,
 } from "next/font/google";
 import HEDGEHOG from "@/lib/hedgehog";
+import PublicMarketingNavbar from "@/components/layout/PublicMarketingNavbar";
+import PublicMarketingFooter from "@/components/layout/PublicMarketingFooter";
 import StepFolders from "../../components/StepFolders";
 
 export const metadata: Metadata = {
@@ -154,23 +156,7 @@ export default function ResearchGuidancePage() {
     <div className={`${fontClasses} min-h-screen`} style={{ background: palette.bg, color: palette.ink }}>
 
       {/* ── Navbar ── */}
-      <div style={{ padding: "12px 24px 0", position: "relative" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={HEDGEHOG.hedgehog09Notepad} alt="" className="pointer-events-none hidden lg:block" style={{ position: "absolute", left: "calc(50% - 550px - 60px)", top: "8px", height: "52px", width: "auto", objectFit: "contain", zIndex: 10 }} />
-        <nav style={{ maxWidth: "1100px", margin: "0 auto", height: "48px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", background: "#ffffff", borderRadius: "100px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-          <Link href="/" style={{ fontFamily: "var(--font-playfair)", fontSize: "15px", color: palette.ink, textDecoration: "none" }}>Cerise Scholar</Link>
-          <div style={{ display: "flex", alignItems: "center", gap: "20px", fontFamily: "var(--font-noto)", fontSize: "11px" }}>
-            <Link href="/" className="hover:opacity-70" style={{ color: palette.ink, textDecoration: "none" }}>Home</Link>
-            <div className="group" style={{ position: "relative" }}><span className="hover:opacity-70 cursor-pointer" style={{ color: palette.ink }}>About</span><div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: "8px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", padding: "8px", minWidth: "120px", zIndex: 200 }}><Link href="/about/features" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: palette.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Features</Link><Link href="/about/mission" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: palette.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Mission</Link></div></div>
-            <Link href="/research-guidance" style={{ color: palette.cerise, textDecoration: "none", fontWeight: 600 }}>Research Guide</Link>
-            <Link href="/projects-preview" className="hover:opacity-70" style={{ color: palette.ink, textDecoration: "none" }}>Projects</Link>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Link href="/login" className="hover:opacity-70" style={{ fontFamily: "var(--font-noto)", fontSize: "11px", color: palette.ink, textDecoration: "none" }}>Log In</Link>
-            <Link href="/signup" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "6px 16px", fontFamily: "var(--font-noto)", fontSize: "11px", fontWeight: 600, background: palette.ink, color: "#fff", borderRadius: "100px", textDecoration: "none" }}>Sign Up Free</Link>
-          </div>
-        </nav>
-      </div>
+      <PublicMarketingNavbar />
 
       {/* ── Hero ── */}
       <section style={{ paddingTop: "48px", paddingBottom: "60px", maxWidth: "900px", margin: "0 auto", textAlign: "center", padding: "48px 32px 60px" }}>
@@ -233,52 +219,7 @@ export default function ResearchGuidancePage() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer style={{ background: "#f5f2ec", borderTop: "1px solid #e0d8d0" }}>
-        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "48px 48px 24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1.5fr", gap: "40px", marginBottom: "32px" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={HEDGEHOG.hedgehog03Standing} alt="" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
-                <span style={{ fontFamily: "var(--font-playfair)", fontSize: "15px", color: palette.ink }}>Cerise Scholar</span>
-              </div>
-              <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: "12px", color: "#8a7a6a", lineHeight: 1.6, maxWidth: "220px" }}>The research companion for reading, highlighting, reviewing, and writing.</p>
-            </div>
-            <div>
-              <p style={{ fontFamily: "var(--font-noto)", fontSize: "11px", fontWeight: 700, color: palette.ink, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "14px" }}>Product</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontFamily: "var(--font-dm-sans)", fontSize: "12px" }}>
-                <Link href="/scholar-ask-preview" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">ScholarAsk</Link>
-                <Link href="/workspace-preview" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">Workspace</Link>
-                <Link href="/lit-review-preview" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">Literature Review</Link>
-                <Link href="/meta-analysis-preview" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">Meta-Analysis</Link>
-                <Link href="/paper-writer-preview" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">Paper Writer</Link>
-              </div>
-            </div>
-            <div>
-              <p style={{ fontFamily: "var(--font-noto)", fontSize: "11px", fontWeight: 700, color: palette.ink, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "14px" }}>Company</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontFamily: "var(--font-dm-sans)", fontSize: "12px" }}>
-                <Link href="/about" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">About</Link>
-                <Link href="/research-guidance" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">Research Guide</Link>
-                <Link href="/projects-preview" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">Projects</Link>
-                <a href="https://github.com/linhvotueduong/CeriseScholar" target="_blank" style={{ color: "#8a7a6a", textDecoration: "none" }} className="hover:opacity-70">GitHub ↗</a>
-              </div>
-            </div>
-            <div>
-              <p style={{ fontFamily: "var(--font-noto)", fontSize: "11px", fontWeight: 700, color: palette.ink, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "14px" }}>Newsletter</p>
-              <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: "12px", color: "#8a7a6a", lineHeight: 1.6, marginBottom: "14px" }}>Receive product updates, research tips, and early access.</p>
-              <div style={{ display: "flex", gap: "6px" }}>
-                <input type="email" placeholder="Enter your email..." style={{ flex: 1, padding: "10px 14px", border: "1.5px solid #d4cdc5", borderRadius: "100px", fontSize: "12px", fontFamily: "var(--font-dm-sans)", color: palette.ink, outline: "none", background: "#fff" }} />
-                <button style={{ width: "40px", height: "40px", borderRadius: "50%", background: palette.ink, color: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "16px", flexShrink: 0 }}>→</button>
-              </div>
-            </div>
-          </div>
-          <div style={{ borderTop: "1px solid #e0d8d0", paddingTop: "20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: "11px", color: "#a09080" }}>© 2025 Cerise Scholar · All rights reserved</span>
-            <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: "11px", color: "#a09080" }}>Built for researchers</span>
-          </div>
-        </div>
-      </footer>
+      <PublicMarketingFooter />
     </div>
   );
 }

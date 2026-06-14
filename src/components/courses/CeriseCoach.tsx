@@ -141,23 +141,42 @@ export default function CeriseCoach({ notes }: { notes: NoteForContext[] }) {
         return;
       }
 
-      const reply = (
-        await callLocalAgentChat({
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are Cerise, the user's research learning coach. Help them organize and connect their lesson notes. Be warm, concise, concrete, and always end with one reflective follow-up question.\n\n" +
-                (notesContext
-                  ? `The student's current notes are below. Ground the answer in these notes and do not invent course content.\n\n${notesContext}`
-                  : "The student has not written notes yet. Encourage them to start with one short note per lesson."),
-            },
-            ...nextMessages,
-          ],
-          query: trimmed,
-          timeoutMs: 30000,
-        })
-      ).trim();
+      let reply = "";
+      if (localAgent.hostedAiBypass) {
+        const response = await fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task: "learning_coach",
+            messages: nextMessages,
+            notesContext,
+          }),
+        });
+        const data = (await response.json().catch(() => ({}))) as {
+          content?: string;
+          error?: string;
+        };
+        if (!response.ok) throw new Error(data.error || "Cerise could not reply yet.");
+        reply = (data.content || "").trim();
+      } else {
+        reply = (
+          await callLocalAgentChat({
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are Cerise, the user's research learning coach. Help them organize and connect their lesson notes. Be warm, concise, concrete, and always end with one reflective follow-up question.\n\n" +
+                  (notesContext
+                    ? `The student's current notes are below. Ground the answer in these notes and do not invent course content.\n\n${notesContext}`
+                    : "The student has not written notes yet. Encourage them to start with one short note per lesson."),
+              },
+              ...nextMessages,
+            ],
+            query: trimmed,
+            timeoutMs: 30000,
+          })
+        ).trim();
+      }
       if (!reply) {
         setError("Cerise returned an empty reply. Try rephrasing your question.");
         setSending(false);

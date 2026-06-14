@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DM_Serif_Display, DM_Sans, Playfair_Display, Noto_Sans, Fredoka } from "next/font/google";
 import HEDGEHOG from "@/lib/hedgehog";
+import PublicMarketingNavbar from "@/components/layout/PublicMarketingNavbar";
+import PublicMarketingFooter from "@/components/layout/PublicMarketingFooter";
 
 export const metadata: Metadata = {
   title: "Mission — Cerise Scholar",
@@ -31,22 +33,7 @@ export default function MissionPage() {
     <div className={`${fc} min-h-screen`} style={{ background: p.bg, color: p.ink, fontFamily: "var(--font-dm-sans), 'DM Sans', sans-serif" }}>
 
       {/* ── Navbar ── */}
-      <div style={{ padding: "12px 24px 0", position: "relative" }}>
-        <img src={HEDGEHOG.hedgehog03Standing} alt="" className="pointer-events-none hidden lg:block" style={{ position: "absolute", left: "calc(50% - 550px - 60px)", top: "8px", height: "52px", width: "auto", objectFit: "contain", zIndex: 10 }} />
-        <nav style={{ maxWidth: "1100px", margin: "0 auto", height: "48px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", background: "#fff", borderRadius: "100px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-          <Link href="/" style={{ fontFamily: "var(--font-playfair)", fontSize: "15px", color: p.ink, textDecoration: "none" }}>Cerise Scholar</Link>
-          <div style={{ display: "flex", alignItems: "center", gap: "20px", fontFamily: "var(--font-noto)", fontSize: "11px" }}>
-            <Link href="/" className="hover:opacity-70" style={{ color: p.ink, textDecoration: "none" }}>Home</Link>
-            <div className="group" style={{ position: "relative" }}><span className="cursor-pointer" style={{ color: p.cerise, fontWeight: 600 }}>About</span><div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: "8px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", padding: "8px", minWidth: "120px", zIndex: 200 }}><Link href="/about/features" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: p.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Features</Link><Link href="/about/mission" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: p.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Mission</Link></div></div>
-            <Link href="/research-guidance" className="hover:opacity-70" style={{ color: p.ink, textDecoration: "none" }}>Research Guide</Link>
-            <Link href="/projects-preview" className="hover:opacity-70" style={{ color: p.ink, textDecoration: "none" }}>Projects</Link>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Link href="/login" className="hover:opacity-70" style={{ fontFamily: "var(--font-noto)", fontSize: "11px", color: p.ink, textDecoration: "none" }}>Log In</Link>
-            <Link href="/signup" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "6px 16px", fontFamily: "var(--font-noto)", fontSize: "11px", fontWeight: 600, background: p.ink, color: "#fff", borderRadius: "100px", textDecoration: "none" }}>Sign Up Free</Link>
-          </div>
-        </nav>
-      </div>
+      <PublicMarketingNavbar />
 
       {/* ═══ HERO — split layout with circle ═══ */}
       <section style={{ maxWidth: "900px", margin: "0 auto", padding: "60px 40px 50px", display: "flex", alignItems: "center", gap: "40px" }}>
@@ -191,48 +178,7 @@ export default function MissionPage() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer style={{ background: "#f5f2ec", borderTop: `1px solid ${p.rule}` }}>
-        <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "36px 48px 20px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1.5fr", gap: "32px", marginBottom: "24px" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                <img src={HEDGEHOG.hedgehog03Standing} alt="" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
-                <span style={{ fontFamily: "var(--font-playfair)", fontSize: "14px", color: p.ink }}>Cerise Scholar</span>
-              </div>
-              <p style={{ fontSize: "11px", color: p.muted, lineHeight: 1.6, maxWidth: "200px" }}>The research companion for reading, highlighting, reviewing, and writing.</p>
-            </div>
-            <div>
-              <p style={{ fontFamily: "var(--font-noto)", fontSize: "10px", fontWeight: 700, color: p.ink, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>Product</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "11px" }}>
-                <Link href="/scholar-ask-preview" style={{ color: p.muted, textDecoration: "none" }}>ScholarAsk</Link>
-                <Link href="/workspace-preview" style={{ color: p.muted, textDecoration: "none" }}>Workspace</Link>
-                <Link href="/lit-review-preview" style={{ color: p.muted, textDecoration: "none" }}>Literature Review</Link>
-              </div>
-            </div>
-            <div>
-              <p style={{ fontFamily: "var(--font-noto)", fontSize: "10px", fontWeight: 700, color: p.ink, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>Company</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "11px" }}>
-                <Link href="/about/features" style={{ color: p.muted, textDecoration: "none" }}>Features</Link>
-                <Link href="/about/mission" style={{ color: p.muted, textDecoration: "none" }}>Mission</Link>
-                <Link href="/research-guidance" style={{ color: p.muted, textDecoration: "none" }}>Research Guide</Link>
-              </div>
-            </div>
-            <div>
-              <p style={{ fontFamily: "var(--font-noto)", fontSize: "10px", fontWeight: 700, color: p.ink, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>Newsletter</p>
-              <p style={{ fontSize: "11px", color: p.muted, lineHeight: 1.6, marginBottom: "10px" }}>Product updates and research tips.</p>
-              <div style={{ display: "flex", gap: "6px" }}>
-                <input type="email" placeholder="Enter your email..." style={{ flex: 1, padding: "8px 12px", border: `1.5px solid ${p.border}`, borderRadius: "100px", fontSize: "11px", fontFamily: "var(--font-dm-sans)", color: p.ink, outline: "none", background: "#fff" }} />
-                <button style={{ width: "34px", height: "34px", borderRadius: "50%", background: p.ink, color: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "14px", flexShrink: 0 }}>→</button>
-              </div>
-            </div>
-          </div>
-          <div style={{ borderTop: `1px solid ${p.rule}`, paddingTop: "16px", paddingBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: "10px", color: p.faint }}>© 2025 Cerise Scholar · All rights reserved</span>
-            <span style={{ fontSize: "10px", color: p.faint }}>Built for researchers</span>
-          </div>
-        </div>
-      </footer>
+      <PublicMarketingFooter />
     </div>
   );
 }

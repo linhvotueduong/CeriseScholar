@@ -35,15 +35,22 @@ export async function middleware(request: NextRequest) {
 
   // Use getUser to validate the JWT against Supabase on every request.
   // Slightly slower than getSession, but ensures revoked/expired tokens
-  // are caught immediately — important for a public-facing app.
+  // are caught immediately - important for a public-facing app.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
 
-  // If user is NOT logged in and trying to access /dashboard, redirect to /login
-  if (!user && path.startsWith("/dashboard")) {
+  const isProtectedAppPath =
+    path.startsWith("/dashboard") ||
+    path === "/research-desk" ||
+    path.startsWith("/research-desk/") ||
+    path === "/settings" ||
+    path.startsWith("/settings/");
+
+  // If user is NOT logged in and trying to access a protected app page, redirect to /login
+  if (!user && isProtectedAppPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -76,5 +83,14 @@ export async function middleware(request: NextRequest) {
 
 // Only run middleware on these paths (skip static files, images, etc.)
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/signup"],
+  matcher: [
+    "/dashboard/:path*",
+    "/research-desk",
+    "/research-desk/:path*",
+    "/settings",
+    "/settings/:path*",
+    "/admin/:path*",
+    "/login",
+    "/signup",
+  ],
 };

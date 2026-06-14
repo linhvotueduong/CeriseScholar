@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { logDashboardActivity } from "@/lib/dashboard/activity";
 import type { PaperSection, PaperSectionKey } from "@/types/paper-section";
 import { PAPER_SECTIONS } from "@/types/paper-section";
 
@@ -80,6 +81,13 @@ export function usePaperWriter(projectId: string) {
         if (error) {
           console.error("Paper Writer save failed:", error);
           setSaveError("Save failed — your changes may not be saved. Please try again.");
+        } else {
+          await logDashboardActivity({
+            projectId,
+            eventType: "paper_draft_saved",
+            sectionId: "draft",
+            label: `Saved ${sectionKey} draft section`,
+          });
         }
 
         setSaving(false);

@@ -1,936 +1,399 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Navbar from "@/components/layout/Navbar";
-import CourseSectionNav from "@/components/courses/CourseSectionNav";
-import CourseFaq from "@/components/courses/CourseFaq";
-import GoldStars from "@/components/doodles/GoldStars";
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
+import AppShell from "@/components/app-shell/AppShell";
+import { AppIcon } from "@/components/app-shell/AppIcons";
+import type { AppIconName } from "@/components/app-shell/AppIcons";
+import CourseCard from "@/components/app-ui/CourseCard";
+import {
+  AppPageFrame,
+  CourseLibraryLayoutGrid,
+} from "@/components/app-ui/LayoutGrids";
+import {
+  courseCalendar,
+  courseLibraryCards,
+  recentMaterials,
+  recommendedCourses,
+} from "@/lib/app-data/courseLibrary";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/useUser";
 import type { CourseModule, CourseVideo } from "@/types/course";
+import styles from "./page.module.css";
 
-const p = {
-  ink: "#1a1208",
-  inkMuted: "#7a6a5a",
-  inkFaint: "#9a8a7a",
-  cerise: "#c0392b",
-  coral: "#c97a6b",
-  gold: "#c8a84b",
-  rule: "#e0d8d0",
-  border: "#d4cdc5",
-  surface: "#fdfcfa",
-  warm: "#faf7f0",
-  bg: "#fefefe",
-};
+const tabs = ["All Courses", "In Progress", "Completed", "Saved"];
 
-const stars = [
-  { top: "10%", left: "4%", size: 8, op: 0.3, rot: -10 },
-  { top: "26%", right: "5%", size: 9, op: 0.35, rot: 12 },
-  { top: "55%", left: "3%", size: 7, op: 0.3, rot: -5 },
-  { top: "82%", right: "4%", size: 8, op: 0.35, rot: 8 },
-];
-
-/**
- * Tracks whether the viewport is below 768px wide. Used to swap responsive
- * styles (multi-col grids, sticky sidebar, hero font size) without resorting
- * to a `<style>` block. Initial value is `false` so SSR matches desktop;
- * the effect runs post-hydration to flip to mobile if needed.
- */
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return isMobile;
-}
-
-function formatHours(mins: number): string {
-  if (mins <= 0) return "—";
-  const hrs = mins / 60;
-  if (hrs < 1) return `~${mins} min`;
-  // Round to nearest 0.5 hour for a friendly summary
-  const rounded = Math.round(hrs * 2) / 2;
-  return `~${rounded} hr${rounded === 1 ? "" : "s"}`;
+function formatLearningTime(minutes: number) {
+  if (!minutes) return "24h 36m";
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours}h ${mins}m`;
 }
 
 export default function CoursesLandingPage() {
   const { user, loading: userLoading } = useUser();
-  const isMobile = useIsMobile();
-
   const [modules, setModules] = useState<CourseModule[]>([]);
   const [videos, setVideos] = useState<CourseVideo[]>([]);
   const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    const supabase = createClient();
-
-    // Public RLS already filters to published modules + their videos for
-    // anonymous viewers. Admins see everything; we still only count published
-    // ones in the public-facing summary, so filter on the client too.
-    const [modsRes, vidsRes] = await Promise.all([
-      supabase
-        .from("course_modules")
-        .select("*")
-        .order("module_order", { ascending: true })
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("course_videos")
-        .select("*")
-        .order("video_order", { ascending: true })
-        .order("created_at", { ascending: true }),
-    ]);
-
-    const mods = ((modsRes.data ?? []) as CourseModule[]).filter((m) => m.is_published);
-    const modIds = new Set(mods.map((m) => m.id));
-    const vids = ((vidsRes.data ?? []) as CourseVideo[]).filter((v) => modIds.has(v.module_id));
-
-    setModules(mods);
-    setVideos(vids);
-
-    if (user) {
-      const progRes = await supabase
-        .from("course_progress")
-        .select("video_id")
-        .eq("user_id", user.id);
-      const seen = new Set<string>(
-        (progRes.data ?? []).map((r: { video_id: string }) => r.video_id)
-      );
-      setWatchedIds(seen);
-    } else {
-      setWatchedIds(new Set());
-    }
-
-    setLoading(false);
-  }, [user]);
+  const [activeTab, setActiveTab] = useState("All Courses");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
-    if (!userLoading) fetchData();
-  }, [userLoading, fetchData]);
+    let cancelled = false;
 
-  const totalModules = modules.length;
-  const totalLessons = videos.length;
-  const totalMinutes = videos.reduce((sum, v) => sum + (v.duration_minutes ?? 0), 0);
+    async function loadCourseLibrary() {
+      const supabase = createClient();
+      const [modsRes, vidsRes] = await Promise.all([
+        supabase
+          .from("course_modules")
+          .select("*")
+          .order("module_order", { ascending: true })
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("course_videos")
+          .select("*")
+          .order("video_order", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
 
-  // Find the next unwatched video for "Continue learning →" deep-link
-  const nextUnwatched = useMemo(() => {
-    if (!user || watchedIds.size === 0) return null;
-    return videos.find((v) => !watchedIds.has(v.id)) ?? null;
-  }, [videos, watchedIds, user]);
+      const publishedModules = ((modsRes.data ?? []) as CourseModule[]).filter((module) => module.is_published);
+      const moduleIds = new Set(publishedModules.map((module) => module.id));
+      const publishedVideos = ((vidsRes.data ?? []) as CourseVideo[]).filter((video) => moduleIds.has(video.module_id));
+      const nextWatchedIds = new Set<string>();
 
-  const ctaHref = nextUnwatched ? `/courses/learn?video=${nextUnwatched.id}` : "/courses/learn";
-  const ctaLabel =
-    !user
-      ? "Start learning →"
-      : watchedIds.size === 0
-        ? "Start learning →"
-        : nextUnwatched
-          ? "Continue learning →"
-          : "Review the course →";
+      if (user) {
+        const progressRes = await supabase
+          .from("course_progress")
+          .select("video_id")
+          .eq("user_id", user.id);
+        (progressRes.data ?? []).forEach((row: { video_id: string }) => nextWatchedIds.add(row.video_id));
+      }
+
+      if (cancelled) return;
+      setModules(publishedModules);
+      setVideos(publishedVideos);
+      setWatchedIds(nextWatchedIds);
+    }
+
+    if (!userLoading) void loadCourseLibrary();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, userLoading]);
+
+  const totalLessons = videos.length || 21;
+  const lessonsCompleted = watchedIds.size || 21;
+  const learningMinutes = videos
+    .filter((video) => watchedIds.has(video.id))
+    .reduce((sum, video) => sum + (video.duration_minutes ?? 0), 0);
+
+  const cards = useMemo(() => {
+    const filtered = courseLibraryCards.filter((course) =>
+      `${course.title} ${course.body}`.toLowerCase().includes(query.toLowerCase())
+    );
+    if (activeTab === "Completed") return filtered.filter((course) => course.progress >= 100);
+    if (activeTab === "In Progress") return filtered.filter((course) => course.progress > 0 && course.progress < 100);
+    if (activeTab === "Saved") return filtered.slice(1, 3);
+    return filtered;
+  }, [activeTab, query]);
+
+  const courseStats: Array<{
+    detail: string;
+    icon: AppIconName;
+    label: string;
+    success?: boolean;
+    value: string | number;
+  }> = [
+    { icon: "book-open", label: "Active courses", value: modules.length || 2, detail: "Courses in progress" },
+    { icon: "check-square", label: "Lessons completed", value: lessonsCompleted, detail: `${totalLessons} available` },
+    { icon: "file", label: "Notes created", value: "12", detail: "Course notes" },
+    { icon: "clock", label: "Learning time", value: formatLearningTime(learningMinutes), detail: "Across courses" },
+    { icon: "trophy", label: "Course completed", value: "1", detail: "Finished", success: true },
+  ];
 
   return (
-    <div style={{ background: p.bg, minHeight: "100vh", color: p.ink, position: "relative" }}>
-      <Navbar />
-      <GoldStars stars={stars} />
-
-      <main
-        style={{
-          maxWidth: "1180px",
-          margin: "0 auto",
-          padding: isMobile ? "32px 20px 64px" : "40px 32px 80px",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) 340px",
-            gap: isMobile ? "20px" : "32px",
-            alignItems: "flex-start",
-          }}
-        >
-          {/* ── Left: Hero ── */}
-          <section>
-            <div
-              style={{
-                fontSize: "11px",
-                color: p.cerise,
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                marginBottom: "10px",
-              }}
-            >
-              The course
-            </div>
-            <h1
-              style={{
-                fontFamily: "var(--font-display), 'DM Serif Display', serif",
-                fontSize: isMobile ? "36px" : "56px",
-                fontWeight: 400,
-                color: p.ink,
-                margin: "0 0 14px",
-                lineHeight: 1.05,
-                letterSpacing: "-0.01em",
-              }}
-            >
-              Learn how to <span style={{ fontStyle: "italic" }}>research well</span>
-            </h1>
-            <p
-              style={{
-                fontSize: "17px",
-                color: p.inkMuted,
-                lineHeight: 1.65,
-                margin: "0 0 24px",
-                maxWidth: "560px",
-              }}
-            >
-              A guided course for new researchers and student writers. Watch short
-              video lessons, take notes that stay yours, and turn what you learn
-              into a paper you&apos;re proud of.
-            </p>
-
-            {/* Primary CTA + meta line */}
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px", marginBottom: "8px" }}>
-              <Link
-                href={ctaHref}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "12px 24px",
-                  borderRadius: "100px",
-                  background: p.cerise,
-                  color: "#fff",
-                  textDecoration: "none",
-                  fontSize: "14px",
-                  fontWeight: 700,
-                  boxShadow: "0 6px 20px rgba(192, 57, 43, 0.25)",
-                }}
-              >
-                {ctaLabel}
-              </Link>
-              {!loading && totalLessons > 0 && (
-                <span style={{ fontSize: "13px", color: p.inkFaint }}>
-                  {totalModules} module{totalModules === 1 ? "" : "s"} · {totalLessons} lesson
-                  {totalLessons === 1 ? "" : "s"} · {formatHours(totalMinutes)}
-                </span>
-              )}
-            </div>
-            {!user && !userLoading && (
-              <p style={{ fontSize: "12px", color: p.inkFaint, margin: "8px 0 0" }}>
-                You&apos;ll be asked to sign in or create a free account before the first lesson.
-              </p>
-            )}
-          </section>
-
-          {/* ── Right: Sticky enrollment card (static on mobile) ── */}
-          <aside
-            style={{
-              position: isMobile ? "static" : "sticky",
-              top: "24px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
-            <div
-              style={{
-                background: "#fff",
-                border: `1.5px solid ${p.border}`,
-                borderRadius: "18px",
-                overflow: "hidden",
-                boxShadow: "0 6px 24px rgba(0,0,0,0.06)",
-              }}
-            >
-              {/* Cerise accent strip */}
-              <div
-                style={{
-                  background: p.cerise,
-                  padding: "14px 20px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <span style={{ color: p.gold, fontSize: "14px" }}>★</span>
-                <span style={{ color: "#fff", fontSize: "12px", fontWeight: 700, letterSpacing: "0.06em" }}>
-                  ENROLL FOR FREE
-                </span>
+    <AppShell contentClassName={styles.courseMain}>
+      <AppPageFrame className={`${styles.courseFrame} max-w-[1380px] px-1`}>
+        <CourseLibraryLayoutGrid className={`${styles.courseLayout} xl:grid-cols-[minmax(0,1fr)_320px]`}>
+          <div className={styles.courseContent}>
+            <header className={`${styles.courseHeader} mb-4 grid min-h-[76px] gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end`}>
+              <div className="min-w-0">
+                <p className="mb-1.5 text-[11px] font-[850] leading-none text-[#a87f4f]">Course</p>
+                <h1 className="m-0 text-[30px] font-[850] leading-none tracking-normal text-[#111111]">
+                  Course Library
+                </h1>
+                <p className="mt-2 max-w-[520px] text-[13px] font-semibold leading-[1.45] text-[#625a52]">
+                  Access your lessons, course materials, readings, notes, and research skill paths in one place.
+                </p>
               </div>
+              <div className={`${styles.courseActions} mb-1 flex shrink-0 items-center gap-2`}>
+                <button className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#d8d3ce] bg-white px-3.5 text-[12px] font-[850] text-[#111111]" type="button">
+                  <AppIcon className="h-4 w-4" name="upload" />
+                  Export report
+                </button>
+                <button className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-[#111111] bg-[#111111] px-3.5 text-[12px] font-[850] text-white" type="button">
+                  <AppIcon className="h-4 w-4" name="settings" />
+                  Report settings
+                </button>
+              </div>
+            </header>
 
-              <div style={{ padding: "20px 22px 22px" }}>
-                {loading ? (
-                  <div style={{ display: "flex", justifyContent: "center", padding: "24px 0" }}>
-                    <div
-                      className="animate-spin rounded-full h-6 w-6 border-2"
-                      style={{ borderColor: p.rule, borderTopColor: p.ink }}
-                    />
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
-                      <SummaryRow label="Modules" value={String(totalModules)} />
-                      <SummaryRow label="Lessons" value={String(totalLessons)} />
-                      <SummaryRow label="Total time" value={formatHours(totalMinutes)} />
-                      {user && watchedIds.size > 0 && (
-                        <SummaryRow
-                          label="Your progress"
-                          value={
-                            totalLessons === 0
-                              ? "—"
-                              : `${watchedIds.size} / ${totalLessons} watched`
-                          }
-                          accent
-                        />
-                      )}
+            <div className={`${styles.courseControls} grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center`}>
+              <div className="relative min-w-0">
+                <AppIcon className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#6f6760]" name="search" />
+                <input
+                  className="h-8 w-full rounded-[8px] border border-[#d8d3ce] bg-white px-9 text-[11px] font-semibold text-[#17120d] outline-none placeholder:text-[#8b8178]"
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search courses, materials, or topics..."
+                  type="search"
+                  value={query}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {tabs.map((tab) => (
+                  <button
+                    className={`h-8 rounded-full px-4 text-[11px] font-bold ${
+                      activeTab === tab ? "bg-[#e9e2d8] text-[#111111]" : "bg-[#f3f1ee] text-[#4f4842]"
+                    }`}
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    type="button"
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={`${styles.statsRow} mt-2.5 grid gap-2 md:grid-cols-2 xl:grid-cols-5`}>
+              {courseStats.map((stat) => (
+                <article
+                  className={`${styles.statCard} min-h-[58px] rounded-[9px] border border-[#e5e1dc] bg-white px-3 py-1.5 shadow-[0_1px_0_rgba(17,17,17,0.02)]`}
+                  key={stat.label}
+                >
+                  <div className="flex h-full items-center gap-2">
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
+                        stat.success
+                          ? "border-[#cde9cc] bg-[#eef8ed] text-[#17952a]"
+                          : "border-[#ece8e3] bg-white text-[#17120d]"
+                      }`}
+                    >
+                      <AppIcon className="h-3.5 w-3.5" name={stat.icon} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-[850] leading-none text-[#17120d]">{stat.label}</p>
+                      <p
+                        className={`mt-0.5 text-[18px] font-[850] leading-none ${
+                          stat.success ? "text-[#14912a]" : "text-[#111111]"
+                        }`}
+                      >
+                        {stat.value}
+                      </p>
+                      <p className="mt-0.5 text-[9.5px] font-semibold leading-none text-[#625a52]">{stat.detail}</p>
                     </div>
+                  </div>
+                </article>
+              ))}
+            </div>
 
-                    <Link
-                      href={ctaHref}
-                      style={{
-                        display: "block",
-                        textAlign: "center",
-                        padding: "12px 18px",
-                        borderRadius: "100px",
-                        background: p.ink,
-                        color: "#fff",
-                        textDecoration: "none",
-                        fontSize: "13px",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {ctaLabel}
-                    </Link>
-                    <p
-                      style={{
-                        fontSize: "11px",
-                        color: p.inkFaint,
-                        margin: "10px 2px 0",
-                        textAlign: "center",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      Free · video lessons · personal notes · AI study coach
-                    </p>
-                  </>
-                )}
+            <div className={`${styles.courseRailInline} mt-3 grid gap-2.5`}>
+              <ContinueLearningCard />
+              <RecommendedForYouCard />
+            </div>
+
+            <section className={`${styles.courseCardsSection} mt-3 rounded-[10px] border border-[#e5e1dc] bg-white px-2.5 py-3`}>
+              <div className="flex items-center justify-between">
+                <h2 className="text-[14px] font-[850] leading-none text-[#111111]">Your Course</h2>
+                <Link className="inline-flex items-center gap-1 text-[11px] font-[850] text-[#8a5b10] no-underline" href="/courses/learn">
+                  <span>View all lessons</span>
+                </Link>
               </div>
-            </div>
+              <div className={`${styles.courseCardsGrid} mt-3 grid gap-2 lg:grid-cols-3`}>
+                {cards.map((course) => (
+                  <CourseCard
+                    action={
+                      <Link
+                        className="block rounded-[7px] border border-[#d8d3ce] px-3 py-1.5 text-center text-[10px] font-[850] text-[#8a5b10] no-underline"
+                        href="/courses/learn"
+                      >
+                        {course.progress ? "Continue learning" : "Start Learning"}
+                      </Link>
+                    }
+                    badge={course.badge}
+                    key={course.title}
+                    lessons={course.lessons}
+                    modules={course.modules}
+                    notes={course.notes}
+                    progress={course.progress}
+                    remaining={course.remaining}
+                    title={course.title}
+                  >
+                    {course.body}
+                  </CourseCard>
+                ))}
+              </div>
+            </section>
 
-            {/* Helpful side-link card */}
-            <div
-              style={{
-                background: p.warm,
-                border: `1.5px solid ${p.border}`,
-                borderRadius: "14px",
-                padding: "14px 16px",
-                fontSize: "12px",
-                color: p.inkMuted,
-                lineHeight: 1.5,
-              }}
-            >
-              <strong style={{ color: p.ink }}>Already enrolled?</strong>
-              <br />
-              <Link
-                href="/my-learning"
-                className="hover:underline"
-                style={{ color: p.cerise, fontWeight: 600, textDecoration: "none" }}
-              >
-                Open your learning dashboard →
+            <section className={`${styles.materialsSection} mt-3 rounded-[10px] border border-[#e5e1dc] bg-white p-3`}>
+              <div className="flex items-center justify-between">
+                <h2 className="text-[14px] font-[850] text-[#111111]">Recent Materials</h2>
+                <button className="inline-flex items-center gap-1 text-[11px] font-[850] text-[#8a5b10]" type="button">
+                  <span>View all materials</span>
+                </button>
+              </div>
+              <div className={`${styles.materialsTable} mt-2.5 overflow-hidden rounded-[8px] border border-[#eeeae5]`}>
+                {recentMaterials.map(([title, course, kind, date]) => (
+                  <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_72px_58px] gap-3 border-t border-[#eeeae5] px-3 py-1.5 text-[10px] first:border-t-0" key={title}>
+                    <span className="truncate font-bold text-[#111111]">{title}</span>
+                    <span className="text-[#625a52]">{course}</span>
+                    <span className="rounded-full bg-[#f7f5f2] px-2 py-0.5 text-center text-[10px] font-bold text-[#4f4842]">
+                      {kind}
+                    </span>
+                    <span className="text-right text-[#625a52]">{date}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className={`${styles.progressStrip} mt-3 grid items-center gap-3 rounded-[10px] border border-[#eadfce] bg-[#fffaf2] px-3 py-2 lg:grid-cols-[34px_minmax(190px,1fr)_112px_112px_90px_150px_auto]`}>
+              <div className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#fff0c8] text-[#9a7b55]">
+                <AppIcon className="h-3.5 w-3.5" name="trophy" />
+              </div>
+              <div>
+                <h2 className="text-[15px] font-[850] text-[#111111]">Keep going, Win!</h2>
+                <p className="mt-0.5 text-[11px] text-[#625a52]">You&apos;re building strong research skills every day.</p>
+              </div>
+              <Metric label="Total learning time" value={formatLearningTime(learningMinutes)} />
+              <Metric label="Courses completed" value="1" />
+              <Metric label="Weekly goal" value="68%" />
+              <Metric label="Next milestone" value="Finish Module 5" />
+              <Link className="rounded-[8px] border border-[#a87f4f] px-3 py-1.5 text-[10px] font-bold text-[#8a5b10] no-underline" href="/my-learning">
+                View my progress
               </Link>
-            </div>
-          </aside>
-        </div>
-
-        <CourseSectionNav />
-
-        <AboutSection />
-        <ModulesSection
-          modules={modules}
-          videos={videos}
-          watchedIds={watchedIds}
-          isLoggedIn={!!user}
-          loading={loading}
-        />
-
-        <WhatYoullLearnSection />
-        <FaqSection />
-      </main>
-    </div>
-  );
-}
-
-function AboutSection() {
-  const isMobile = useIsMobile();
-  return (
-    <section
-      id="about"
-      style={{
-        scrollMarginTop: "80px",
-        padding: "56px 0",
-        borderBottom: `1px solid ${p.rule}`,
-      }}
-    >
-      <h2
-        style={{
-          fontFamily: "var(--font-display), 'DM Serif Display', serif",
-          fontSize: "32px",
-          fontWeight: 400,
-          color: p.ink,
-          margin: "0 0 14px",
-        }}
-      >
-        About this course
-      </h2>
-      <p
-        style={{
-          fontSize: "16px",
-          color: p.inkMuted,
-          lineHeight: 1.7,
-          margin: "0 0 36px",
-          maxWidth: "720px",
-        }}
-      >
-        A self-paced course for students and early-career researchers. Watch
-        short video lessons, take notes that stay yours, and turn what you
-        learn into a paper you&apos;re proud of — using the same workspace
-        you&apos;re learning in.
-      </p>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
-          gap: "16px",
-          marginBottom: "36px",
-        }}
-      >
-        <AboutCard
-          label="Who it's for"
-          body="Undergraduates writing their first thesis, master's students starting research, and anyone who's been asked to write a literature review without quite knowing where to start."
-        />
-        <AboutCard
-          label="How it works"
-          body="Watch a short lesson. Write a note. Move on. Your notes stay connected to the lessons they came from — and to Cerise, the AI coach who can help you organise them later."
-        />
-        <AboutCard
-          label="What you'll get"
-          body="By the end, you'll be able to read a research paper critically, structure your own writing using IMRaD, and tell a strong claim from a weak one."
-        />
-      </div>
-
-      <div
-        style={{
-          background: p.warm,
-          border: `1.5px solid ${p.border}`,
-          borderRadius: "14px",
-          padding: "20px 24px",
-          maxWidth: "820px",
-          display: "flex",
-          gap: "14px",
-          alignItems: "flex-start",
-        }}
-      >
-        <span style={{ color: p.gold, fontSize: "22px", lineHeight: 1, flexShrink: 0 }}>★</span>
-        <div>
-          <div
-            style={{
-              fontSize: "11px",
-              color: p.cerise,
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              marginBottom: "4px",
-            }}
-          >
-            Why it exists
+            </section>
           </div>
-          <p style={{ fontSize: "14px", color: p.ink, lineHeight: 1.7, margin: 0 }}>
-            Most research-writing advice is either too abstract (&ldquo;think
-            critically!&rdquo;) or too narrow (&ldquo;use this template&rdquo;).
-            This course aims for the middle: enough method to get unstuck,
-            enough room to think for yourself.
-          </p>
-        </div>
-      </div>
-    </section>
+
+          <aside className={`${styles.courseRail} grid min-w-0 content-start gap-2.5 xl:pt-[53px]`}>
+            <ContinueLearningCard />
+            <RecommendedForYouCard />
+            <CourseCalendarCard />
+          </aside>
+        </CourseLibraryLayoutGrid>
+      </AppPageFrame>
+    </AppShell>
   );
 }
 
-function AboutCard({ label, body }: { label: string; body: string }) {
+function ContinueLearningCard() {
   return (
-    <div
-      style={{
-        background: "#fff",
-        border: `1.5px solid ${p.border}`,
-        borderRadius: "14px",
-        padding: "18px 20px",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "10px",
-          color: p.cerise,
-          fontWeight: 700,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          marginBottom: "8px",
-        }}
-      >
-        {label}
+    <article className={`${styles.railCard} rounded-[10px] border border-[#e5e1dc] bg-white px-2.5 py-3`}>
+      <div className="flex items-center justify-between">
+        <h2 className="text-[14px] font-[850] text-[#111111]">Continue Learning</h2>
+        <Link className="text-[10px] font-bold text-[#8a5b10] no-underline" href="/courses/learn">
+          View all
+        </Link>
       </div>
-      <p style={{ fontSize: "13px", color: p.ink, lineHeight: 1.65, margin: 0 }}>
-        {body}
-      </p>
-    </div>
-  );
-}
-
-function formatModuleMins(mins: number): string {
-  if (mins <= 0) return "—";
-  if (mins < 60) return `${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  const m = mins % 60;
-  return m === 0 ? `${hrs}h` : `${hrs}h ${m}m`;
-}
-
-function ModulesSection({
-  modules,
-  videos,
-  watchedIds,
-  isLoggedIn,
-  loading,
-}: {
-  modules: CourseModule[];
-  videos: CourseVideo[];
-  watchedIds: Set<string>;
-  isLoggedIn: boolean;
-  loading: boolean;
-}) {
-  return (
-    <section
-      id="modules"
-      style={{
-        scrollMarginTop: "80px",
-        padding: "56px 0",
-        borderBottom: `1px solid ${p.rule}`,
-      }}
-    >
-      <h2
-        style={{
-          fontFamily: "var(--font-display), 'DM Serif Display', serif",
-          fontSize: "32px",
-          fontWeight: 400,
-          color: p.ink,
-          margin: "0 0 14px",
-        }}
-      >
-        Modules
-      </h2>
-      <p
-        style={{
-          fontSize: "15px",
-          color: p.inkMuted,
-          lineHeight: 1.7,
-          margin: "0 0 28px",
-          maxWidth: "640px",
-        }}
-      >
-        What you&apos;ll cover, in order. Click any lesson to jump straight to
-        it on the player.
-      </p>
-
-      {loading ? (
-        <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}>
-          <div
-            className="animate-spin rounded-full h-7 w-7 border-2"
-            style={{ borderColor: p.rule, borderTopColor: p.ink }}
+      <div className="mt-2.5 grid gap-2 sm:grid-cols-[92px_1fr] xl:grid-cols-1">
+        <div className="relative min-h-[98px] overflow-hidden rounded-[9px] bg-gradient-to-br from-[#f2eadb] via-[#fbf7f0] to-[#e8dfd0]">
+          <Image
+            alt=""
+            className="absolute inset-0 h-full w-full object-contain p-3"
+            fill
+            sizes="160px"
+            src="/assets/hedgehogs/hedgehog11LitBook.png"
           />
         </div>
-      ) : modules.length === 0 ? (
-        <div
-          style={{
-            background: "#fff",
-            border: `1.5px solid ${p.border}`,
-            borderRadius: "14px",
-            padding: "32px 28px",
-            textAlign: "center",
-          }}
-        >
-          <p style={{ fontSize: "15px", color: p.ink, margin: "0 0 6px", fontFamily: "var(--font-display), serif" }}>
-            Lessons are being put together
+        <div>
+          <p className="text-[10.5px] text-[#625a52]">Current lesson</p>
+          <h3 className="mt-1.5 text-[14px] font-[850] text-[#111111]">Evidence synthesis</h3>
+          <p className="mt-1.5 text-[10.5px] leading-[1.55] text-[#625a52]">
+            Finish the comparison notes, review the example matrix, then continue to citation mapping.
           </p>
-          <p style={{ fontSize: "13px", color: p.inkMuted, margin: 0 }}>
-            New modules will show up here as they&apos;re published.
-          </p>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          {modules.map((m, i) => {
-            const moduleVids = videos.filter((v) => v.module_id === m.id);
-            const watched = moduleVids.filter((v) => watchedIds.has(v.id)).length;
-            const totalMins = moduleVids.reduce(
-              (s, v) => s + (v.duration_minutes ?? 0),
-              0
-            );
-            const firstVid = moduleVids[0];
-            return (
-              <ModuleCard
-                key={m.id}
-                index={i + 1}
-                module={m}
-                videos={moduleVids}
-                watched={watched}
-                totalMins={totalMins}
-                firstVidId={firstVid?.id}
-                watchedIds={watchedIds}
-                isLoggedIn={isLoggedIn}
-              />
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ModuleCard({
-  index,
-  module: mod,
-  videos,
-  watched,
-  totalMins,
-  firstVidId,
-  watchedIds,
-  isLoggedIn,
-}: {
-  index: number;
-  module: CourseModule;
-  videos: CourseVideo[];
-  watched: number;
-  totalMins: number;
-  firstVidId: string | undefined;
-  watchedIds: Set<string>;
-  isLoggedIn: boolean;
-}) {
-  const totalVids = videos.length;
-  const showProgress = isLoggedIn && totalVids > 0;
-  const pct = totalVids === 0 ? 0 : Math.round((watched / totalVids) * 100);
-  const isComplete = isLoggedIn && totalVids > 0 && watched === totalVids;
-
-  return (
-    <div
-      style={{
-        background: "#fff",
-        border: `1.5px solid ${p.border}`,
-        borderRadius: "16px",
-        overflow: "hidden",
-      }}
-    >
-      {/* Header */}
-      <div style={{ padding: "20px 24px 16px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-            marginBottom: "6px",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "10px",
-              color: p.cerise,
-              fontWeight: 700,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-            }}
-          >
-            Module {index}
-          </span>
-          {showProgress && (
-            <span
-              style={{
-                fontSize: "11px",
-                color: isComplete ? "#3a9d5d" : p.inkMuted,
-                fontWeight: 700,
-              }}
-            >
-              {isComplete ? "✓ Complete" : `${watched} / ${totalVids} watched`}
-            </span>
-          )}
-        </div>
-
-        <h3
-          style={{
-            fontFamily: "var(--font-display), 'DM Serif Display', serif",
-            fontSize: "22px",
-            fontWeight: 400,
-            color: p.ink,
-            margin: "0 0 4px",
-            lineHeight: 1.25,
-          }}
-        >
-          {mod.title}
-        </h3>
-        {mod.description && (
-          <p style={{ fontSize: "14px", color: p.inkMuted, lineHeight: 1.65, margin: "4px 0 10px" }}>
-            {mod.description}
-          </p>
-        )}
-        <div style={{ fontSize: "12px", color: p.inkFaint }}>
-          {totalVids} lesson{totalVids === 1 ? "" : "s"} · {formatModuleMins(totalMins)}
-        </div>
-
-        {showProgress && (
-          <div
-            style={{
-              marginTop: "12px",
-              height: "6px",
-              background: p.warm,
-              borderRadius: "100px",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                width: `${pct}%`,
-                height: "100%",
-                background: isComplete ? "#3a9d5d" : p.cerise,
-                borderRadius: "100px",
-                transition: "width 300ms ease",
-              }}
-            />
+          <div className="mt-2.5 grid grid-cols-3 gap-2 text-center text-xs">
+            <Metric label="Module progress" value="75%" />
+            <Metric label="Notes" value="8" />
+            <Metric label="Time left" value="35m" />
           </div>
-        )}
-      </div>
-
-      {/* Lessons list */}
-      {totalVids > 0 && (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, borderTop: `1px solid ${p.rule}` }}>
-          {videos.map((v) => {
-            const seen = watchedIds.has(v.id);
-            return (
-              <li key={v.id}>
-                <Link
-                  href={`/courses/learn?video=${v.id}`}
-                  className="hover:bg-[#faf7f0]"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "12px 24px",
-                    textDecoration: "none",
-                    color: p.ink,
-                    borderTop: `1px solid ${p.rule}`,
-                  }}
-                >
-                  <span
-                    aria-hidden
-                    style={{
-                      width: "22px",
-                      height: "22px",
-                      borderRadius: "50%",
-                      background: seen ? p.cerise : p.warm,
-                      color: seen ? "#fff" : p.inkMuted,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "10px",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {seen ? "✓" : "▶"}
-                  </span>
-                  <span style={{ flex: 1, fontSize: "13px", fontWeight: 500, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {v.title}
-                  </span>
-                  <span style={{ fontSize: "11px", color: p.inkFaint, flexShrink: 0 }}>
-                    {v.duration_minutes > 0 ? `${v.duration_minutes} min` : ""}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {/* Footer CTA */}
-      {firstVidId && (
-        <div style={{ padding: "12px 24px", borderTop: `1px solid ${p.rule}`, background: p.surface }}>
-          <Link
-            href={`/courses/learn?video=${firstVidId}`}
-            style={{
-              fontSize: "12px",
-              color: p.cerise,
-              fontWeight: 700,
-              textDecoration: "none",
-            }}
-            className="hover:underline"
-          >
-            {isLoggedIn && watched > 0 && watched < totalVids
-              ? "Continue this module →"
-              : "Start this module →"}
-          </Link>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Link className="rounded-[7px] bg-[#111111] px-3 py-1.5 text-center text-[10px] font-bold leading-[1.45] text-white no-underline" href="/courses/learn">
+              Resume lesson
+            </Link>
+            <Link className="rounded-[7px] border border-[#d8d3ce] px-3 py-1.5 text-center text-[10px] font-bold leading-[1.45] text-[#111111] no-underline" href="/my-learning/notes">
+              View notes
+            </Link>
+          </div>
         </div>
-      )}
-    </div>
-  );
-}
-
-const LEARNING_OUTCOMES: string[] = [
-  "How to read a research paper without drowning in it",
-  "The IMRaD structure — and what belongs in each section",
-  "How to write a research question that's actually answerable",
-  "How to do a literature review without copying ten others",
-  "How to write methodology a stranger could replicate",
-  "How to make a strong claim — and recognise a weak one",
-];
-
-function WhatYoullLearnSection() {
-  const isMobile = useIsMobile();
-  return (
-    <section
-      id="what-youll-learn"
-      style={{
-        scrollMarginTop: "80px",
-        padding: "56px 0",
-        borderBottom: `1px solid ${p.rule}`,
-      }}
-    >
-      <h2
-        style={{
-          fontFamily: "var(--font-display), 'DM Serif Display', serif",
-          fontSize: "32px",
-          fontWeight: 400,
-          color: p.ink,
-          margin: "0 0 14px",
-        }}
-      >
-        What you&apos;ll learn
-      </h2>
-      <p
-        style={{
-          fontSize: "15px",
-          color: p.inkMuted,
-          lineHeight: 1.7,
-          margin: "0 0 28px",
-          maxWidth: "640px",
-        }}
-      >
-        Concrete skills you should walk away with. Each one maps to lessons
-        and exercises you&apos;ll do in the course.
-      </p>
-
-      <ul
-        style={{
-          listStyle: "none",
-          margin: 0,
-          padding: 0,
-          display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
-          gap: "14px 24px",
-        }}
-      >
-        {LEARNING_OUTCOMES.map((text, i) => (
-          <li
-            key={i}
-            style={{
-              display: "flex",
-              gap: "12px",
-              alignItems: "flex-start",
-            }}
-          >
-            <span
-              aria-hidden
-              style={{
-                flexShrink: 0,
-                width: "22px",
-                height: "22px",
-                borderRadius: "50%",
-                background: p.cerise,
-                color: "#fff",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "11px",
-                fontWeight: 700,
-                marginTop: "2px",
-              }}
-            >
-              ✓
-            </span>
-            <span style={{ fontSize: "14px", color: p.ink, lineHeight: 1.65 }}>
-              {text}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function FaqSection() {
-  return (
-    <section
-      id="faq"
-      style={{
-        scrollMarginTop: "80px",
-        padding: "56px 0 72px",
-      }}
-    >
-      <h2
-        style={{
-          fontFamily: "var(--font-display), 'DM Serif Display', serif",
-          fontSize: "32px",
-          fontWeight: 400,
-          color: p.ink,
-          margin: "0 0 14px",
-        }}
-      >
-        Frequently asked questions
-      </h2>
-      <p
-        style={{
-          fontSize: "15px",
-          color: p.inkMuted,
-          lineHeight: 1.7,
-          margin: "0 0 28px",
-          maxWidth: "640px",
-        }}
-      >
-        Quick answers to the things people ask most. Tap a question to see
-        the answer.
-      </p>
-      <div style={{ maxWidth: "820px" }}>
-        <CourseFaq />
       </div>
-    </section>
+    </article>
   );
 }
 
-function SummaryRow({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
+function RecommendedForYouCard() {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-      <span style={{ color: p.inkMuted }}>{label}</span>
-      <span style={{ fontWeight: 700, color: accent ? p.cerise : p.ink }}>{value}</span>
+    <article className={`${styles.railCard} rounded-[10px] border border-[#e5e1dc] bg-white p-2.5`}>
+      <h2 className="text-[14px] font-[850] text-[#111111]">Recommended for you</h2>
+      <div className="mt-2.5 grid gap-2">
+        {recommendedCourses.map(([title, body, lessons]) => (
+          <div className="grid grid-cols-[42px_minmax(0,1fr)_14px] gap-2" key={title}>
+            <div className="flex min-h-[42px] items-center justify-center rounded-[8px] bg-[#f3f0ed] text-[#625a52]">
+              <AppIcon aria-hidden="true" className="h-[20px] w-[20px]" name="file" strokeWidth={1.8} />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold leading-tight text-[#111111]">{title}</p>
+              <p className="mt-0.5 text-[10px] leading-4 text-[#625a52]">{body}</p>
+              <p className="mt-0.5 text-[10px] font-bold text-[#8a5b10]">{lessons}</p>
+            </div>
+            <svg
+              aria-hidden="true"
+              className="h-4 w-4 text-[#625a52]"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.8"
+              viewBox="0 0 24 24"
+            >
+              <path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v15l-6.5-4-6.5 4V6A1.5 1.5 0 0 1 7 4.5Z" />
+            </svg>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function CourseCalendarCard() {
+  return (
+    <article className={`${styles.railCard} rounded-[10px] border border-[#e5e1dc] bg-white p-2.5`}>
+      <div className="flex items-center justify-between">
+        <h2 className="text-[14px] font-[850] text-[#111111]">Course Calendar</h2>
+        <button className="inline-flex items-center gap-1 text-[10px] font-bold text-[#8a5b10]" type="button">
+          <span>View full calendar</span>
+        </button>
+      </div>
+      <div className="mt-2.5 grid gap-1.5">
+        {courseCalendar.map(([date, title, course, time]) => (
+          <div className="grid grid-cols-[34px_1fr] gap-2" key={`${date}-${title}`}>
+            <span className="rounded-[7px] bg-[#f7f5f2] p-1 text-center text-[10px] font-bold">{date}</span>
+            <div>
+              <p className="text-[11px] font-bold leading-tight text-[#111111]">{title}</p>
+              <p className="text-[10px] leading-4 text-[#625a52]">{course}</p>
+              <p className="text-[10px] font-bold text-[#111111]">{time}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="whitespace-nowrap text-[10px] leading-tight text-[#625a52]">{label}</p>
+      <p className="mt-0.5 text-[13px] font-[850] leading-none text-[#111111]">{value}</p>
     </div>
   );
 }

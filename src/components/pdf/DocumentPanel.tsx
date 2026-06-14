@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logDashboardActivity } from "@/lib/dashboard/activity";
 import { useUser } from "@/hooks/useUser";
 import { runOcr } from "@/lib/ocr/runOcr";
 import type { Pdf } from "@/types/pdf";
@@ -71,6 +72,12 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
 
     if (newPdf) {
       setPdfs((prev) => [newPdf as Pdf, ...prev]);
+      await logDashboardActivity({
+        projectId,
+        eventType: "source_uploaded",
+        sectionId: "workspace",
+        label: "Uploaded source content",
+      });
       void runOcr(fileId);
     }
     setUploading(false);

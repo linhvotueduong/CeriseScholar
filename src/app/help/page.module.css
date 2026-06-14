@@ -1,0 +1,107 @@
+.helpMain {
+  overflow: auto;
+}
+
+.helpFrame {
+  margin: 0 auto;
+}
+
+@media (max-width: 1420px) {
+  .helpFrame {
+    width: min(1030px, 100%);
+    max-width: none !important;
+    margin: 0 auto;
+  }
+
+  .helpHero {
+    margin-bottom: 14px !important;
+  }
+
+  .helpHeroHeader {
+    padding-right: 0 !important;
+  }
+
+  .helpOrbit {
+    display: none !important;
+  }
+
+  .helpGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 13px !important;
+  }
+
+  .categoryGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .categoryGrid > * {
+    min-height: 142px;
+    padding: 13px 12px;
+  }
+
+  .questionsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .supportGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .helpAside {
+    display: none !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    padding-top: 0 !important;
+  }
+
+  .searchCard {
+    grid-column: 1 / -1;
+    margin-top: 0 !important;
+  }
+
+  .needHelpCard {
+    min-height: 210px;
+    padding: 18px;
+  }
+
+  .policiesCard {
+    min-height: 210px;
+    padding: 18px;
+  }
+
+  .helpFooter {
+    margin-top: 12px !important;
+  }
+}
+
+@media (max-width: 1160px) {
+  .helpFrame {
+    width: 100%;
+    max-width: none !important;
+    margin: 0;
+  }
+
+  .helpMain {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 780px) {
+  .helpFrame {
+    width: calc(100% - 28px);
+    margin: 0 auto;
+  }
+
+  .categoryGrid,
+  .questionsGrid,
+  .supportGrid,
+  .helpAside {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .searchCard {
+    grid-column: auto;
+  }
+}

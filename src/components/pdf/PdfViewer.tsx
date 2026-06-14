@@ -12,6 +12,7 @@ import {
   callLocalAgentChat,
   LOCAL_AGENT_REQUIRED_MESSAGE,
   LOCAL_AI_UNAVAILABLE_MESSAGE,
+  type LocalAgentChatMessage,
 } from "@/lib/local-agent/client";
 import PdfPage from "./PdfPage";
 import PdfToolbar from "./PdfToolbar";
@@ -472,19 +473,39 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
       const docContext = await getDocumentContext();
       const context = docContext ? `\n\nDocument content:\n${docContext}` : "";
 
-      const reply = await callLocalAgentChat({
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are Cerise Scholar's PDF research assistant. Answer using the provided document context when available. Be concise, specific, and honest when the document does not contain enough evidence.",
-          },
-          ...chatMessages.slice(-6),
-          { role: "user", content: text + context },
-        ],
-        query: text,
-        timeoutMs: 45000,
-      });
+      let reply = "";
+      const messages: LocalAgentChatMessage[] = [
+        {
+          role: "system",
+          content:
+            "You are Cerise Scholar's PDF research assistant. Answer using the provided document context when available. Be concise, specific, and honest when the document does not contain enough evidence.",
+        },
+        ...chatMessages.slice(-6),
+        { role: "user", content: text + context },
+      ];
+
+      if (localAgent.hostedAiBypass) {
+        const response = await fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task: "pdf_chat",
+            messages,
+          }),
+        });
+        const data = (await response.json().catch(() => ({}))) as {
+          content?: string;
+          error?: string;
+        };
+        if (!response.ok) throw new Error(data.error || "Cerise could not answer this PDF question yet.");
+        reply = data.content || "";
+      } else {
+        reply = await callLocalAgentChat({
+          messages,
+          query: text,
+          timeoutMs: 45000,
+        });
+      }
       setChatMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (err) {
       setChatMessages((prev) => [
@@ -496,7 +517,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
       ]);
     }
     setChatLoading(false);
-  }, [chatInput, chatLoading, document, chatMessages, getDocumentContext, localAgent.canUseLocalAi, localAgent.mobile, localAgent.ui.detail, localAgent.ui.status]);
+  }, [chatInput, chatLoading, document, chatMessages, getDocumentContext, localAgent.canUseLocalAi, localAgent.hostedAiBypass, localAgent.mobile, localAgent.ui.detail, localAgent.ui.status]);
 
   // Voice input — speech-to-text using browser API
   const toggleVoiceInput = useCallback(() => {

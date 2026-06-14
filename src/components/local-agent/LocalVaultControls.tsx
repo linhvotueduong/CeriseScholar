@@ -68,7 +68,7 @@ const actions: {
 ];
 
 export default function LocalVaultControls({ compact = false }: { compact?: boolean }) {
-  const { ui, mobile, checking } = useLocalAgentStatus();
+  const { ui, mobile, checking, hostedAiBypass } = useLocalAgentStatus();
   const [projectPath, setProjectPath] = useState(() => {
     if (typeof window === "undefined") return "";
     try {
@@ -93,10 +93,13 @@ export default function LocalVaultControls({ compact = false }: { compact?: bool
   const disabledReason = useMemo(() => {
     if (checking) return "Checking the laptop Local Agent first.";
     if (mobile) return LOCAL_AGENT_REQUIRED_MESSAGE;
+    if (hostedAiBypass) {
+      return "Hosted AI is enabled for this account. Local vault and source-file actions still need the Local Agent on this laptop.";
+    }
     if (ui.status === "not-connected") return ui.detail;
     if (!projectPath.trim()) return "Paste the laptop project folder path before running a vault action.";
     return "";
-  }, [checking, mobile, projectPath, ui.detail, ui.status]);
+  }, [checking, hostedAiBypass, mobile, projectPath, ui.detail, ui.status]);
 
   async function runAction(action: (typeof actions)[number]) {
     if (disabledReason) {

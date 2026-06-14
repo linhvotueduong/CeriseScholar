@@ -12,6 +12,7 @@ import {
   Fredoka,
 } from "next/font/google";
 import HEDGEHOG from "@/lib/hedgehog";
+import PublicMarketingNavbar from "@/components/layout/PublicMarketingNavbar";
 
 /* -------- Fonts -------- */
 const dmSerif = DM_Serif_Display({ weight: "400", style: ["normal", "italic"], subsets: ["latin"], variable: "--font-dm-serif", display: "swap" });
@@ -82,66 +83,7 @@ export default function DesignPreviewHomepage() {
       <div className="dph">
 
       {/* ═══════ NAVBAR — fixed pill ═══════ */}
-      <nav
-        style={{
-          position: "fixed",
-          top: "16px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "100%",
-          maxWidth: "1100px",
-          height: V(53),
-          display: "flex", alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 32px",
-          background: "#ffffff",
-          borderRadius: "100px",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-          zIndex: 100,
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            fontFamily: "var(--font-playfair), 'Playfair Display', Georgia, serif",
-            fontSize: V(14.9), fontWeight: 400, color: palette.ink,
-            textDecoration: "none", whiteSpace: "nowrap",
-          }}
-        >
-          Cerise Scholar
-        </Link>
-        <div
-          style={{
-            display: "flex", gap: V(24), alignItems: "center",
-            fontFamily: "var(--font-noto), 'Noto Sans', sans-serif",
-            fontSize: V(9.3), color: palette.ink,
-          }}
-        >
-          <div className="group" style={{ position: "relative" }}><span className="hover:opacity-70 cursor-pointer" style={{ color: palette.ink }}>About</span><div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: "8px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", padding: "8px", minWidth: "120px", zIndex: 200 }}><Link href="/about/features" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: palette.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Features</Link><Link href="/about/mission" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: palette.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Mission</Link></div></div>
-          <Link href="/research-guidance" className="hover:opacity-70" style={{ color: palette.ink, textDecoration: "none" }}>Guidance</Link>
-          <Link href="/projects-preview" className="hover:opacity-70" style={{ color: palette.ink, textDecoration: "none" }}>Projects</Link>
-          <Link href="#" className="hover:opacity-70" style={{ color: palette.ink, textDecoration: "none" }}>Course</Link>
-          <Link href="#" className="hover:opacity-70" style={{ color: palette.ink, textDecoration: "none" }}>Cerise Space</Link>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <Link href="/login" className="hover:opacity-70" style={{ fontFamily: "var(--font-noto), 'Noto Sans', sans-serif", fontSize: V(9.3), color: palette.ink, textDecoration: "none" }}>
-            Log In
-          </Link>
-          <Link
-            href="/signup"
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              padding: `${V(6)} ${V(16)}`,
-              fontFamily: "var(--font-noto), 'Noto Sans', sans-serif",
-              fontSize: V(9.3), fontWeight: 600,
-              background: palette.ink, color: "#fff",
-              borderRadius: "100px", textDecoration: "none",
-            }}
-          >
-            Sign Up
-          </Link>
-        </div>
-      </nav>
+      <PublicMarketingNavbar fixed />
 
       {/* ═══════ SECTION 1 — HERO ═══════ */}
       <section style={{ position: "relative", width: "100%", minHeight: V(900), overflow: "visible", paddingTop: V(90) }}>

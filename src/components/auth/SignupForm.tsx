@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { requestLocalSetupPrompt } from "@/lib/local-agent/client";
+import { agreementDocuments, type AgreementKey } from "@/lib/legal/agreements";
 import Link from "next/link";
 import GoogleButton from "./GoogleButton";
 
@@ -12,19 +13,7 @@ const PENDING_GOOGLE_PROFILE_KEY = "cerise_pending_google_signup_profile";
 const DEVICE_NOTICE =
   "For the full Cerise Scholar research experience, use the laptop where your files, storage, and local AI agent are set up. Mobile sign-in is available for review and lighter workspace access.";
 
-type AgreementKey = "terms" | "privacy";
 type PendingSignupAction = "email" | "google" | null;
-
-type AgreementDocument = {
-  title: string;
-  shortTitle: string;
-  updated: string;
-  intro: string;
-  sections: Array<{
-    heading: string;
-    body: string;
-  }>;
-};
 
 type SignupProfile = {
   firstName: string;
@@ -48,67 +37,6 @@ const emptySignupProfile: SignupProfile = {
   stateProvince: "",
   postalCode: "",
   country: "",
-};
-
-const agreementDocuments: Record<AgreementKey, AgreementDocument> = {
-  terms: {
-    title: "Terms of Use",
-    shortTitle: "Terms",
-    updated: "May 9, 2026",
-    intro:
-      "These terms explain how the public laptop beta should be used while Cerise Scholar is still growing.",
-    sections: [
-      {
-        heading: "Public laptop beta",
-        body:
-          "Cerise Scholar is available for public account creation. The full research workflow is designed for the laptop where your workspace, source files, storage, and local AI agent are set up.",
-      },
-      {
-        heading: "Your files and local agent",
-        body:
-          "You remain in control of your storage, source files, and local AI agent. Cerise Scholar helps orchestrate research assistance, workspace guidance, and AI-supported workflows to support your scholarly work.",
-      },
-      {
-        heading: "Account responsibility",
-        body:
-          "You are responsible for keeping your account secure, keeping profile details accurate when you provide them, using the beta lawfully, and avoiding attempts to disrupt, abuse, or overload Cerise Scholar services.",
-      },
-      {
-        heading: "Research responsibility",
-        body:
-          "AI assistance can help organize, draft, analyze, and review research work, but you remain responsible for checking outputs, citations, methods, and academic integrity requirements.",
-      },
-    ],
-  },
-  privacy: {
-    title: "Privacy Policy",
-    shortTitle: "Privacy",
-    updated: "May 9, 2026",
-    intro:
-      "This policy summarizes what Cerise Scholar needs for account access, lightweight sync, and beta safety.",
-    sections: [
-      {
-        heading: "Account and sync data",
-        body:
-          "Cerise Scholar may process your account email, authentication provider details, name, phone number, address details if provided, consent record, lightweight workspace metadata, and basic security logs needed to run and protect the beta.",
-      },
-      {
-        heading: "Local-first storage",
-        body:
-          "Source files, project materials, and AI-heavy research work stay on the laptop where your Cerise Scholar workspace and local agent are configured.",
-      },
-      {
-        heading: "Trusted providers",
-        body:
-          "Cerise Scholar uses trusted infrastructure and authentication providers to support account access, sign-in, email confirmation, and security operations.",
-      },
-      {
-        heading: "Limited signup scope",
-        body:
-          "Creating an account does not request contacts, SMS, call logs, calendar access, browser location access, microphone, or camera permissions.",
-      },
-    ],
-  },
 };
 
 export default function SignupForm() {
@@ -670,16 +598,30 @@ export default function SignupForm() {
                     <h3 className="text-lg font-semibold text-[#1a1208]">
                       {expandedDocument.title}
                     </h3>
-                    <p className="text-xs font-medium text-[#9a8a7a]">
-                      Updated {expandedDocument.updated}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      <p className="text-xs font-medium text-[#9a8a7a]">
+                        Updated {expandedDocument.updated}
+                      </p>
+                      <Link
+                        className="text-xs font-semibold text-[#1a1208] underline underline-offset-2"
+                        href={`/help/${expandedAgreement}`}
+                      >
+                        Open full page
+                      </Link>
+                    </div>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-[#6f6255]">{expandedDocument.intro}</p>
                   <div className="mt-4 space-y-4">
                     {expandedDocument.sections.map((section) => (
                       <section key={section.heading}>
                         <h4 className="text-sm font-semibold text-[#1a1208]">{section.heading}</h4>
-                        <p className="mt-1 text-sm leading-6 text-[#6f6255]">{section.body}</p>
+                        <div className="mt-1 space-y-2">
+                          {(Array.isArray(section.body) ? section.body : [section.body]).map((paragraph) => (
+                            <p className="text-sm leading-6 text-[#6f6255]" key={paragraph}>
+                              {paragraph}
+                            </p>
+                          ))}
+                        </div>
                       </section>
                     ))}
                   </div>

@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
 import { callOllamaChat, OllamaError } from "@/lib/server/ollama";
+import { canUseHostedAiBypass } from "@/lib/ai/hostedBypass";
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -45,6 +46,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { task, paper, mainAnswer } = body;
     const messages = Array.isArray(body.messages) ? body.messages : [];
+
+    if (!canUseHostedAiBypass(user.email)) {
+      return NextResponse.json(
+        { error: "Hosted AI is enabled only for approved beta accounts. Use the Local Agent for AI-heavy workflows." },
+        { status: 403 }
+      );
+    }
 
     let systemPrompt = "";
 

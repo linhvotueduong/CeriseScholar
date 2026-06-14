@@ -6,6 +6,7 @@ import Link from "next/link";
 import Papa from "papaparse";
 import { parseSavFile } from "@/lib/data/parseSav";
 import { createClient } from "@/lib/supabase/client";
+import { logDashboardActivity } from "@/lib/dashboard/activity";
 import {
   mean, stdDev, correlation, tTest, cohensD, hedgesG, poolEffects,
   studyWeights, type MetaMethod,
@@ -288,10 +289,17 @@ export default function MetaAnalysisPage() {
         canvas_blocks: canvas,
         column_mapping: mapping,
         updated_at: new Date().toISOString(),
-      }).eq("id", metaRowId).then(() => {});
+      }).eq("id", metaRowId).then(() => {
+        void logDashboardActivity({
+          projectId,
+          eventType: "meta_analysis_updated",
+          sectionId: "meta-analysis",
+          label: "Updated meta-analysis",
+        });
+      });
     }, 600);
     return () => clearTimeout(t);
-  }, [researchQuestion, hypothesis, hypothesisType, canvas, mapping, metaRowId, hydrated, supabase]);
+  }, [researchQuestion, hypothesis, hypothesisType, canvas, mapping, metaRowId, hydrated, projectId, supabase]);
 
   // ========== UPLOAD ==========
   const handleFileUpload = useCallback(async (file: File) => {

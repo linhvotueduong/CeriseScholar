@@ -1,9 +1,8 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
 import { DM_Serif_Display, DM_Sans, Playfair_Display, Noto_Sans, Fredoka } from "next/font/google";
-import HEDGEHOG from "@/lib/hedgehog";
+import PublicMarketingNavbar from "@/components/layout/PublicMarketingNavbar";
 
 const dmSerif = DM_Serif_Display({ weight: "400", style: ["normal", "italic"], subsets: ["latin"], variable: "--font-dm-serif", display: "swap" });
 const dmSans = DM_Sans({ weight: ["400", "500", "600", "700"], subsets: ["latin"], variable: "--font-dm-sans", display: "swap" });
@@ -85,55 +84,8 @@ export default function LitReviewPreview() {
         height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden",
       }}
     >
-      {/* ═══ Primary Navbar — pill style ═══ */}
-      <div style={{ padding: "12px 24px 0", flexShrink: 0, position: "relative" }}>
-        {/* Mascot outside navbar pill */}
-        <img
-          src={HEDGEHOG.hedgehog11LitBook}
-          alt=""
-          className="pointer-events-none hidden lg:block"
-          style={{
-            position: "absolute",
-            left: "calc(50% - 550px - 60px)",
-            top: "8px",
-            height: "52px",
-            width: "auto",
-            objectFit: "contain",
-            zIndex: 10,
-          }}
-        />
-        <nav
-          style={{
-            maxWidth: "1100px", margin: "0 auto",
-            height: "48px",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 28px",
-            background: "#ffffff",
-            borderRadius: "100px",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <Link href="/" style={{ fontFamily: "var(--font-playfair)", fontSize: "15px", color: palette.ink, textDecoration: "none" }}>
-              Cerise Scholar
-            </Link>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "20px", fontFamily: "var(--font-noto)", fontSize: "11px" }}>
-            <Link href="/" className="hover:opacity-70" style={{ color: palette.ink, textDecoration: "none" }}>Home</Link>
-            <div className="group" style={{ position: "relative" }}><span className="hover:opacity-70 cursor-pointer" style={{ color: palette.ink }}>About</span><div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: "8px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", padding: "8px", minWidth: "120px", zIndex: 200 }}><Link href="/about/features" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: palette.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Features</Link><Link href="/about/mission" className="hover:bg-[#f5f0e8] block" style={{ padding: "8px 16px", borderRadius: "8px", color: palette.ink, textDecoration: "none", fontSize: "11px", whiteSpace: "nowrap" }}>Mission</Link></div></div>
-            <Link href="/research-guidance" className="hover:opacity-70" style={{ color: palette.ink, textDecoration: "none" }}>Research Guide</Link>
-            <Link href="/projects-preview" className="hover:opacity-70" style={{ color: palette.ink, textDecoration: "none" }}>Projects</Link>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Link href="/login" className="hover:opacity-70" style={{ fontFamily: "var(--font-noto)", fontSize: "11px", color: palette.ink, textDecoration: "none" }}>Log In</Link>
-            <Link href="/signup" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "6px 16px", fontFamily: "var(--font-noto)", fontSize: "11px", fontWeight: 600, background: palette.ink, color: "#fff", borderRadius: "100px", textDecoration: "none" }}>
-              Sign Up Free
-            </Link>
-          </div>
-        </nav>
-      </div>
+      {/* ═══ Primary Navbar — shared public pill ═══ */}
+      <PublicMarketingNavbar />
 
       {/* ═══ Sub-nav tabs ═══ */}
       <div

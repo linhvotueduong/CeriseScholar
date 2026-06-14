@@ -186,6 +186,14 @@ export async function fetchLocalAgentHealth(timeoutMs = 1800): Promise<LocalAgen
       return { ok: false, error: data.error || `Local agent returned ${response.status}` };
     }
     return data;
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error && error.name === "AbortError"
+          ? "Cerise Scholar Local Agent did not respond yet."
+          : "Cerise Scholar Local Agent is not running or has not allowed browser access.",
+    };
   } finally {
     window.clearTimeout(timeout);
   }

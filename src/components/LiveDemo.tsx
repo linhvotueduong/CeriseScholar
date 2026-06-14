@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const palette = {
   ink: "#1a1208",
@@ -223,27 +223,40 @@ const pages = [
 export default function LiveDemo() {
   const [active, setActive] = useState(0);
   const [fading, setFading] = useState(false);
+  const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTransitionTimeout = () => {
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = null;
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
+      clearTransitionTimeout();
       setFading(true);
-      setTimeout(() => {
+      transitionTimeoutRef.current = setTimeout(() => {
         setActive((prev) => (prev + 1) % pages.length);
         setFading(false);
+        transitionTimeoutRef.current = null;
       }, 300);
     }, 4000);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      clearTransitionTimeout();
+    };
   }, []);
 
   const goTo = (i: number) => {
+    clearTransitionTimeout();
     setFading(true);
-    setTimeout(() => {
+    transitionTimeoutRef.current = setTimeout(() => {
       setActive(i);
       setFading(false);
+      transitionTimeoutRef.current = null;
     }, 200);
   };
-
-  const V = (px: number) => `calc(${px} / 1460 * 100vw)`;
 
   return (
     <section style={{ borderTop: `1px solid ${palette.rule}` }}>

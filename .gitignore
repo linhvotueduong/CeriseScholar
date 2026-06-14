@@ -43,3 +43,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# build/backup snapshots (auto-generated, not source)
+/.next.backup-*/
+
+# claude code worktrees
+/.claude/worktrees/
+
+# supabase local cli temp
+/supabase/.temp/

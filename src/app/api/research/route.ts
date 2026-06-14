@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
 import { callOllamaChat, OllamaError } from "@/lib/server/ollama";
+import { canUseHostedAiBypass } from "@/lib/ai/hostedBypass";
 
 const OPENALEX_TIMEOUT_MS = 8000;
 const AI_TIMEOUT_MS = 25000;
@@ -320,6 +321,13 @@ CITATION RULES:
         paperCount: aiPapers.length,
         totalFound: papers.length,
       });
+    }
+
+    if (!canUseHostedAiBypass(user.email)) {
+      return NextResponse.json(
+        { error: "Hosted AI is enabled only for approved beta accounts. Use the Local Agent for AI-heavy workflows." },
+        { status: 403 }
+      );
     }
 
     try {

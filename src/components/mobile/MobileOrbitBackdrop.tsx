@@ -13,6 +13,10 @@ function seeded(index: number, salt: number) {
   return Math.abs(Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453) % 1;
 }
 
+function stableNumber(value: number, digits = 3) {
+  return Number(value.toFixed(digits));
+}
+
 function asteroidArc({
   count,
   end,
@@ -38,10 +42,10 @@ function asteroidArc({
     const y = center.y + Math.sin(angle) * noisyRadius;
 
     return {
-      opacity: opacity * (0.42 + seeded(index, salt + 3) * 0.72),
-      radius: 0.45 + seeded(index, salt + 4) * 1.35,
-      x,
-      y,
+      opacity: stableNumber(opacity * (0.42 + seeded(index, salt + 3) * 0.72), 4),
+      radius: stableNumber(0.45 + seeded(index, salt + 4) * 1.35),
+      x: stableNumber(x),
+      y: stableNumber(y),
     };
   });
 }
@@ -49,11 +53,11 @@ function asteroidArc({
 function starField(count: number) {
   return Array.from({ length: count }, (_, index) => ({
     delay: index * -310,
-    duration: 7 + (index % 7) * 0.55,
-    opacity: 0.18 + seeded(index, 33) * 0.44,
-    radius: 0.65 + seeded(index, 34) * 1.35,
-    x: 8 + seeded(index, 31) * (scene.width - 16),
-    y: 8 + seeded(index, 32) * (scene.height - 16),
+    duration: stableNumber(7 + (index % 7) * 0.55, 2),
+    opacity: stableNumber(0.18 + seeded(index, 33) * 0.44, 4),
+    radius: stableNumber(0.65 + seeded(index, 34) * 1.35),
+    x: stableNumber(8 + seeded(index, 31) * (scene.width - 16)),
+    y: stableNumber(8 + seeded(index, 32) * (scene.height - 16)),
   }));
 }
 
@@ -217,7 +221,7 @@ export default function MobileOrbitBackdrop({ className = "" }: { className?: st
                   {
                     "--asteroid-delay": `${index * -37}ms`,
                     "--asteroid-duration": `${14 + (index % 9)}s`,
-                    "--asteroid-opacity": dot.opacity,
+                    "--asteroid-opacity": String(dot.opacity),
                   } as CSSProperties
                 }
               />
@@ -236,7 +240,7 @@ export default function MobileOrbitBackdrop({ className = "" }: { className?: st
                 {
                   "--dot-delay": `${star.delay}ms`,
                   "--dot-duration": `${star.duration}s`,
-                  "--dot-opacity": star.opacity,
+                  "--dot-opacity": String(star.opacity),
                 } as CSSProperties
               }
             />

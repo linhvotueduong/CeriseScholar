@@ -337,21 +337,37 @@ export default function ScholarAskPage() {
 
       setAnalyzingPaper(paper.num);
       try {
-        const analysis = await callLocalAgentChat({
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are an academic research assistant. Explain in one paragraph how the selected paper connects to the research answer. Be specific, cautious, and do not overclaim support.",
-            },
-            {
-              role: "user",
-              content: `Main research answer excerpt:\n${lastAssistantMsgRef.current.content.slice(0, 600)}\n\nPaper to analyze:\nTitle: ${paper.title}\nAuthors: ${paper.authors?.join(", ")}\nYear: ${paper.year}\nJournal: ${paper.journal}\nAbstract: ${paper.abstract}\n\nExplain how this paper connects to the points in the answer above.`,
-            },
-          ],
-          query: paper.title,
-          timeoutMs: 25000,
-        });
+        let analysis = "";
+        if (localAgent.hostedAiBypass) {
+          const response = await fetch("/api/ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              task: "paper_analysis",
+              paper,
+              mainAnswer: lastAssistantMsgRef.current.content,
+            }),
+          });
+          const data = await readApiResponse<{ content?: string; error?: string }>(response);
+          if (!response.ok) throw new Error(data.error || "Could not generate analysis.");
+          analysis = data.content || "";
+        } else {
+          analysis = await callLocalAgentChat({
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are an academic research assistant. Explain in one paragraph how the selected paper connects to the research answer. Be specific, cautious, and do not overclaim support.",
+              },
+              {
+                role: "user",
+                content: `Main research answer excerpt:\n${lastAssistantMsgRef.current.content.slice(0, 600)}\n\nPaper to analyze:\nTitle: ${paper.title}\nAuthors: ${paper.authors?.join(", ")}\nYear: ${paper.year}\nJournal: ${paper.journal}\nAbstract: ${paper.abstract}\n\nExplain how this paper connects to the points in the answer above.`,
+              },
+            ],
+            query: paper.title,
+            timeoutMs: 25000,
+          });
+        }
         if (analysis) {
           setPaperAnalysis((prev) => ({ ...prev, [paper.num]: analysis }));
         }
@@ -364,7 +380,7 @@ export default function ScholarAskPage() {
       }
       setAnalyzingPaper(null);
     }
-  }, [localAgent.canUseLocalAi, localAgent.mobile, localAgent.ui.detail]);
+  }, [localAgent.canUseLocalAi, localAgent.hostedAiBypass, localAgent.mobile, localAgent.ui.detail]);
 
   // Stable callback for citation clicks
   const handleCiteClick = useCallback((num: number) => {
@@ -438,7 +454,7 @@ export default function ScholarAskPage() {
         body.followUp = q;
         body.previousAnswer = lastAssistantMsg.content;
       }
-      body.localAgent = true;
+      body.localAgent = !localAgent.hostedAiBypass;
 
       const res = await fetch("/api/research", {
         method: "POST",
@@ -453,6 +469,28 @@ export default function ScholarAskPage() {
         error?: string;
       } & ResearchLocalAgentPayload>(res);
       if (!res.ok) throw new Error(data.error || "Research failed");
+      if (localAgent.hostedAiBypass) {
+        if (!data.answer) {
+          throw new Error("Cerise Scholar could not generate a hosted AI answer. Try again.");
+        }
+
+        updateConv(convId!, (c) => ({
+          ...c,
+          messages: c.messages.map((m) =>
+            m.loading
+              ? {
+                  role: "assistant",
+                  content: data.answer!,
+                  references: data.references,
+                  paperCount: data.paperCount,
+                  totalFound: data.totalFound,
+                }
+              : m
+          ),
+        }));
+        return;
+      }
+
       if (!data.localAgent?.messages?.length) {
         throw new Error("Cerise Scholar could not prepare the local AI request. Try again.");
       }
@@ -581,7 +619,7 @@ export default function ScholarAskPage() {
               }`}
               title={localAgent.ui.detail}
             >
-              {localAgent.canUseLocalAi ? "Laptop AI ready" : "Laptop AI required"}
+              {localAgent.hostedAiBypass ? "Hosted AI ready" : localAgent.canUseLocalAi ? "Laptop AI ready" : "Laptop AI required"}
             </span>
           </div>
 

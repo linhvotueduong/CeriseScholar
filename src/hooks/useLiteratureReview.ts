@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { logDashboardActivity } from "@/lib/dashboard/activity";
 import type { LiteratureReviewEntry } from "@/types/literature-review";
 
 const PAGE_SIZE = 100;
@@ -165,8 +166,14 @@ export function useLiteratureReview(projectId?: string) {
       setEntries((prev) =>
         prev.map((e) => (e.id === id ? { ...e, ...fields } : e))
       );
+      await logDashboardActivity({
+        projectId,
+        eventType: "literature_row_saved",
+        sectionId: "literature-review",
+        label: "Saved literature review row",
+      });
     },
-    [entries]
+    [entries, projectId]
   );
 
   const deleteEntry = useCallback(async (id: string) => {

@@ -32,9 +32,9 @@ const statusStyles = {
 };
 
 export default function LocalAgentStatusCard({ compact = false }: { compact?: boolean }) {
-  const { ui, health, checking, checkNow } = useLocalAgentStatus();
+  const { ui, health, checking, checkNow, hostedAiBypass } = useLocalAgentStatus();
   const style = statusStyles[ui.status];
-  const ollamaReady = Boolean(health?.ollama?.ok ?? health?.ollama?.connected);
+  const ollamaReady = hostedAiBypass || Boolean(health?.ollama?.ok ?? health?.ollama?.connected);
   const securityReady = health?.ollama?.security?.ok !== false;
 
   return (
@@ -92,10 +92,10 @@ export default function LocalAgentStatusCard({ compact = false }: { compact?: bo
             gap: "8px",
           }}
         >
-          <StatusMini label="Agent" value={LOCAL_AGENT_BASE_URL.replace(/^https?:\/\//, "")} />
-          <StatusMini label="Ollama" value={ollamaReady ? "Ready" : "Needs setup"} />
+          <StatusMini label="Agent" value={hostedAiBypass ? "Hosted AI bypass" : LOCAL_AGENT_BASE_URL.replace(/^https?:\/\//, "")} />
+          <StatusMini label="Ollama" value={hostedAiBypass ? "Not required" : ollamaReady ? "Ready" : "Needs setup"} />
           <StatusMini label="Safety" value={securityReady ? "Checked" : "Blocked"} />
-          <StatusMini label="Model" value={health?.ollama?.selectedModel || "Not selected"} />
+          <StatusMini label="Model" value={hostedAiBypass ? "Hosted AI" : health?.ollama?.selectedModel || "Not selected"} />
         </div>
       )}
     </section>

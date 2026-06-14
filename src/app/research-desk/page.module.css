@@ -1,0 +1,1981 @@
+.researchDeskMain {
+  height: calc(100dvh - 64px);
+  overflow: auto;
+  padding: 0;
+  background: #fff;
+}
+
+.researchDeskViewport {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  overflow: visible;
+  background: #fff;
+}
+
+.researchDeskStage {
+  position: relative;
+  min-height: 100%;
+  background: #fff;
+}
+
+.foundationCanvas {
+  box-sizing: border-box;
+  width: min(1518px, calc(100% - 42px));
+  margin-left: 20px;
+  padding-top: 8px;
+  color: #121212;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+
+.foundationHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto clamp(268px, 18vw, 286px);
+  align-items: flex-end;
+  height: 88px;
+  column-gap: clamp(16px, 1.35vw, 24px);
+  padding-left: 6px;
+}
+
+.headerEyebrow {
+  margin: 0 0 8px;
+  color: #a87f4f;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.foundationHeader h1 {
+  margin: 0;
+  color: #121212;
+  font-size: 31px;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.headerSubtitle {
+  margin-top: 11px;
+  max-width: 555px;
+  color: #3b342e;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.42;
+}
+
+.foundationActions {
+  display: flex;
+  grid-column: 3;
+  flex-shrink: 0;
+  gap: 8px;
+  justify-self: stretch;
+  padding-bottom: 2px;
+  transform: translateY(8px);
+}
+
+.foundationActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.foundationActions svg {
+  width: 14px;
+  height: 14px;
+}
+
+.secondaryAction {
+  width: calc((100% - 8px) / 2);
+  border: 1px solid #cfc9c3;
+  background: #fff;
+  color: #121212;
+}
+
+.darkAction {
+  width: calc((100% - 8px) / 2);
+  border: 1px solid #121212;
+  background: #121212;
+  color: #fff;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  width: 100%;
+  height: 68px;
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 68px;
+  padding: 10px 14px;
+  border: 1px solid #e7e2dc;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.statIconCircle,
+.successIconCircle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #eee9e4;
+  border-radius: 50%;
+  color: #121212;
+}
+
+.successIconCircle {
+  border-color: #d8efd6;
+  color: #2aaa36;
+}
+
+.statIconCircle svg,
+.successIconCircle svg {
+  width: 15px;
+  height: 15px;
+}
+
+.statCard h2 {
+  margin: 0;
+  color: #121212;
+  font-size: 10.5px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.statCard strong {
+  display: block;
+  margin-top: 6px;
+  color: #121212;
+  font-size: 20px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.successText {
+  color: #159327 !important;
+}
+
+.statCard p {
+  margin-top: 5px;
+  color: #625d56;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.deskBodyGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1216px) clamp(268px, 18vw, 286px);
+  gap: clamp(14px, 1.1vw, 16px);
+  margin-top: 19px;
+}
+
+.leftWorkspace {
+  display: grid;
+  gap: 13px;
+}
+
+.topWorkGrid {
+  display: grid;
+  grid-template-columns: minmax(220px, 326px) minmax(330px, 558px) minmax(220px, 312px);
+  gap: 10px;
+}
+
+.projectsZone,
+.overviewZone,
+.evidenceZone,
+.funnelZone,
+.nextZone,
+.supportZone {
+  border: 1px solid #e7e2dc;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.projectsZone,
+.overviewZone {
+  min-height: 424px;
+}
+
+.projectsZone {
+  overflow: visible;
+  padding: 17px 16px 13px;
+}
+
+.overviewZone {
+  padding: 16px 13px 13px;
+}
+
+.cardHeader,
+.overviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardHeader h2,
+.overviewHeader h2 {
+  margin: 0;
+  color: #121212;
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.miniButton {
+  width: 51px;
+  height: 31px;
+  border: 1px solid #e2ddd8;
+  border-radius: 7px;
+  background: #fff;
+  color: #121212;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.projectList {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.selectedProjectCard,
+.projectCard {
+  appearance: none;
+  position: relative;
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #121212;
+  font: inherit;
+  text-align: left;
+}
+
+.selectedProjectCard {
+  cursor: pointer;
+}
+
+.selectedProjectCard {
+  min-height: 76px;
+  overflow: visible;
+}
+
+.selectedProjectShape {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 0;
+  width: calc(100% + 38px);
+  height: 100%;
+  fill: #fbf6ee;
+  stroke: #e8bd79;
+  stroke-width: 1.05px;
+  vector-effect: non-scaling-stroke;
+}
+
+.selectedProjectContent {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  height: 100%;
+  padding: 12px 38px 10px 16px;
+}
+
+.projectCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  min-height: 68px;
+  padding: 11px 12px 10px;
+  border: 1px solid #ebe6e1;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.projectCard:hover {
+  border-color: #e4c186;
+  background: #fffaf3;
+  transform: translateY(-1px);
+}
+
+.selectedProjectCard:focus-visible,
+.projectCard:focus-visible,
+.overviewTabs button:focus-visible {
+  outline: 2px solid #c28a41;
+  outline-offset: 2px;
+}
+
+.projectTitle {
+  grid-column: 1;
+  color: #121212;
+  font-size: 10.5px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.selectedProjectCard .projectTitle {
+  max-width: 185px;
+}
+
+.projectBadge {
+  grid-column: 2;
+  justify-self: end;
+  align-self: start;
+  height: 17px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 7.2px;
+  font-weight: 850;
+  line-height: 17px;
+  white-space: nowrap;
+}
+
+.warmBadge {
+  background: #fff4dc;
+  color: #c17622;
+}
+
+.neutralBadge {
+  background: #f1f0ee;
+  color: #5f5a53;
+}
+
+.greenBadge {
+  background: #edf7e8;
+  color: #5a8a47;
+}
+
+.blueBadge {
+  background: #edf3ff;
+  color: #4f76d0;
+}
+
+.projectMeta {
+  grid-column: 1 / -1;
+  color: #625d56;
+  font-size: 8.1px;
+  font-weight: 650;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.projectProgressLine {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 9px;
+}
+
+.projectProgressTrack {
+  position: relative;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ebe8e5;
+}
+
+.projectProgressFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: #0d0d0d;
+}
+
+.projectProgressLine strong {
+  color: #121212;
+  font-size: 8.4px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.archiveButton {
+  width: 100%;
+  height: 30px;
+  margin-top: 9px;
+  border: 1px solid #e4dfd9;
+  border-radius: 6px;
+  background: #fff;
+  color: #4f4942;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.projectSelectButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 284px;
+  height: 31px;
+  padding: 0 10px 0 13px;
+  border: 1px solid #e2ddd8;
+  border-radius: 7px;
+  background: #fff;
+  color: #121212;
+  font-size: 8.5px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.projectSelectButton {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectSelectButton svg {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+}
+
+.overviewTabs {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.9fr 0.65fr 0.8fr;
+  align-items: end;
+  height: 42px;
+  margin-top: 11px;
+  border-bottom: 1px solid #e4dfd9;
+  color: #5f5a53;
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+.overviewTabs button {
+  appearance: none;
+  position: relative;
+  display: flex;
+  align-items: end;
+  justify-self: start;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  padding-bottom: 10px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.overviewTabs .activeTab {
+  color: #121212;
+}
+
+.overviewTabs .activeTab::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background: #111;
+  content: "";
+}
+
+.overviewPanel {
+  overflow: hidden;
+  margin-top: 11px;
+  border: 1px solid #e7e2dc;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.overviewMain {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 132px;
+}
+
+.phaseBlock,
+.nextBlock {
+  padding: 21px 24px 18px;
+}
+
+.nextBlock {
+  border-left: 1px solid #e7e2dc;
+}
+
+.phaseBlock p,
+.nextBlock p {
+  margin: 0 0 9px;
+  color: #625d56;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.phaseBlock h3 {
+  margin: 0 0 8px;
+  color: #121212;
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.phaseBlock span,
+.nextBlock span {
+  display: block;
+  color: #121212;
+  font-size: 10.2px;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.nextBlock button {
+  width: min(185px, 100%);
+  height: 36px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #030303;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 850;
+}
+
+.overviewMetrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  min-height: 70px;
+  border-top: 1px solid #e7e2dc;
+}
+
+.metricCell {
+  padding: 13px 14px 11px;
+  border-left: 1px solid #e7e2dc;
+}
+
+.metricCell:first-child {
+  border-left: 0;
+}
+
+.metricCell svg {
+  width: 13px;
+  height: 13px;
+  color: #625d56;
+}
+
+.metricCell strong {
+  display: block;
+  margin-top: 5px;
+  color: #121212;
+  font-size: 17px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.metricCell span {
+  display: block;
+  margin-top: 7px;
+  color: #625d56;
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
+.overviewProgress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  height: 42px;
+  padding: 0 22px;
+  border-top: 1px solid #e7e2dc;
+}
+
+.overviewProgress span {
+  position: relative;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ebe8e5;
+}
+
+.overviewProgress i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 72%;
+  border-radius: inherit;
+  background: #0d0d0d;
+}
+
+.overviewProgress strong {
+  color: #121212;
+  font-size: 9.5px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.evidenceZone {
+  min-height: 248px;
+  overflow: visible;
+  padding: 14px 12px 11px;
+}
+
+.evidenceHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.evidenceTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.evidenceHeader h2 {
+  margin: 0;
+  color: #121212;
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.evidenceHeader a {
+  color: #5f5a53;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.sourceToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transform: translateY(-1px);
+}
+
+.sourceToggle span {
+  display: inline-flex;
+  align-items: center;
+  height: 19px;
+  padding: 0 9px;
+  border: 1px solid #e6e2dd;
+  border-radius: 999px;
+  background: #fff;
+  color: #6a645e;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.sourceToggle span:first-child {
+  border-color: #cfe2ff;
+  background: #f0f7ff;
+  color: #1c80ff;
+}
+
+.evidenceNote {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 8px 0 0;
+  color: #5f5a53;
+  font-size: 9.5px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.evidenceNote span {
+  color: #77716a;
+  font-size: 9px;
+}
+
+.evidenceTabs {
+  display: flex;
+  align-items: center;
+  gap: 21px;
+  height: 25px;
+  margin-top: 3px;
+  border-bottom: 1px solid #e6e1dc;
+}
+
+.evidenceTabs button {
+  appearance: none;
+  position: relative;
+  height: 25px;
+  border: 0;
+  background: transparent;
+  color: #5f5a53;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.evidenceTabs .activeEvidenceTab {
+  color: #121212;
+}
+
+.activeEvidenceTab::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: #121212;
+  content: "";
+}
+
+.evidenceTableWrap {
+  margin-top: 8px;
+  overflow: hidden;
+  border: 1px solid #e7e2dc;
+  border-radius: 7px;
+}
+
+.evidenceTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #625d56;
+  font-size: 9.8px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.evidenceTable th,
+.evidenceTable td {
+  height: 29px;
+  padding: 0 9px;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evidenceTable th {
+  height: 27px;
+  background: #f7f4f1;
+  color: #625d56;
+  font-size: 9.2px;
+  font-weight: 850;
+}
+
+.evidenceTable tbody tr + tr {
+  border-top: 1px solid #eee9e4;
+}
+
+.evidenceTable th:nth-child(1),
+.evidenceTable td:nth-child(1) {
+  width: 33%;
+  color: #121212;
+  font-weight: 850;
+}
+
+.evidenceTable th:nth-child(2),
+.evidenceTable td:nth-child(2) {
+  width: 14%;
+}
+
+.evidenceTable th:nth-child(3),
+.evidenceTable td:nth-child(3) {
+  width: 14%;
+}
+
+.evidenceTable th:nth-child(4),
+.evidenceTable td:nth-child(4) {
+  width: 16%;
+}
+
+.evidenceTable th:nth-child(5),
+.evidenceTable td:nth-child(5) {
+  width: 20%;
+}
+
+.evidenceTable th:nth-child(6),
+.evidenceTable td:nth-child(6) {
+  width: 3%;
+  padding-right: 6px;
+  padding-left: 0;
+  text-align: center;
+}
+
+.scholarSource {
+  color: #1c80ff;
+  font-weight: 850;
+}
+
+.uploadSource {
+  color: #5f5a53;
+  font-weight: 850;
+}
+
+.bookmarkIcon {
+  width: 9px;
+  height: 10px;
+  fill: none;
+  stroke: #121212;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.rightRailZone {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  margin-top: 0;
+}
+
+.funnelZone {
+  display: flex;
+  min-height: 424px;
+  flex-direction: column;
+  overflow: visible;
+  padding: 18px 15px 20px;
+}
+
+.focusRailCard,
+.changesRailCard,
+.notesRailCard,
+.assistantRailCard {
+  border: 1px solid #e7e2dc;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.focusRailCard {
+  min-height: 154px;
+  padding: 12px 14px 10px;
+}
+
+.changesRailCard {
+  min-height: 136px;
+  padding: 10px 14px 8px;
+}
+
+.notesRailCard {
+  min-height: 174px;
+  padding: 13px 14px 11px;
+}
+
+.assistantRailCard {
+  min-height: 212px;
+  padding: 13px 14px 10px;
+}
+
+.railCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.railCardHeader h2,
+.notesRailCard h2,
+.assistantRailCard h2 {
+  margin: 0;
+  color: #121212;
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.railCardHeader > span {
+  color: #756d64;
+  font-size: 8.6px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.railCardHeader button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 54px;
+  height: 29px;
+  padding: 0 11px;
+  border: 1px solid #e2ddd8;
+  border-radius: 7px;
+  background: #fff;
+  color: #121212;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.railCardHeader button svg {
+  width: 11px;
+  height: 11px;
+}
+
+.focusList {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.focusItem,
+.changeItem,
+.quickNoteItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.focusItem {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.focusItem strong,
+.changeItem strong,
+.quickNoteItem strong {
+  color: #121212;
+  font-size: 9.7px;
+  font-weight: 850;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.focusItem span,
+.changeItem small {
+  display: block;
+  color: #625d56;
+  font-size: 8.5px;
+  font-weight: 650;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.focusItem span {
+  color: #c0833d;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.railLinkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  height: 25px;
+  margin-top: 10px;
+  border: 0;
+  border-top: 1px solid #eee9e4;
+  background: transparent;
+  color: #121212;
+  font-size: 9.4px;
+  font-weight: 850;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.railLinkButton svg {
+  width: 11px;
+  height: 11px;
+}
+
+.focusRailLink {
+  height: 30px;
+  margin-top: 12px;
+  border: 1px solid #e2ddd8;
+  border-radius: 7px;
+}
+
+.changeList {
+  display: grid;
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.changeItem {
+  align-items: start;
+}
+
+.changeItem time,
+.quickNoteItem time {
+  color: #625d56;
+  font-size: 8.4px;
+  font-weight: 750;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.quickNoteList {
+  display: grid;
+  gap: 0;
+  margin-top: 14px;
+  padding: 9px 12px;
+  border: 1px solid #f0eded;
+  border-radius: 10px;
+  background: #faf9f8;
+}
+
+.quickNoteItem strong {
+  max-width: 100%;
+  line-height: 1.22;
+}
+
+.quickNoteItem {
+  min-height: 36px;
+  align-items: start;
+  gap: 12px;
+}
+
+.quickNoteItem + .quickNoteItem {
+  padding-top: 8px;
+  border-top: 1px solid #e8e4df;
+}
+
+.quickNoteComposer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.quickNoteComposer input,
+.quickNoteComposer button {
+  height: 30px;
+  border: 1px solid #e3ded9;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.quickNoteComposer input {
+  min-width: 0;
+  padding: 0 13px;
+  color: #121212;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  outline: 0;
+}
+
+.quickNoteComposer input::placeholder {
+  color: #8a827a;
+}
+
+.quickNoteComposer button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6e6b68;
+}
+
+.quickNoteComposer svg {
+  width: 17px;
+  height: 17px;
+}
+
+.assistantRailCard p {
+  margin: 10px 0 0;
+}
+
+.assistantRailCard p strong,
+.assistantRailCard p span {
+  display: block;
+}
+
+.assistantRailCard p strong {
+  color: #121212;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.15;
+}
+
+.assistantRailCard p span {
+  margin-top: 3px;
+  color: #625d56;
+  font-size: 8.7px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.assistantActions {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.assistantActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  height: auto;
+  padding: 6px 10px;
+  border: 1px solid #eee9e4;
+  border-radius: 5px;
+  background: #fff;
+  color: #121212;
+  font-size: 8.6px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: left;
+  white-space: normal;
+}
+
+.assistantActions svg {
+  width: 11px;
+  height: 11px;
+}
+
+.assistantInput {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  align-items: center;
+  height: 26px;
+  margin-top: 12px;
+  padding: 0 5px 0 10px;
+  border: 1px solid #eee9e4;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.assistantInput input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #121212;
+  font: inherit;
+  font-size: 8.6px;
+  font-weight: 650;
+}
+
+.assistantInput input::placeholder {
+  color: #8a827a;
+}
+
+.assistantInput svg {
+  width: 13px;
+  height: 13px;
+  color: #121212;
+}
+
+.funnelHeader h2 {
+  margin: 0;
+  color: #121212;
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.funnelHeader p {
+  margin: 8px 0 0;
+  color: #625d56;
+  font-size: 9.6px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.funnelHeader span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 23px;
+  margin-top: 13px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: #fff0f2;
+  color: #33302d;
+  font-size: 9.5px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.funnelHeader i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #fb7f92;
+}
+
+.funnelGraphic {
+  position: relative;
+  height: 196px;
+  margin: 0 -15px 0;
+  transform: translateY(-18px);
+}
+
+.funnelGraphic svg {
+  display: block;
+  width: 100%;
+  height: 170px;
+}
+
+.funnelShape {
+  fill: url("#funnelGradient");
+}
+
+.funnelGuide line {
+  stroke: #bfb8b2;
+  stroke-dasharray: 4 4;
+  stroke-linecap: round;
+  stroke-width: 1;
+  opacity: 0.58;
+}
+
+.funnelGuide circle {
+  fill: #fff;
+  stroke: #9f9892;
+  stroke-width: 1.4;
+}
+
+.assumptionMarker line {
+  stroke: #ff7d94;
+  stroke-dasharray: 4 4;
+  stroke-linecap: round;
+  stroke-width: 1.6;
+}
+
+.assumptionMarker circle:first-of-type {
+  fill: #fff;
+  stroke: #ffdce2;
+  stroke-width: 4;
+}
+
+.assumptionMarker circle:last-of-type {
+  fill: #fff;
+  stroke: #ff6680;
+  stroke-width: 2;
+}
+
+.lockNode circle {
+  fill: #fff;
+  stroke: #8f8984;
+  stroke-dasharray: 4 4;
+  stroke-width: 1.2;
+}
+
+.lockNode path {
+  fill: none;
+  stroke: #121212;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.funnelLabels {
+  position: absolute;
+  right: 12px;
+  bottom: 0;
+  left: 12px;
+  display: grid;
+  grid-template-columns: 44px 44px 52px 64px 45px;
+  justify-content: space-between;
+  align-items: start;
+  color: #625d56;
+  font-size: 8.2px;
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.funnelLabels strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #121212;
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.activeFunnelLabel {
+  color: #121212;
+  font-weight: 850;
+}
+
+.funnelAlert {
+  margin-top: auto;
+  padding: 18px 18px 16px;
+  border: 1px solid #ffe0e3;
+  border-radius: 8px;
+  background: #fff2f2;
+}
+
+.alertTop {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.alertTop > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid #ff788c;
+  border-radius: 999px;
+  color: #ff788c;
+  font-size: 22px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.alertTop p,
+.alertNext {
+  margin: 0;
+  color: #625d56;
+  font-size: 9.6px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.alertTop strong,
+.alertNext strong {
+  color: #121212;
+  font-weight: 850;
+}
+
+.alertDivider {
+  height: 1px;
+  margin: 11px 0 10px;
+  background: #f2d7d7;
+}
+
+:global(html.cerise-night-mode) .researchDeskMain,
+:global(html.cerise-night-mode) .researchDeskViewport,
+:global(html.cerise-night-mode) .researchDeskStage {
+  background:
+    radial-gradient(circle at 26% 8%, rgba(255, 255, 255, 0.025), transparent 28%),
+    linear-gradient(180deg, #080a0b 0%, #070909 45%, #050707 100%) !important;
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .foundationCanvas {
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .headerEyebrow {
+  color: #d8a05d !important;
+}
+
+:global(html.cerise-night-mode) .foundationHeader h1,
+:global(html.cerise-night-mode) .cardHeader h2,
+:global(html.cerise-night-mode) .overviewHeader h2,
+:global(html.cerise-night-mode) .evidenceHeader h2,
+:global(html.cerise-night-mode) .funnelHeader h2,
+:global(html.cerise-night-mode) .railCardHeader h2,
+:global(html.cerise-night-mode) .notesRailCard h2,
+:global(html.cerise-night-mode) .assistantRailCard h2 {
+  color: #f3f0ea !important;
+}
+
+:global(html.cerise-night-mode) .foundationHeader,
+:global(html.cerise-night-mode) .cardHeader,
+:global(html.cerise-night-mode) .overviewHeader,
+:global(html.cerise-night-mode) .evidenceHeader,
+:global(html.cerise-night-mode) .funnelHeader,
+:global(html.cerise-night-mode) .railCardHeader {
+  border-color: transparent !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+:global(html.cerise-night-mode) .researchDeskMain .cardHeader,
+:global(html.cerise-night-mode) .researchDeskMain .overviewHeader,
+:global(html.cerise-night-mode) .researchDeskMain .evidenceHeader,
+:global(html.cerise-night-mode) .researchDeskMain .funnelHeader,
+:global(html.cerise-night-mode) .researchDeskMain .railCardHeader,
+:global(html.cerise-night-mode) .researchDeskMain .cardHeader h2,
+:global(html.cerise-night-mode) .researchDeskMain .overviewHeader h2,
+:global(html.cerise-night-mode) .researchDeskMain .evidenceHeader h2,
+:global(html.cerise-night-mode) .researchDeskMain .funnelHeader h2,
+:global(html.cerise-night-mode) .researchDeskMain .railCardHeader h2,
+:global(html.cerise-night-mode) .researchDeskMain .notesRailCard h2,
+:global(html.cerise-night-mode) .researchDeskMain .assistantRailCard h2 {
+  border-color: transparent !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:global(html.cerise-night-mode) .headerSubtitle,
+:global(html.cerise-night-mode) .statCard p,
+:global(html.cerise-night-mode) .projectMeta,
+:global(html.cerise-night-mode) .phaseBlock p,
+:global(html.cerise-night-mode) .nextBlock p,
+:global(html.cerise-night-mode) .metricCell span,
+:global(html.cerise-night-mode) .evidenceHeader a,
+:global(html.cerise-night-mode) .evidenceNote,
+:global(html.cerise-night-mode) .evidenceNote span,
+:global(html.cerise-night-mode) .funnelHeader p,
+:global(html.cerise-night-mode) .funnelLabels,
+:global(html.cerise-night-mode) .alertTop p,
+:global(html.cerise-night-mode) .alertNext,
+:global(html.cerise-night-mode) .railCardHeader > span,
+:global(html.cerise-night-mode) .focusItem span,
+:global(html.cerise-night-mode) .changeItem small,
+:global(html.cerise-night-mode) .changeItem time,
+:global(html.cerise-night-mode) .quickNoteItem time,
+:global(html.cerise-night-mode) .assistantRailCard p span {
+  color: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .foundationActions button,
+:global(html.cerise-night-mode) .statCard,
+:global(html.cerise-night-mode) .projectsZone,
+:global(html.cerise-night-mode) .overviewZone,
+:global(html.cerise-night-mode) .evidenceZone,
+:global(html.cerise-night-mode) .funnelZone,
+:global(html.cerise-night-mode) .focusRailCard,
+:global(html.cerise-night-mode) .changesRailCard,
+:global(html.cerise-night-mode) .notesRailCard,
+:global(html.cerise-night-mode) .assistantRailCard {
+  border-color: #2b3030 !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)),
+    #0f1111 !important;
+  color: #f1eee8 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 12px 28px rgba(0, 0, 0, 0.18) !important;
+}
+
+:global(html.cerise-night-mode) .secondaryAction,
+:global(html.cerise-night-mode) .miniButton,
+:global(html.cerise-night-mode) .projectSelectButton,
+:global(html.cerise-night-mode) .archiveButton,
+:global(html.cerise-night-mode) .railCardHeader button,
+:global(html.cerise-night-mode) .assistantActions button,
+:global(html.cerise-night-mode) .quickNoteComposer input,
+:global(html.cerise-night-mode) .quickNoteComposer button,
+:global(html.cerise-night-mode) .assistantInput {
+  border-color: #2f3434 !important;
+  background: #0b0d0d !important;
+  color: #f0ece5 !important;
+}
+
+:global(html.cerise-night-mode) .darkAction {
+  border-color: #333938 !important;
+  background: #101212 !important;
+  color: #f5f1ea !important;
+}
+
+:global(html.cerise-night-mode) .statIconCircle,
+:global(html.cerise-night-mode) .successIconCircle {
+  border-color: #2d3333 !important;
+  background: #0b0d0d !important;
+  color: #e8e3dc !important;
+}
+
+:global(html.cerise-night-mode) .successIconCircle,
+:global(html.cerise-night-mode) .successText {
+  color: #59cf55 !important;
+}
+
+:global(html.cerise-night-mode) .statCard h2,
+:global(html.cerise-night-mode) .statCard strong,
+:global(html.cerise-night-mode) .projectTitle,
+:global(html.cerise-night-mode) .projectProgressLine strong,
+:global(html.cerise-night-mode) .overviewTabs .activeTab,
+:global(html.cerise-night-mode) .phaseBlock h3,
+:global(html.cerise-night-mode) .phaseBlock span,
+:global(html.cerise-night-mode) .nextBlock span,
+:global(html.cerise-night-mode) .metricCell strong,
+:global(html.cerise-night-mode) .overviewProgress strong,
+:global(html.cerise-night-mode) .evidenceTabs .activeEvidenceTab,
+:global(html.cerise-night-mode) .evidenceTable td:nth-child(1),
+:global(html.cerise-night-mode) .funnelLabels strong,
+:global(html.cerise-night-mode) .activeFunnelLabel,
+:global(html.cerise-night-mode) .alertTop strong,
+:global(html.cerise-night-mode) .alertNext strong,
+:global(html.cerise-night-mode) .focusItem strong,
+:global(html.cerise-night-mode) .changeItem strong,
+:global(html.cerise-night-mode) .quickNoteItem strong,
+:global(html.cerise-night-mode) .assistantRailCard p strong,
+:global(html.cerise-night-mode) .railLinkButton,
+:global(html.cerise-night-mode) .quickNoteComposer input,
+:global(html.cerise-night-mode) .quickNoteComposer svg,
+:global(html.cerise-night-mode) .assistantInput input,
+:global(html.cerise-night-mode) .assistantInput svg {
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .selectedProjectShape {
+  fill: #14100b !important;
+  stroke: #a36c33 !important;
+}
+
+:global(html.cerise-night-mode) .projectCard,
+:global(html.cerise-night-mode) .overviewPanel,
+:global(html.cerise-night-mode) .evidenceTableWrap {
+  border-color: #2b3030 !important;
+  background: #0f1111 !important;
+}
+
+:global(html.cerise-night-mode) .projectCard {
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .warmBadge {
+  background: #332514 !important;
+  color: #dca25d !important;
+}
+
+:global(html.cerise-night-mode) .neutralBadge {
+  background: #252828 !important;
+  color: #d7d1c9 !important;
+}
+
+:global(html.cerise-night-mode) .greenBadge {
+  background: #1d321e !important;
+  color: #8fd486 !important;
+}
+
+:global(html.cerise-night-mode) .blueBadge {
+  background: #17243e !important;
+  color: #80a9ff !important;
+}
+
+:global(html.cerise-night-mode) .projectProgressTrack,
+:global(html.cerise-night-mode) .overviewProgress span {
+  background: #242828 !important;
+}
+
+:global(html.cerise-night-mode) .projectProgressFill,
+:global(html.cerise-night-mode) .overviewProgress i {
+  background: #f0ece5 !important;
+}
+
+:global(html.cerise-night-mode) .overviewTabs,
+:global(html.cerise-night-mode) .overviewMetrics,
+:global(html.cerise-night-mode) .overviewProgress,
+:global(html.cerise-night-mode) .evidenceTabs {
+  border-color: #2b3030 !important;
+}
+
+:global(html.cerise-night-mode) .overviewTabs,
+:global(html.cerise-night-mode) .evidenceTabs,
+:global(html.cerise-night-mode) .evidenceTable {
+  color: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .overviewTabs .activeTab::after,
+:global(html.cerise-night-mode) .activeEvidenceTab::after {
+  background: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .nextBlock,
+:global(html.cerise-night-mode) .metricCell,
+:global(html.cerise-night-mode) .evidenceTable tbody tr + tr,
+:global(html.cerise-night-mode) .quickNoteItem + .quickNoteItem,
+:global(html.cerise-night-mode) .quickNoteList,
+:global(html.cerise-night-mode) .railLinkButton {
+  border-color: #2b3030 !important;
+}
+
+:global(html.cerise-night-mode) .quickNoteList {
+  background: #0b0d0d !important;
+}
+
+:global(html.cerise-night-mode) .nextBlock button {
+  background: #f0ece5 !important;
+  color: #171817 !important;
+}
+
+:global(html.cerise-night-mode) .metricCell svg,
+:global(html.cerise-night-mode) .bookmarkIcon {
+  color: #b8b2aa !important;
+  stroke: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .sourceToggle span {
+  border-color: #2f3434 !important;
+  background: #0f1111 !important;
+  color: #b9b2aa !important;
+}
+
+:global(html.cerise-night-mode) .sourceToggle span:first-child {
+  border-color: #1d3f66 !important;
+  background: #142235 !important;
+  color: #58a6ff !important;
+}
+
+:global(html.cerise-night-mode) .evidenceTable th {
+  background: #171a1a !important;
+  color: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .scholarSource {
+  color: #4e9bff !important;
+}
+
+:global(html.cerise-night-mode) .uploadSource {
+  color: #b9b2aa !important;
+}
+
+:global(html.cerise-night-mode) .funnelHeader span {
+  background: #2b1c23 !important;
+  color: #f1d3d9 !important;
+}
+
+:global(html.cerise-night-mode) .funnelGraphic stop:nth-child(1) {
+  stop-color: #c49a7a !important;
+  stop-opacity: 0.72 !important;
+}
+
+:global(html.cerise-night-mode) .funnelGraphic stop:nth-child(2) {
+  stop-color: #8e5f61 !important;
+  stop-opacity: 0.56 !important;
+}
+
+:global(html.cerise-night-mode) .funnelGraphic stop:nth-child(3) {
+  stop-color: #4c3a55 !important;
+  stop-opacity: 0.48 !important;
+}
+
+:global(html.cerise-night-mode) .funnelGuide line {
+  stroke: #a59b92 !important;
+}
+
+:global(html.cerise-night-mode) .funnelGuide circle {
+  fill: #0f1111 !important;
+  stroke: #aaa39a !important;
+}
+
+:global(html.cerise-night-mode) .assumptionMarker circle:first-of-type {
+  fill: #1d1711 !important;
+  stroke: #6f5d49 !important;
+}
+
+:global(html.cerise-night-mode) .assumptionMarker circle:last-of-type {
+  fill: #0f1111 !important;
+  stroke: #bda78c !important;
+}
+
+:global(html.cerise-night-mode) .lockNode circle {
+  fill: #0f1111 !important;
+  stroke: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .lockNode path {
+  stroke: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .funnelAlert {
+  border-color: #4c4136 !important;
+  background:
+    linear-gradient(180deg, rgba(222, 181, 132, 0.08), rgba(222, 181, 132, 0.03)),
+    #191817 !important;
+}
+
+:global(html.cerise-night-mode) .alertDivider {
+  background: #4c4136 !important;
+}
+
+:global(html.cerise-night-mode) .alertTop > span {
+  border-color: #f1d0ae !important;
+  color: #f1d0ae !important;
+}
+
+:global(html.cerise-night-mode) .assistantInput input::placeholder {
+  color: #827a71 !important;
+}
+
+:global(html.cerise-night-mode) .quickNoteComposer input::placeholder {
+  color: #827a71 !important;
+}
+
+@media (max-width: 1420px) {
+  .foundationCanvas {
+    width: min(1030px, calc(100% - 40px));
+    margin: 0 auto;
+    padding-top: 12px;
+  }
+
+  .foundationHeader {
+    grid-template-columns: minmax(0, 1fr) 258px;
+    height: 126px;
+    column-gap: 16px;
+  }
+
+  .foundationActions {
+    grid-column: 2;
+    gap: 7px;
+    align-self: end;
+    transform: translateY(2px);
+  }
+
+  .foundationActions button {
+    height: 34px;
+    gap: 6px;
+    border-radius: 6px;
+    font-size: 9px;
+  }
+
+  .foundationActions svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .deskBodyGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 13px;
+    margin-top: 22px;
+  }
+
+  .leftWorkspace {
+    gap: 13px;
+  }
+
+  .statsRow {
+    height: 61px;
+    gap: 13px;
+  }
+
+  .statCard {
+    height: 61px;
+    gap: 11px;
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  .statIconCircle,
+  .successIconCircle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .statIconCircle svg,
+  .successIconCircle svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .statCard h2 {
+    font-size: 8.8px;
+  }
+
+  .statCard strong {
+    margin-top: 4px;
+    font-size: 17px;
+  }
+
+  .statCard p {
+    margin-top: 4px;
+    font-size: 7.8px;
+  }
+
+  .topWorkGrid {
+    grid-template-columns: minmax(250px, 0.78fr) minmax(0, 1.35fr);
+    gap: 10px;
+  }
+
+  .funnelZone {
+    display: none;
+  }
+
+  .rightRailZone {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .projectsZone,
+  .overviewZone {
+    min-height: 344px;
+  }
+
+  .projectsZone {
+    padding: 14px 13px 11px;
+  }
+
+  .overviewZone {
+    padding: 14px 11px 11px;
+  }
+
+  .projectList {
+    gap: 7px;
+    margin-top: 12px;
+  }
+
+  .selectedProjectCard,
+  .projectCard {
+    min-height: 60px;
+  }
+
+  .selectedProjectContent {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+    padding: 9px 46px 8px 12px;
+  }
+
+  .selectedProjectCard .projectTitle {
+    max-width: none;
+  }
+
+  .selectedProjectCard .projectProgressLine {
+    padding-right: 16px;
+  }
+
+  .projectTitle {
+    font-size: 8.8px;
+  }
+
+  .projectMeta,
+  .projectProgressLine {
+    font-size: 7.4px;
+  }
+
+  .overviewPanel {
+    min-height: 276px;
+  }
+
+  .phaseBlock,
+  .nextBlock {
+    min-height: 122px;
+    padding: 20px 20px 16px;
+  }
+
+  .phaseBlock h3 {
+    font-size: 17px;
+  }
+
+  .phaseBlock p,
+  .nextBlock p {
+    font-size: 9.4px;
+  }
+
+  .nextBlock button {
+    height: 35px;
+    font-size: 8.8px;
+  }
+
+  .metricCell {
+    height: 76px;
+    padding: 12px 12px;
+  }
+
+  .evidenceZone {
+    min-height: 250px;
+    padding: 13px 13px 12px;
+  }
+
+  .focusRailCard,
+  .changesRailCard,
+  .notesRailCard,
+  .assistantRailCard {
+    min-height: 0;
+  }
+
+  .focusRailCard,
+  .changesRailCard {
+    min-height: 168px;
+  }
+
+  .notesRailCard,
+  .assistantRailCard {
+    min-height: 186px;
+  }
+}
+
+@media (max-width: 1160px) {
+  .foundationCanvas {
+    width: calc(100% - 28px);
+    margin: 0 auto;
+  }
+
+  .foundationHeader {
+    height: 118px;
+    grid-template-columns: minmax(0, 1fr) 226px;
+    row-gap: 0;
+    padding: 8px 0 0 4px;
+  }
+
+  .foundationActions {
+    grid-column: 2;
+    width: auto;
+    justify-self: stretch;
+    transform: translateY(1px);
+  }
+
+  .statsRow {
+    height: 56px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .statCard {
+    height: 56px;
+    gap: 8px;
+    padding: 7px 8px;
+  }
+
+  .statCard:last-child {
+    grid-column: auto;
+  }
+
+  .topWorkGrid {
+    grid-template-columns: minmax(250px, 0.78fr) minmax(0, 1.35fr);
+    gap: 8px;
+  }
+
+  .projectsZone,
+  .overviewZone {
+    min-height: 322px;
+  }
+
+  .projectList {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .overviewPanel {
+    min-height: 256px;
+  }
+
+  .rightRailZone {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+
+  .statsRow,
+  .projectList,
+  .rightRailZone {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .statCard:last-child {
+    grid-column: auto;
+  }
+
+  .foundationActions {
+    width: 100%;
+  }
+}

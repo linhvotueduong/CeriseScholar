@@ -23,10 +23,18 @@ export default function LoginForm() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const timeout = new Promise<{ error: Error }>((resolve) => {
+      window.setTimeout(() => resolve({ error: new Error("Sign in took too long. Please try again.") }), 10000);
     });
+    const { error } = await Promise.race([
+      supabase.auth.signInWithPassword({
+        email,
+        password,
+      }),
+      timeout,
+    ]).catch((signInError) => ({
+      error: signInError instanceof Error ? signInError : new Error("Sign in failed. Please try again."),
+    }));
 
     if (error) {
       setError(error.message);
