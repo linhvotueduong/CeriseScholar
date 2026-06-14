@@ -91,27 +91,31 @@ Key decisions baked in:
 
 *Why first: ~28 untracked files (including the whole dashboard engine) could be lost in one accident, and we cannot fix drift while blind to the live database. This is "save your game before the boss fight."*
 
-- [ ] Make a deliberate **checkpoint git commit** of the untracked/modified app work (scoped per the house rule in `docs/design-phase-storage-protocol.md` — no broad cleanup).
-- [ ] Connect the repo to the live Supabase project (CLI link) **or** export the live schema from the Supabase dashboard.
-- [ ] Produce a written **live-schema snapshot**: which tables/columns actually exist in production, saved as `docs/live-schema-snapshot.md`.
-- [ ] Check in the live dashboard: does the `pdfs` storage bucket exist, and what are its access policies? Record findings.
-- [ ] Confirm which of the 11 migrations have actually been applied to the live DB.
+- [x] Make a deliberate **checkpoint git commit** of the untracked/modified app work — **done 2026-06-14, commit `6413e0f`** (118 files incl. the whole dashboard engine). Also added `.next.backup-*`, `.claude/worktrees`, `supabase/.temp` to `.gitignore` to stop tracking 97 MB of build/backup noise (1,215 junk files). `.env` confirmed already ignored.
+- [x] Connect the repo to the live Supabase project — **done**; linked to project **`cerise-scholar`** (ref `gowhkjnrioevudzphoht`, East US). User was already authenticated to the Supabase CLI.
+- [x] Produce a written **live-schema snapshot** — **done**, saved to `docs/live-schema-snapshot.md` (live query 2026-06-14).
+- [x] Check the `pdfs` storage bucket exists + privacy — **done**: bucket `pdfs` exists and is **private** (correct).
+- [x] Confirm which migrations are actually applied to the live DB — **done (inferred)**: migration `011` is NOT applied (its 3 dashboard tables are absent from live); the other 15 tables are present. 4 extra tables exist in live with no repo migration. See snapshot.
 
-**Done when:** dashboard code is safely in git history, and we have a definitive list of where live DB ≠ migration files.
+**Done when:** dashboard code is safely in git history, and we have a definitive list of where live DB ≠ migration files. — **✅ PHASE 0 COMPLETE (2026-06-14).** See `docs/live-schema-snapshot.md`.
 
-### Phase 1 — Make the blueprint match the building *(1 session)*
+### Phase 1 — Reconcile blueprint ↔ building *(1–2 sessions · revised by 2026-06-14 snapshot)*
 
-*Why: every later phase trusts the schema. An app that inserts into columns that may not exist is a time bomb.*
+*Why: every later phase trusts the schema. Phase 0 revealed the live DB and the migration files disagree in BOTH directions — and, critically, the dashboard's own tables don't exist in production yet.*
 
-- [ ] Write migration `012_schema_reconciliation.sql` (guarded with `IF NOT EXISTS` so it's safe anywhere):
-  - [ ] `pdfs`: add `pdf_author`, `pdf_title`, `pdf_subject`.
-  - [ ] `literature_review_entries`: add `apa_reference`, `synthesis_paragraph`.
-  - [ ] Add missing indexes: `highlights(user_id)`, `annotations(user_id)`, `literature_review_entries(user_id)`.
-- [ ] If the live DB has hand-made changes the blueprint lacks, fold them into the migration too (decided from the Phase 0 snapshot).
-- [ ] Document the `pdfs` bucket setup (and its policies) so it's reproducible — documentation only, no new storage code paths.
-- [ ] Apply to live DB; re-snapshot; confirm blueprint == building.
+**Good news from the snapshot:** the 5 "missing" columns and the `pdfs` bucket already exist in production, so nothing is broken there — the blueprint just needs to catch up. **Important news:** the 3 dashboard tables are missing from production.
 
-**Done when:** a fresh database built from migrations 001–012 matches production exactly.
+- [x] **(Highest priority) Apply migration `011` to the live database** — **✅ DONE 2026-06-14.** Created `dashboard_tasks`, `dashboard_activity_events`, `dashboard_project_settings` via the dashboard SQL Editor (idempotent script, run inside a transaction; RLS + policies + indexes). Verified all three exist in live. First production write of the project — additive only, no existing data touched.
+- [x] Checked the migration-tracking state — `supabase_migrations.schema_migrations` exists (history IS tracked).
+- [ ] **Follow-up bookkeeping:** add a tracking row for `011` to `supabase_migrations.schema_migrations` so the CLI's migration history matches reality.
+- [ ] Write migration `012_schema_reconciliation.sql` (all `IF NOT EXISTS`, so it's a no-op against live and only helps fresh rebuilds):
+  - [ ] Document the 5 live-only columns: `pdfs.pdf_author/title/subject`, `literature_review_entries.apa_reference/synthesis_paragraph`.
+  - [ ] Add the 3 missing `user_id` indexes (`highlights`, `annotations`, `literature_review_entries`) — verify against live first.
+- [ ] Capture the 4 undocumented live tables into migration files: `beta_waitlist_applications`, `beta_waitlist_activity_events`, `legal_documents`, `user_consents`.
+- [ ] Document the `pdfs` bucket (exists, private) + its access policies so it's reproducible — documentation only, no new storage code paths.
+- [ ] Re-snapshot; confirm a fresh build from migrations would match production exactly.
+
+**Done when:** the live DB has the dashboard tables, and the migration files faithfully represent the live database in both directions.
 
 ### Phase 2 — Identity & profile foundation *(1–2 sessions)*
 
@@ -224,3 +228,6 @@ Order of attack — fake cards first, then partials, then verify reals:
 ## 10. Decision log
 
 - **2026-06-12** — Audit completed (4 parallel code scouts + manual drift verification). Roadmap v1 saved. No code changed.
+- **2026-06-14** — Phase 0 started. Safety checkpoint committed (`6413e0f`); build-backup noise gitignored; live Supabase project linked (read-only). Schema snapshot pending a dashboard SQL query (Docker unavailable for CLI dump). No changes made to the live database.
+- **2026-06-14 (cont.)** — Live schema snapshot captured (`docs/live-schema-snapshot.md`). Findings: all 5 drift columns + `pdfs` bucket (private) exist in live (app not broken); BUT migration `011`'s 3 dashboard tables are absent from production (dashboard stats blocked until applied); 4 tables exist in live with no repo migration (beta-waitlist/legal/consents). Phase 1 revised. **Phase 0 complete.**
+- **2026-06-14 (cont.2)** — Phase 1 began. Hardened migration `011` to be re-run safe, then applied it to the live DB via the dashboard SQL Editor; all 3 dashboard tables verified present. First production write — additive only. **Biggest blocker to real dashboard stats now cleared.** A syntax error on the first attempt (apostrophes/quotes in explanatory SQL comments) was fixed by stripping those comments; transaction wrapper meant the failed attempt rolled back cleanly.
