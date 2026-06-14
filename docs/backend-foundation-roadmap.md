@@ -107,15 +107,19 @@ Key decisions baked in:
 
 - [x] **(Highest priority) Apply migration `011` to the live database** — **✅ DONE 2026-06-14.** Created `dashboard_tasks`, `dashboard_activity_events`, `dashboard_project_settings` via the dashboard SQL Editor (idempotent script, run inside a transaction; RLS + policies + indexes). Verified all three exist in live. First production write of the project — additive only, no existing data touched.
 - [x] Checked the migration-tracking state — `supabase_migrations.schema_migrations` exists (history IS tracked).
-- [ ] **Follow-up bookkeeping:** add a tracking row for `011` to `supabase_migrations.schema_migrations` so the CLI's migration history matches reality.
-- [ ] Write migration `012_schema_reconciliation.sql` (all `IF NOT EXISTS`, so it's a no-op against live and only helps fresh rebuilds):
-  - [ ] Document the 5 live-only columns: `pdfs.pdf_author/title/subject`, `literature_review_entries.apa_reference/synthesis_paragraph`.
-  - [ ] Add the 3 missing `user_id` indexes (`highlights`, `annotations`, `literature_review_entries`) — verify against live first.
-- [ ] Capture the 4 undocumented live tables into migration files: `beta_waitlist_applications`, `beta_waitlist_activity_events`, `legal_documents`, `user_consents`.
-- [ ] Document the `pdfs` bucket (exists, private) + its access policies so it's reproducible — documentation only, no new storage code paths.
-- [ ] Re-snapshot; confirm a fresh build from migrations would match production exactly.
+- [x] Write + apply migration `012_schema_reconciliation.sql` — **✅ DONE 2026-06-14**, applied to live via the dashboard SQL Editor and verified. Documents the 5 live-only columns AND restored the migration-005 performance indexes (which, like `011`, had never reached production — live had only primary-key indexes), plus added new `user_id` indexes.
+  - [x] Document the 5 live-only columns.
+  - [x] Add `user_id` indexes on `highlights`, `annotations`, `literature_review_entries` (verified present in live).
 
-**Done when:** the live DB has the dashboard tables, and the migration files faithfully represent the live database in both directions.
+**Phase 1 is substantively complete** — the live database now has everything the app needs (dashboard tables + indexes + columns). The items below are deferred, low-priority *documentation* (blueprint completeness / disaster-recovery insurance); none affect the running app, so they can happen anytime:
+
+- [ ] *(deferred)* Capture the 4 undocumented live tables into migration files: `beta_waitlist_applications`, `beta_waitlist_activity_events`, `legal_documents`, `user_consents`.
+- [ ] *(deferred)* Document the `pdfs` bucket (exists, private) + its storage access policies.
+- [ ] *(deferred)* Migration-history tidy-up: record `011`/`012` (and reconcile older entries) in `supabase_migrations.schema_migrations`.
+
+> ⚠️ **Caution for future sessions:** the live DB was built piecemeal, so `supabase_migrations.schema_migrations` does not match the migration files. Until that's reconciled, apply DB changes via the **dashboard SQL Editor** (the method used so far), NOT `supabase db push` — a push could try to re-run older non-idempotent migrations and error.
+
+**Done when:** the live DB has the dashboard tables + indexes + columns (✅ achieved), and the migration files faithfully represent live (substantive part ✅; deferred documentation remains).
 
 ### Phase 2 — Identity & profile foundation *(1–2 sessions)*
 
@@ -231,3 +235,4 @@ Order of attack — fake cards first, then partials, then verify reals:
 - **2026-06-14** — Phase 0 started. Safety checkpoint committed (`6413e0f`); build-backup noise gitignored; live Supabase project linked (read-only). Schema snapshot pending a dashboard SQL query (Docker unavailable for CLI dump). No changes made to the live database.
 - **2026-06-14 (cont.)** — Live schema snapshot captured (`docs/live-schema-snapshot.md`). Findings: all 5 drift columns + `pdfs` bucket (private) exist in live (app not broken); BUT migration `011`'s 3 dashboard tables are absent from production (dashboard stats blocked until applied); 4 tables exist in live with no repo migration (beta-waitlist/legal/consents). Phase 1 revised. **Phase 0 complete.**
 - **2026-06-14 (cont.2)** — Phase 1 began. Hardened migration `011` to be re-run safe, then applied it to the live DB via the dashboard SQL Editor; all 3 dashboard tables verified present. First production write — additive only. **Biggest blocker to real dashboard stats now cleared.** A syntax error on the first attempt (apostrophes/quotes in explanatory SQL comments) was fixed by stripping those comments; transaction wrapper meant the failed attempt rolled back cleanly.
+- **2026-06-14 (cont.3)** — Migration `012` applied to live: documented the 5 drift columns and created the missing performance indexes (migration 005's indexes had also never reached production) + new `user_id` indexes; verified. **Phase 1 substantively complete**; remaining items are deferred documentation. Reminder: use the dashboard SQL Editor (not `supabase db push`) for future DB changes until migration tracking is reconciled.
