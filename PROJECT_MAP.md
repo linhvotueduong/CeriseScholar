@@ -109,8 +109,10 @@ CeriseScholar/
 │   │
 │   ├── components/
 │   │   ├── auth/
-│   │   │   ├── LoginForm.tsx           # Email/password login
-│   │   │   └── SignupForm.tsx          # Signup form
+│   │   │   ├── LoginForm.tsx           # Email/password login (+ "Forgot password?" link)
+│   │   │   ├── SignupForm.tsx          # Signup form
+│   │   │   ├── ForgotPasswordForm.tsx  # Request a password-reset email (Phase 2)
+│   │   │   └── ResetPasswordForm.tsx   # Set a new password via reset link / PKCE exchange (Phase 2)
 │   │   ├── layout/
 │   │   │   ├── Navbar.tsx              # Top nav (Home, About, Guidance, Cerise Space, Projects, Courses, My Learning, Admin)
 │   │   │   ├── Sidebar.tsx             # Dashboard sidebar
@@ -151,6 +153,7 @@ CeriseScholar/
 │   │
 │   ├── hooks/
 │   │   ├── useUser.ts                  # Current user (session + auth listener)
+│   │   ├── useProfile.ts               # profiles-table identity (name/initials/avatar/bio) + metadata fallback (Phase 2)
 │   │   ├── usePdf.ts                   # PDF loading, page nav, zoom
 │   │   ├── useHighlights.ts            # Highlights CRUD + auto lit review entry + APA reference
 │   │   ├── useAnnotations.ts           # Annotations CRUD + sync with lit review notes
@@ -163,6 +166,8 @@ CeriseScholar/
 │   │   ├── supabase/
 │   │   │   ├── client.ts              # Browser Supabase client
 │   │   │   └── server.ts              # Server Supabase client (cookie-based auth)
+│   │   ├── profile/
+│   │   │   └── profile.ts            # profiles table: Profile type, fetch/upsert, name/initials/avatar/bio resolvers (Phase 2)
 │   │   ├── pdf/
 │   │   │   ├── loadPdf.ts             # PDF.js document loader
 │   │   │   ├── extractText.ts         # Extract text from PDF page

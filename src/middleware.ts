@@ -47,7 +47,8 @@ export async function middleware(request: NextRequest) {
     path === "/research-desk" ||
     path.startsWith("/research-desk/") ||
     path === "/settings" ||
-    path.startsWith("/settings/");
+    path.startsWith("/settings/") ||
+    path === "/auth/complete-profile";
 
   // If user is NOT logged in and trying to access a protected app page, redirect to /login
   if (!user && isProtectedAppPath) {
@@ -89,6 +90,7 @@ export const config = {
     "/research-desk/:path*",
     "/settings",
     "/settings/:path*",
+    "/auth/complete-profile",
     "/admin/:path*",
     "/login",
     "/signup",

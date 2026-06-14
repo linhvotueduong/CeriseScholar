@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useSyncExternalStore } from "react";
-import { useUser } from "@/hooks/useUser";
+import { useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils/cn";
 import { AppIcon, type AppIconName } from "./AppIcons";
 
@@ -75,12 +75,8 @@ function setNightModePreference(value: boolean) {
 
 export default function AppSidebar() {
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user, displayName } = useProfile();
   const nightMode = useSyncExternalStore(subscribeNightMode, getNightModePreference, () => false);
-  const displayName =
-    (typeof user?.user_metadata?.full_name === "string" && user.user_metadata.full_name) ||
-    user?.email ||
-    "Cerise Scholar";
 
   useEffect(() => {
     document.documentElement.classList.toggle("cerise-night-mode", nightMode);

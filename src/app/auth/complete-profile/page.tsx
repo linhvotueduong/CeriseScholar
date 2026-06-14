@@ -5,9 +5,29 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { canUseHostedAiBypass } from "@/lib/ai/hostedBypass";
 import { requestLocalSetupPrompt } from "@/lib/local-agent/client";
+import { upsertProfile } from "@/lib/profile/profile";
 
 const PENDING_GOOGLE_PROFILE_KEY = "cerise_pending_google_signup_profile";
 const ADMIN_EMAIL = "cerisescholar@gmail.com";
+
+function metaString(metadata: Record<string, unknown>, key: string) {
+  const value = metadata[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+/** Mirror identity fields from auth metadata into the profiles table. */
+async function syncProfileFromMetadata(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  metadata: Record<string, unknown>
+) {
+  await upsertProfile(supabase, userId, {
+    first_name: metaString(metadata, "first_name"),
+    last_name: metaString(metadata, "last_name"),
+    full_name: metaString(metadata, "full_name") || metaString(metadata, "name"),
+    avatar_url: metaString(metadata, "avatar_url") || metaString(metadata, "picture"),
+  });
+}
 
 export default function CompleteProfilePage() {
   const router = useRouter();
@@ -23,12 +43,12 @@ export default function CompleteProfilePage() {
           const parsedProfile = JSON.parse(pendingProfile) as Record<string, unknown>;
 
           if (data.user && data.user.email?.toLowerCase() !== ADMIN_EMAIL) {
-            await supabase.auth.updateUser({
-              data: {
-                ...data.user.user_metadata,
-                ...parsedProfile,
-              },
-            });
+            const mergedMetadata = {
+              ...data.user.user_metadata,
+              ...parsedProfile,
+            };
+            await supabase.auth.updateUser({ data: mergedMetadata });
+            await syncProfileFromMetadata(supabase, data.user.id, mergedMetadata);
             if (!canUseHostedAiBypass(data.user.email)) {
               requestLocalSetupPrompt("auth-callback-profile");
             }
@@ -38,12 +58,15 @@ export default function CompleteProfilePage() {
         }
       } else {
         const { data } = await supabase.auth.getUser();
-        if (
-          data.user &&
-          data.user.email?.toLowerCase() !== ADMIN_EMAIL &&
-          !canUseHostedAiBypass(data.user.email)
-        ) {
-          requestLocalSetupPrompt("auth-callback");
+        if (data.user && data.user.email?.toLowerCase() !== ADMIN_EMAIL) {
+          await syncProfileFromMetadata(
+            supabase,
+            data.user.id,
+            data.user.user_metadata || {}
+          );
+          if (!canUseHostedAiBypass(data.user.email)) {
+            requestLocalSetupPrompt("auth-callback");
+          }
         }
       }
 

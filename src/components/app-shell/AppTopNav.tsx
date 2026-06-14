@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useUser } from "@/hooks/useUser";
+import { useProfile } from "@/hooks/useProfile";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils/cn";
 import { AppIcon } from "./AppIcons";
@@ -15,23 +15,6 @@ const centerLinks = [
   { href: "/dashboard/space", label: "Cerise Space" },
 ];
 
-function getDisplayName(user: ReturnType<typeof useUser>["user"]) {
-  const metadata = user?.user_metadata || {};
-  const fullName = typeof metadata.full_name === "string" ? metadata.full_name.trim() : "";
-  const firstName = typeof metadata.first_name === "string" ? metadata.first_name.trim() : "";
-  return fullName || firstName || user?.email || "Account";
-}
-
-function getInitials(displayName: string, email?: string) {
-  const parts = displayName
-    .split(/\s+|@/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  if (parts[0] && parts[0] !== email) return parts[0].slice(0, 2).toUpperCase();
-  return (email?.slice(0, 2) || "CS").toUpperCase();
-}
-
 function isTopActive(pathname: string, href: string) {
   if (href === "/about") return pathname === "/about" || pathname.startsWith("/about/");
   if (href === "/research-desk") return pathname === "/research-desk" || pathname.startsWith("/dashboard/project");
@@ -42,9 +25,7 @@ function isTopActive(pathname: string, href: string) {
 export default function AppTopNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useUser();
-  const displayName = getDisplayName(user);
-  const initials = getInitials(displayName, user?.email);
+  const { user, displayName, initials } = useProfile("Account");
 
   async function handleLogout() {
     const supabase = createClient();

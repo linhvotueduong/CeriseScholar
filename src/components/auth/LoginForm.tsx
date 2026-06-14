@@ -105,6 +105,11 @@ export default function LoginForm() {
                 className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
                 placeholder="At least 8 characters"
               />
+              <div className="mt-2 text-right">
+                <Link href="/forgot-password" className="text-xs font-semibold text-[#7a6a5a] hover:text-[#1a1208]">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             {error && (
@@ -172,6 +177,11 @@ export default function LoginForm() {
               className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
               placeholder="At least 8 characters"
             />
+            <div className="mt-2 text-right">
+              <Link href="/forgot-password" className="text-xs font-semibold text-[#7a6a5a] hover:text-[#1a1208]">
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           <p className="rounded-[8px] border border-[#e0d8d0] bg-[#faf7f0] px-3 py-3 text-xs leading-5 text-[#7a6a5a]">

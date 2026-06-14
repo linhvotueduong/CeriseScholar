@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { useLocalAgentStatus } from "@/hooks/useLocalAgentStatus";
+import { useProfile } from "@/hooks/useProfile";
 import { useUser } from "@/hooks/useUser";
 import Spinner from "@/components/ui/Spinner";
 
@@ -17,6 +18,7 @@ const accountLinks = [
 
 export default function AccountPage() {
   const { user, loading } = useUser();
+  const { displayName, initials } = useProfile("Cerise Scholar member");
   const localAgent = useLocalAgentStatus();
   const router = useRouter();
 
@@ -52,7 +54,6 @@ export default function AccountPage() {
     );
   }
 
-  const profile = getProfile(user);
   const betaStatus = getBetaStatus(user);
   const providerLabel = getProviderLabel(user);
   const ollamaReady = localAgent.hostedAiBypass || Boolean(localAgent.health?.ollama?.ok ?? localAgent.health?.ollama?.connected);
@@ -87,10 +88,10 @@ export default function AccountPage() {
         <Card title="Profile identity" eyebrow="Signed in as">
           <div className="flex items-start gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#1a1208] text-base font-black uppercase text-white">
-              {profile.initials}
+              {initials}
             </div>
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-black text-[#1a1208]">{profile.name}</h2>
+              <h2 className="truncate text-lg font-black text-[#1a1208]">{displayName}</h2>
               <p className="mt-1 truncate text-sm text-[#7a6a5a]">{user.email}</p>
               <div className="mt-4 grid gap-2 text-sm">
                 <DetailRow label="Login method" value={providerLabel} />
@@ -272,23 +273,6 @@ function StatusPill({
       {children}
     </span>
   );
-}
-
-function getProfile(user: User) {
-  const metadata = user.user_metadata || {};
-  const fullName = readMetadataString(metadata.full_name);
-  const firstName = readMetadataString(metadata.first_name);
-  const lastName = readMetadataString(metadata.last_name);
-  const email = user.email || "";
-  const name = fullName || `${firstName} ${lastName}`.trim() || email || "Cerise Scholar member";
-  const initialsSource = name || email;
-  const parts = initialsSource.split(/\s+/).filter(Boolean);
-  const initials =
-    parts.length >= 2
-      ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-      : (parts[0] || email || "CS").slice(0, 2).toUpperCase();
-
-  return { initials, name };
 }
 
 function getBetaStatus(user: User) {
