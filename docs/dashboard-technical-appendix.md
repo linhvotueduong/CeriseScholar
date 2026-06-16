@@ -66,7 +66,7 @@ export const emptyCard = <T,>(data: T, at: string, message?: string): CardState<
 export const demoCard  = <T,>(data: T, at: string): CardState<T> => ({ dataState: "demo",  data, lastComputedAt: at });
 ```
 
-Reuse, don't reinvent: `DashboardSourceData`, `DashboardSectionData`, `DashboardTask`, `DashboardActivityEvent`, `DashboardSectionId` already exist in `src/lib/dashboard/deriveDashboardState.ts` and stay as the input shapes. `DashboardTargetSettings` / `DashboardPaceMode` already exist in `src/lib/dashboard/targetPace.ts` and become the persisted settings shape (Phase B).
+Reuse, don't reinvent: `DashboardSourceData`, `DashboardSectionData`, `DashboardTask`, `DashboardActivityEvent`, `DashboardSectionId` already exist in `src/lib/dashboard/deriveDashboardState.ts` and stay as the input shapes. `DashboardPaceMode` already exists in `src/lib/dashboard/targetPace.ts` and is reused. The UI-local `DashboardTargetSettings` (with `workDaysPerWeek: number`) is **upgraded** in Phase A to a persisted shape `PersistedDashboardTargetSettings` (with `workWeekdays: number[]`, default pace `moderate`) defined in `types.ts`; Phase B reconciles the UI-local field to it.
 
 ---
 
@@ -157,7 +157,7 @@ Current columns (live): `current_section_id`, `preferred_daily_minutes` (=dailyW
 ```sql
 -- 016_dashboard_target_pacing.sql (DRAFT)
 ALTER TABLE public.dashboard_project_settings
-  ADD COLUMN IF NOT EXISTS pace                  TEXT NOT NULL DEFAULT 'low'
+  ADD COLUMN IF NOT EXISTS pace                  TEXT NOT NULL DEFAULT 'moderate'
     CHECK (pace IN ('low','moderate','high')),
   ADD COLUMN IF NOT EXISTS work_weekdays         SMALLINT[] NOT NULL DEFAULT '{1,2,3,4,5}', -- 0=Sun..6=Sat
   ADD COLUMN IF NOT EXISTS skipped_dates         DATE[] NOT NULL DEFAULT '{}',
@@ -165,13 +165,17 @@ ALTER TABLE public.dashboard_project_settings
   ADD COLUMN IF NOT EXISTS manual_target_percent NUMERIC;
 ```
 
+> **Settled 2026-06-16 (owner decision, both mismatches resolved):**
+> 1. **Pace default = `moderate`** for persisted `dashboard_project_settings` *and* code defaults (the new `getDefaultPersistedDashboardTargetSettings()`). Demo/preview seed data (`getDefaultDashboardTargetSettings()` in `targetPace.ts`) may keep `high` so the dashboard still shows the current tuned preview — demo never persists, so the two never conflict.
+> 2. **Work days = a weekday array, not a count.** Canonical storage is `work_weekdays SMALLINT[]` defaulting to `{1,2,3,4,5}` (0=Sun … 6=Sat). The UI may still *display* "5 days," but every formula reads the array (so `skipped_dates` and per-weekday math are exact). The new persisted type carries `workWeekdays: number[]`; the old UI-local `workDaysPerWeek: number` is reconciled to the array in Phase B.
+
 **UI ↔ DB field mapping** (so `targetPace.ts` and the DB agree):
 
 | `DashboardTargetSettings` (UI) | DB column | Note |
 |---|---|---|
 | `deadlineDate` | `target_completion_date` | rename in code or alias on read |
-| `paceMode` | `pace` | ⚠️ UI default is `"high"`, spec/DB default is `"low"` — **pick one** (rec: keep UI's `high` as the *seed* but DB default `low`) |
-| `workDaysPerWeek` (a count) | `work_weekdays` (array) | ⚠️ UI stores a count; spec wants specific weekdays for `skipped_dates` math — **rec: upgrade UI to the array** in Phase B |
+| `paceMode` | `pace` | ✅ **Settled:** persisted/code default `"moderate"`; demo/preview seed may stay `"high"` (never persists). |
+| `workDaysPerWeek` (a count) | `work_weekdays` (array) | ✅ **Settled:** store the weekday array (`{1,2,3,4,5}` default); UI may show "5 days" but formulas use the array. Upgrade UI-local field to the array in Phase B. |
 | `dailyWorkGoalMinutes` | `preferred_daily_minutes` | already exists |
 | `manualOverride` + `manualTargetPercent` | `manual_target_date` + `manual_target_percent` | add the date so override is per-day per spec |
 
