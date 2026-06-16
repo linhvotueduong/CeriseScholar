@@ -1694,7 +1694,7 @@ html.cerise-night-mode .cerise-app-ui {
   --night-text: #f6f1ea;
   --night-muted: #c7beb4;
   --night-faint: #9f968c;
-  --night-accent: #d3a061;
+  --night-accent: #a97745;
   background: var(--night-bg) !important;
   color: var(--night-text) !important;
 }
@@ -1923,7 +1923,7 @@ html.cerise-night-mode .cerise-app-ui aside [class*="bg-[#f2f0ed"] {
 
 html.cerise-night-mode .cerise-app-ui aside a[class*="bg-[#f1f0ee"] {
   background-color: #1b1f1f !important;
-  color: #dca15a !important;
+  color: #bd8750 !important;
 }
 
 html.cerise-night-mode .cerise-app-ui aside a:not([class*="bg-[#f1f0ee"]),
@@ -1938,11 +1938,11 @@ html.cerise-night-mode .cerise-app-ui aside button:hover {
 
 html.cerise-night-mode .cerise-app-ui aside a[class*="bg-[#f1f0ee"] svg,
 html.cerise-night-mode .cerise-app-ui aside a[class*="bg-[#f1f0ee"] span {
-  color: #dca15a !important;
+  color: #bd8750 !important;
 }
 
 html.cerise-night-mode .cerise-app-ui aside button[aria-pressed="true"] > span:last-child {
-  background-color: #d3a061 !important;
+  background-color: #a97745 !important;
 }
 
 html.cerise-night-mode .cerise-app-ui aside button[aria-pressed="true"] > span:last-child > span {
@@ -2000,7 +2000,7 @@ html.cerise-night-mode .dashboard-exact-template [class*="bg-[#eee6da"] {
 }
 
 html.cerise-night-mode .dashboard-exact-template [class*="border-[#b6844e"] {
-  border-color: #d9a15d !important;
+  border-color: #a97745 !important;
 }
 
 html.cerise-night-mode .dashboard-exact-template [class*="border-r-[#eadfce"] {
@@ -2011,13 +2011,13 @@ html.cerise-night-mode .dashboard-exact-template [class*="text-[#b6844e"],
 html.cerise-night-mode .dashboard-exact-template [class*="text-[#8f6132"],
 html.cerise-night-mode .dashboard-exact-template [class*="text-[#8f5d24"],
 html.cerise-night-mode .dashboard-exact-template [class*="text-[#8e6837"] {
-  color: #e0aa67 !important;
+  color: #bd8750 !important;
 }
 
 html.cerise-night-mode .dashboard-exact-template [class*="bg-[#b6844e"],
 html.cerise-night-mode .dashboard-exact-template [class*="bg-[#d6ad6f"],
 html.cerise-night-mode .dashboard-exact-template [class*="bg-[#9c7443"] {
-  background-color: #d9a15d !important;
+  background-color: #a97745 !important;
 }
 
 html.cerise-night-mode .dashboard-exact-template [class*="bg-[#e8e5e1"],
@@ -2037,12 +2037,12 @@ html.cerise-night-mode .dashboard-exact-template [class*="text-[#4f6f3d"] {
 
 html.cerise-night-mode .dashboard-exact-template svg path[stroke="#d19a2f"],
 html.cerise-night-mode .dashboard-exact-template svg circle[fill="#d19a2f"] {
-  stroke: #d9a15d !important;
-  fill: #d9a15d !important;
+  stroke: #a97745 !important;
+  fill: #a97745 !important;
 }
 
 html.cerise-night-mode .dashboard-exact-template svg circle[stroke="#b6844e"] {
-  stroke: #d9a15d !important;
+  stroke: #a97745 !important;
 }
 
 html.cerise-night-mode .dashboard-exact-template svg circle[stroke="#eadfce"],
@@ -2063,6 +2063,32 @@ html.cerise-night-mode .dashboard-exact-template svg path[stroke="#eadcc5"] {
   background-color: #ffffff !important;
 }
 
+.cerise-target-ring-large {
+  background: radial-gradient(circle, transparent 0 33px, #f8f0e4 34px 41px, transparent 42px);
+}
+
+.cerise-target-ring-track,
+.cerise-target-ring-arc {
+  fill: none;
+  stroke-width: 7;
+}
+
+.cerise-target-ring-track {
+  stroke: #f3eadc;
+}
+
+.cerise-target-ring-arc {
+  stroke: #b6844e;
+  stroke-dasharray: 158 226;
+  stroke-linecap: round;
+  transform: rotate(45deg);
+  transform-origin: 50% 50%;
+}
+
+.cerise-target-ring-large-center {
+  background-color: #ffffff;
+}
+
 html.cerise-night-mode .dashboard-exact-template .cerise-target-ring-center {
   background-color: #11100f !important;
 }
@@ -2072,9 +2098,9 @@ html.cerise-night-mode .dashboard-exact-template {
   --dashboard-night-card-raised: #171a19;
   --dashboard-night-border: #2c3332;
   --dashboard-night-border-soft: #222827;
-  --dashboard-night-amber: #dca15a;
-  --dashboard-night-amber-bright: #eba957;
-  --dashboard-night-amber-soft: #2d2112;
+  --dashboard-night-amber: #a97745;
+  --dashboard-night-amber-bright: #bd8750;
+  --dashboard-night-amber-soft: #241a10;
   --dashboard-night-muted: #b7b0a8;
   --dashboard-night-green: #bfe4a8;
   --dashboard-night-green-soft: #22351d;
@@ -2180,6 +2206,22 @@ html.cerise-night-mode .dashboard-exact-template .dashboard-exact-top .cerise-ta
   background-color: #171614 !important;
 }
 
+html.cerise-night-mode .dashboard-exact-template .dashboard-exact-top .cerise-target-ring-large {
+  background: radial-gradient(circle, transparent 0 33px, #24211d 34px 41px, transparent 42px) !important;
+}
+
+html.cerise-night-mode .dashboard-exact-template .dashboard-exact-top .cerise-target-ring-track {
+  stroke: #302a23 !important;
+}
+
+html.cerise-night-mode .dashboard-exact-template .dashboard-exact-top .cerise-target-ring-arc {
+  stroke: var(--dashboard-night-amber) !important;
+}
+
+html.cerise-night-mode .dashboard-exact-template .dashboard-exact-top .cerise-target-ring-large-center {
+  background-color: #171614 !important;
+}
+
 html.cerise-night-mode .dashboard-exact-template .dashboard-research-bridge-svg {
   --dashboard-bridge-canvas: #161514;
   --dashboard-bridge-header-text: #f2eee8;
@@ -2188,15 +2230,15 @@ html.cerise-night-mode .dashboard-exact-template .dashboard-research-bridge-svg 
   --dashboard-bridge-control-text: #f2eee8;
   --dashboard-bridge-icon-stroke: #ece7df;
   --dashboard-bridge-action-fill: #151413;
-  --dashboard-bridge-action-text: #d7a05c;
+  --dashboard-bridge-action-text: #bd8750;
   --dashboard-bridge-progress-track: #3e3a35;
   --dashboard-bridge-alert-dot: #1c1a18;
   --dashboard-bridge-active-fill: #191817;
   --dashboard-bridge-active-stroke: #3f3a34;
   --dashboard-bridge-active-icon: #3a2a18;
   --dashboard-bridge-active-badge: #342719;
-  --dashboard-bridge-active-badge-text: #e0a762;
-  --dashboard-bridge-active-bar: #d7a05c;
+  --dashboard-bridge-active-badge-text: #bd8750;
+  --dashboard-bridge-active-bar: #a97745;
   --dashboard-bridge-active-alert: #191817;
   --dashboard-bridge-neutral-fill: #191817;
   --dashboard-bridge-neutral-stroke: #3a3631;

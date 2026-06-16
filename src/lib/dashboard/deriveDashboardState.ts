@@ -98,6 +98,11 @@ export type DashboardDerivedState = {
     totalProgress: number;
     totalDelta: number;
   };
+  recentChanges: Array<{
+    title: string;
+    subtitle: string;
+    time: string;
+  }>;
   researchSections: DashboardSectionData[];
   researchFocus: {
     recommended: string;
@@ -190,6 +195,15 @@ const ACTIVITY_WEIGHTS: Record<string, number> = {
   paper_draft_saved: 5,
 };
 
+const TODAY_TARGET_ACTIVITY_EXCLUSIONS = new Set([
+  "project_opened",
+  "research_focus_opened",
+  "dashboard_schedule_updated",
+  "dashboard_task_completed",
+]);
+
+const TODAY_TARGET_WORK_UNIT_GOAL = 10;
+
 function activityWeight(event: DashboardActivityEvent) {
   return ACTIVITY_WEIGHTS[event.event_type] ?? 1;
 }
@@ -217,6 +231,76 @@ function activityUnitSeries(events: DashboardActivityEvent[], days = 7) {
       .filter((event) => isSameLocalDay(event.created_at, day))
       .reduce((sum, event) => sum + activityWeight(event), 0);
   });
+}
+
+const RECENT_CHANGE_EXCLUSIONS = new Set(["project_opened", "research_focus_opened"]);
+
+const RECENT_CHANGE_FALLBACKS = [
+  { title: "Saved source from ScholarAsk", subtitle: "ScholarAsk • Evidence Library", time: "1h ago" },
+  { title: "Updated literature review row", subtitle: "Literature Review Table", time: "2h ago" },
+  { title: "Mapped synthesis assumptions", subtitle: "Meta-analysis • Synthesis Workspace", time: "5h ago" },
+  { title: "Saved citation-linked draft note", subtitle: "Paper Draft • Citations", time: "22h ago" },
+];
+
+function recentChangeTitle(event: DashboardActivityEvent) {
+  const label = event.label.trim();
+
+  switch (event.event_type) {
+    case "source_uploaded":
+      return "Added source to Evidence Library";
+    case "literature_row_saved":
+      return "Updated Literature Review Table";
+    case "meta_analysis_updated":
+      return "Mapped synthesis assumptions";
+    case "paper_draft_saved":
+      return "Saved Paper Draft section";
+    case "highlight_created":
+      return "Captured source highlight";
+    case "note_created":
+      return "Saved source note";
+    case "dashboard_task_completed":
+      return label ? `Completed ${label.toLowerCase()}` : "Completed research checkpoint";
+    case "dashboard_schedule_updated":
+      return "Updated research schedule";
+    default:
+      return label || event.event_type.replaceAll("_", " ");
+  }
+}
+
+function recentChangeSubtitle(event: DashboardActivityEvent) {
+  switch (event.event_type) {
+    case "source_uploaded":
+      return "Evidence Library • Project sources";
+    case "literature_row_saved":
+      return "Literature Review Table";
+    case "meta_analysis_updated":
+      return "Meta-analysis • Synthesis Workspace";
+    case "paper_draft_saved":
+      return "Paper Draft • Writing workspace";
+    case "highlight_created":
+      return "Source Viewer • Evidence highlights";
+    case "note_created":
+      return "Workspace Notes • Source notes";
+    case "dashboard_task_completed":
+      return "Dashboard Tasks • Today";
+    case "dashboard_schedule_updated":
+      return "Schedule • Research plan";
+    default:
+      break;
+  }
+
+  switch (event.section_id) {
+    case "literature-review":
+      return "Literature Review Table";
+    case "meta-analysis":
+      return "Meta-analysis • Synthesis Workspace";
+    case "workspace":
+      return "ScholarAsk • Evidence Library";
+    case "draft":
+      return "Paper Draft • Citations";
+    default:
+      return event.label || "Cerise Scholar";
+  }
 }
 
 export function buildDefaultDashboardTasks(userId: string, projectId: string, taskDate = getLocalDay()) {
@@ -316,16 +400,25 @@ export function deriveDashboardState(
   const previousWeek = activityUnits(data.activityEvents, 7, 7);
   const weeklySeries = activityUnitSeries(data.activityEvents);
   const todayActivityUnits = data.activityEvents
-    .filter((event) => isSameLocalDay(event.created_at, taskDate))
+    .filter((event) => isSameLocalDay(event.created_at, taskDate) && !TODAY_TARGET_ACTIVITY_EXCLUSIONS.has(event.event_type))
     .reduce((sum, event) => sum + activityWeight(event), 0);
   const weeklyActivity = pct((thisWeek / 45) * 100);
   const weeklyDelta = pct(previousWeek ? ((thisWeek - previousWeek) / previousWeek) * 100 : thisWeek ? 8 : 0);
-  const todayDone = pct(((completedToday * 8 + todayActivityUnits) / 18) * 100);
   const target = Math.max(6, Math.min(18, Math.round((100 - totalProgress) / 8)));
+  const todayWorkUnits = completedToday * ACTIVITY_WEIGHTS.dashboard_task_completed + todayActivityUnits;
+  const todayDone = Math.min(target, Math.round((todayWorkUnits / TODAY_TARGET_WORK_UNIT_GOAL) * target));
   const litRowsLeft = Math.max(0, literatureTargetRows - litCount);
   const plannedLiteratureRows = Math.max(1, Math.min(4, litRowsLeft || 2));
   const plannedHighlights = Math.max(1, Math.min(3, Math.max(0, pdfCount * 2 - highlightCount) || 3));
   const lastActivity = data.activityEvents[0]?.created_at ?? project.updated_at;
+  const recentChanges = data.activityEvents
+    .filter((event) => !RECENT_CHANGE_EXCLUSIONS.has(event.event_type))
+    .slice(0, 4)
+    .map((event) => ({
+      title: recentChangeTitle(event),
+      subtitle: recentChangeSubtitle(event),
+      time: relativeTime(event.created_at),
+    }));
 
   return {
     activeSectionId: metaProgress >= literatureProgress ? "meta-analysis" : "literature-review",
@@ -359,6 +452,7 @@ export function deriveDashboardState(
       totalProgress,
       totalDelta: Math.max(0, Math.min(20, completedToday + Math.round(thisWeek / 3))),
     },
+    recentChanges: [...recentChanges, ...RECENT_CHANGE_FALLBACKS].slice(0, 4),
     researchSections: [
       {
         id: "meta-analysis",

@@ -31,13 +31,16 @@ function hasProjectDashboardData(data: DashboardSourceData) {
     data.literatureEntries.length > 0 ||
     data.codes.length > 0 ||
     data.paperSections.some((section) => hasText(section.content)) ||
-    hasText(data.metaAnalysis?.research_question) ||
-    data.activityEvents.length > 0
+    hasText(data.metaAnalysis?.research_question)
   );
 }
 
 function hasUserTaskSignal(tasks: DashboardTask[]) {
   return tasks.some((task) => task.completed_at || task.generation_key.startsWith("manual:"));
+}
+
+function hasUserActivitySignal(events: DashboardActivityEvent[]) {
+  return events.some((event) => !event.id.startsWith("demo-") && event.event_type !== "project_opened");
 }
 
 export function hasMeaningfulDashboardSourceData(data: DashboardSourceData) {
@@ -48,11 +51,22 @@ export function applyDemoDashboardFallback(
   data: DashboardSourceData,
   params: BuildDemoDashboardSourceDataParams
 ): { data: DashboardSourceData; usingDemo: boolean } {
-  if (hasProjectDashboardData(data)) {
-    return { data, usingDemo: false };
-  }
-
   const demo = buildDemoDashboardSourceData(params);
+
+  if (hasProjectDashboardData(data)) {
+    const needsDashboardDemo = !hasUserTaskSignal(data.tasks) && !hasUserActivitySignal(data.activityEvents);
+
+    return {
+      data: needsDashboardDemo
+        ? {
+            ...data,
+            tasks: demo.tasks,
+            activityEvents: demo.activityEvents,
+          }
+        : data,
+      usingDemo: needsDashboardDemo,
+    };
+  }
 
   return {
     data: {
@@ -62,6 +76,7 @@ export function applyDemoDashboardFallback(
       courseProgress: data.courseProgress.length ? data.courseProgress : demo.courseProgress,
       courseNotes: data.courseNotes.length ? data.courseNotes : demo.courseNotes,
       tasks: hasUserTaskSignal(data.tasks) ? data.tasks : demo.tasks,
+      activityEvents: hasUserActivitySignal(data.activityEvents) ? data.activityEvents : demo.activityEvents,
     },
     usingDemo: true,
   };
@@ -244,17 +259,17 @@ export function buildDemoDashboardSourceData({
   const eventSeed: Array<[DashboardActivityEvent["event_type"], string, string, number, number]> = [
     ["project_opened", "Opened project dashboard", "workspace", 0, 8],
     ["dashboard_task_completed", "Literature review sprint", "literature-review", 0, 9],
-    ["literature_row_saved", "Saved literature review row", "literature-review", 0, 10],
-    ["highlight_created", "Created highlight", "workspace", 1, 11],
-    ["note_created", "Created note", "workspace", 1, 12],
-    ["meta_analysis_updated", "Updated meta-analysis setup", "meta-analysis", 2, 14],
+    ["literature_row_saved", "Saved evidence row from source", "literature-review", 0, 10],
+    ["highlight_created", "Highlighted claim in source viewer", "workspace", 1, 11],
+    ["note_created", "Saved citation-ready source note", "workspace", 1, 12],
+    ["meta_analysis_updated", "Updated effect-size plan", "meta-analysis", 2, 14],
     ["paper_draft_saved", "Saved introduction draft section", "draft", 2, 15],
     ["research_focus_opened", "Opened literature-review", "literature-review", 3, 10],
-    ["source_uploaded", "Uploaded synthetic source", "workspace", 4, 9],
-    ["literature_row_saved", "Saved synthesis paragraph", "literature-review", 5, 13],
+    ["source_uploaded", "Uploaded evidence paper", "workspace", 4, 9],
+    ["literature_row_saved", "Saved synthesis comparison row", "literature-review", 5, 13],
     ["dashboard_schedule_updated", "Updated research checkpoint", "notes", 6, 16],
     ["project_opened", "Opened project dashboard", "workspace", 7, 9],
-    ["highlight_created", "Created highlight", "workspace", 8, 11],
+    ["highlight_created", "Captured method detail from source", "workspace", 8, 11],
     ["paper_draft_saved", "Saved methodology draft section", "draft", 9, 14],
   ];
 

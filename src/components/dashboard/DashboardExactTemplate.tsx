@@ -2,12 +2,20 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { AppIcon } from "@/components/app-shell/AppIcons";
 import type { AppIconName } from "@/components/app-shell/AppIcons";
 import DashboardResearchSectionsExact from "@/components/dashboard/DashboardResearchSectionsExact";
 import { dashboardContinueLearning } from "@/lib/app-data/dashboard";
 import type { DashboardDerivedState, DashboardSectionId, DashboardTask } from "@/lib/dashboard/deriveDashboardState";
+import {
+  DASHBOARD_PACE_OPTIONS,
+  getDashboardTargetPaceSummary,
+  getDefaultDashboardTargetSettings,
+  type DashboardTargetPaceSummary,
+  type DashboardTargetSettings,
+} from "@/lib/dashboard/targetPace";
 import type { Project } from "@/types/project";
 
 type DashboardExactTemplateProps = {
@@ -102,123 +110,381 @@ function Card({
   );
 }
 
-function TodayTargetCard({ data }: { data?: DashboardDerivedState["todayTarget"] }) {
+function TodayTargetCard({
+  data,
+  onOpenSettings,
+  paceSummary,
+}: {
+  data?: DashboardDerivedState["todayTarget"];
+  onOpenSettings: () => void;
+  paceSummary: DashboardTargetPaceSummary;
+}) {
   const target = data?.target ?? 6;
   const done = data?.done ?? 3;
   const remaining = data?.remaining ?? 3;
 
   return (
     <Card className="h-[186px] p-[14px]">
-      <p className="text-[13px] font-[850] text-[#111111]">Today&apos;s Target</p>
-      <div className="mt-[18px] flex items-center gap-3">
-        <span className="cerise-target-ring-shell relative flex h-[36px] w-[36px] items-center justify-center rounded-full">
-          <span className="cerise-target-ring-fill absolute h-[25px] w-[25px] rounded-full" />
-          <span className="cerise-target-ring-center h-[9px] w-[9px] rounded-full" />
-        </span>
-        <div>
-          <p className="text-[20px] font-[850] leading-none text-[#b6844e]">{target}%</p>
-          <p className="text-[11px] font-[750] text-[#111111]">to keep pace</p>
-        </div>
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-[13px] font-[850] text-[#111111]">Today&apos;s Target</p>
+        <button
+          aria-label="Adjust deadline or pace"
+          className="inline-flex h-[22px] w-[18px] shrink-0 flex-col items-center justify-center gap-[2px] rounded-full text-[#4d4944] transition hover:bg-[#f4f2ef]"
+          onClick={onOpenSettings}
+          type="button"
+        >
+          <span className="h-[2.5px] w-[2.5px] rounded-full bg-current" />
+          <span className="h-[2.5px] w-[2.5px] rounded-full bg-current" />
+          <span className="h-[2.5px] w-[2.5px] rounded-full bg-current" />
+        </button>
       </div>
-      <div className="mt-[18px] grid gap-[7px] text-[12px] text-[#111111]">
-        <p>
-          <strong>{done}%</strong> <span className="font-[650] text-[#59524c]">done</span>
-        </p>
-        <p>
-          <strong>{remaining}%</strong> <span className="font-[650] text-[#59524c]">remaining</span>
-        </p>
+
+      <div className="mt-[8px] grid grid-cols-[108px_minmax(0,1fr)] gap-[15px]">
+        <div className="flex min-w-0 flex-col items-center">
+          <div className="flex w-full justify-center">
+            <span
+              className="cerise-target-ring-large relative mx-auto flex h-[82px] w-[82px] -translate-x-[5px] items-center justify-center rounded-full"
+            >
+              <svg aria-hidden="true" className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
+                <circle className="cerise-target-ring-track" cx="50" cy="50" r="36" />
+                <circle className="cerise-target-ring-arc" cx="50" cy="50" r="36" />
+              </svg>
+              <span className="cerise-target-ring-large-center relative z-10 flex h-[58px] w-[58px] flex-col items-center justify-center rounded-full">
+                <span className="text-[17px] font-[850] leading-none text-[#b6844e]">{target}%</span>
+                <span className="mt-[3px] text-[7px] font-[800] leading-none text-[#111111]">to keep pace</span>
+              </span>
+            </span>
+          </div>
+          <div className="mt-[10px] grid gap-[5px] text-[11px] leading-none text-[#111111]">
+            <p>
+              <strong className="font-[850]">{done}%</strong> <span className="ml-[7px] font-[700] text-[#625a52]">done</span>
+            </p>
+            <p>
+              <strong className="font-[850]">{remaining}%</strong> <span className="ml-[7px] font-[700] text-[#625a52]">remaining</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="min-w-0">
+          <div className="rounded-[8px] border border-[#ededeb] bg-[#f5f5f4] px-[9px] py-[7px] text-center text-[10px] font-[700] leading-none text-[#111111]">
+            <span>Pace: </span>
+            <strong className="font-[750] text-[#5f5a55]">{paceSummary.paceLabel}</strong>
+            <span className="px-[6px]">&middot;</span>
+            <span>Finish: </span>
+            <strong className="font-[750] text-[#5f5a55]">{paceSummary.expectedFinishLabel}</strong>
+          </div>
+
+          <div className="mt-[10px] grid gap-0 text-[10px]">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-[12px] pb-[8px]">
+              <span className="font-[700] text-[#625a52]">Deadline</span>
+              <strong className="text-right font-[850] text-[#111111]">{paceSummary.deadlineLabel}</strong>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-[12px] border-t border-[#eee7de] py-[8px]">
+              <span className="font-[700] text-[#625a52]">Days left</span>
+              <strong className="text-right font-[850] text-[#111111]">{paceSummary.daysLeft} days</strong>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-[12px] border-t border-[#eee7de] pt-[8px]">
+              <span className="font-[700] text-[#625a52]">Status</span>
+              <strong className="text-right font-[850] text-[#167026]">{paceSummary.statusLabel}</strong>
+            </div>
+          </div>
+        </div>
       </div>
     </Card>
   );
 }
 
-function sparklinePoints(values: number[]) {
-  const series = values.length > 0 ? values : [2, 3, 3, 5, 4, 5, 5];
-  const max = Math.max(1, ...series);
-  const min = Math.min(...series);
-  const spread = Math.max(1, max - min);
-  return series.map((value, index) => {
-    const x = 7 + index * (44 / Math.max(1, series.length - 1));
-    const y = 39 - ((value - min) / spread) * 23;
-    return { x, y };
-  });
-}
-
-function WeeklyActivitySparkline({ values }: { values: number[] }) {
-  const points = sparklinePoints(values);
-  const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+function TodayTargetModalPreviewCard({
+  data,
+  paceSummary,
+}: {
+  data?: DashboardDerivedState["todayTarget"];
+  paceSummary: DashboardTargetPaceSummary;
+}) {
+  const target = data?.target ?? 9;
+  const done = data?.done ?? 6;
+  const remaining = data?.remaining ?? 3;
 
   return (
-    <span className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[12px] border border-[#eadcc5] bg-[#fffaf2]">
-      <svg aria-hidden="true" className="h-[42px] w-[44px]" viewBox="0 0 58 48">
-        <path d="M4 14H54" stroke="#eadcc5" strokeDasharray="4 6" strokeLinecap="round" strokeWidth="1.6" />
-        <path d="M4 25H54" stroke="#eadcc5" strokeDasharray="4 6" strokeLinecap="round" strokeWidth="1.6" />
-        <path d="M4 36H54" stroke="#eadcc5" strokeDasharray="4 6" strokeLinecap="round" strokeWidth="1.6" />
-        <path d={path} fill="none" stroke="#d19a2f" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
-        {points.map((point) => (
-          <circle cx={point.x} cy={point.y} fill="#d19a2f" key={`${point.x}-${point.y}`} r="3.2" />
-        ))}
-      </svg>
-    </span>
-  );
-}
-
-function AnalyticsStack({ data }: { data?: DashboardDerivedState["analytics"] }) {
-  const weeklyActivity = data?.weeklyActivity ?? 58;
-  const weeklyDelta = data?.weeklyDelta ?? 5;
-  const weeklySeries = data?.weeklySeries ?? [2, 3, 3, 5, 4, 5, 5];
-  const totalProgress = data?.totalProgress ?? 64;
-  const totalDelta = data?.totalDelta ?? 4;
-  const totalProgressArc = Math.round((totalProgress / 100) * 151);
-
-  return (
-    <div className="grid h-[186px] grid-rows-[88px_88px] gap-[10px]">
-      <article className="h-full rounded-[12px] border border-[#eadcc5] bg-white px-[12px] py-[10px]">
-        <div className="flex h-full items-center gap-[12px]">
-          <WeeklyActivitySparkline values={weeklySeries} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-[11px] font-[850] leading-tight text-[#111111]">Weekly activity</p>
-              <span className="inline-flex h-[18px] items-center gap-[2px] rounded-full bg-[#edf4e8] px-[6px] text-[8.5px] font-[850] text-[#5f7d4d]">
-                <span className="text-[10px] leading-none">↗</span>
-                +{weeklyDelta}%
+    <div className="mt-[10px] rounded-[14px] border border-[#e8e2da] bg-white px-[16px] py-[18px] md:px-[20px]">
+      <div className="grid gap-[18px] md:grid-cols-[178px_minmax(0,1fr)]">
+        <div className="min-w-0">
+          <h3 className="text-center text-[20px] font-[850] leading-none text-[#111111]">Today&apos;s Target</h3>
+          <div className="mt-[15px] flex justify-center">
+            <span className="cerise-target-ring-large relative flex h-[82px] w-[82px] items-center justify-center rounded-full">
+              <svg aria-hidden="true" className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
+                <circle className="cerise-target-ring-track" cx="50" cy="50" r="36" />
+                <circle className="cerise-target-ring-arc" cx="50" cy="50" r="36" />
+              </svg>
+              <span className="cerise-target-ring-large-center relative z-10 flex h-[58px] w-[58px] flex-col items-center justify-center rounded-full">
+                <span className="text-[18px] font-[850] leading-none text-[#b6844e]">{target}%</span>
+                <span className="mt-[3px] text-[6.5px] font-[800] leading-none text-[#111111]">to keep pace</span>
               </span>
-            </div>
-            <p className="mt-[4px] text-[17px] font-[850] leading-none text-[#151515]">{weeklyActivity}%</p>
-            <p className="mt-[3px] truncate text-[9px] font-[550] text-[#6b6762]">Compared with last week</p>
+            </span>
           </div>
-        </div>
-      </article>
-      <article className="h-full rounded-[12px] border border-[#eadcc5] bg-white px-[12px] py-[10px]">
-        <div className="flex h-full items-center gap-[12px]">
-          <span className="relative flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-full">
-            <svg aria-hidden="true" className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 58 58">
-              <circle cx="29" cy="29" fill="none" r="24" stroke="#eadfce" strokeWidth="6" />
-              <circle cx="29" cy="29" fill="none" r="24" stroke="#b6844e" strokeDasharray={`${totalProgressArc} 151`} strokeLinecap="round" strokeWidth="6" />
-            </svg>
-            <span className="relative text-[13px] font-[850] text-[#151515]">{totalProgress}%</span>
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-[11px] font-[850] leading-tight text-[#111111]">Total progress</p>
-              <span className="inline-flex h-[18px] items-center gap-[2px] rounded-full bg-[#edf4e8] px-[6px] text-[8.5px] font-[850] text-[#5f7d4d]">
-                <span className="text-[10px] leading-none">↗</span>
-                +{totalDelta}%
-              </span>
-            </div>
-            <p className="mt-[4px] text-[14px] font-[850] leading-none text-[#151515]">{totalProgress}% this week</p>
-            <p className="mt-[5px] flex items-center gap-[4px] text-[9px] font-[550] text-[#6b6762]">
-              <span className="flex h-[11px] w-[11px] items-center justify-center rounded-full bg-[#b6844e] text-white">
-                <svg aria-hidden="true" className="h-[7px] w-[7px] fill-none stroke-current stroke-[2.4]" viewBox="0 0 12 12">
-                  <path d="m2 6.2 2.4 2.4L10 3" />
-                </svg>
-              </span>
-              On pace this week
+          <div className="mx-auto mt-[15px] grid w-[112px] gap-[5px] text-[14px] leading-none text-[#111111]">
+            <p>
+              <strong>{done}%</strong> <span className="ml-[10px] font-[750] text-[#625a52]">done</span>
+            </p>
+            <p>
+              <strong>{remaining}%</strong> <span className="ml-[10px] font-[750] text-[#625a52]">remaining</span>
             </p>
           </div>
         </div>
-      </article>
+
+        <div className="min-w-0 pt-[2px]">
+          <div className="flex justify-end">
+            <span className="inline-flex h-[22px] w-[18px] flex-col items-center justify-center gap-[2px] text-[#4d4944]">
+              <span className="h-[2.5px] w-[2.5px] rounded-full bg-current" />
+              <span className="h-[2.5px] w-[2.5px] rounded-full bg-current" />
+              <span className="h-[2.5px] w-[2.5px] rounded-full bg-current" />
+            </span>
+          </div>
+          <div className="mt-[12px] rounded-[9px] border border-[#ededeb] bg-[#f5f5f4] px-[9px] py-[9px] text-center text-[11px] font-[800] leading-none text-[#111111]">
+            <span>Pace: </span>
+            <strong className="font-[850] text-[#5f5a55]">{paceSummary.paceLabel}</strong>
+            <span className="px-[7px]">&middot;</span>
+            <span>Finish: </span>
+            <strong className="font-[850] text-[#5f5a55]">{paceSummary.expectedFinishLabel}</strong>
+          </div>
+
+          <div className="mt-[13px] grid gap-0 text-[12px]">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-[12px] pb-[10px]">
+              <span className="font-[750] text-[#625a52]">Deadline</span>
+              <strong className="text-right font-[850] text-[#111111]">{paceSummary.deadlineLabel}</strong>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-[12px] border-t border-[#eee7de] py-[10px]">
+              <span className="font-[750] text-[#625a52]">Days left</span>
+              <strong className="text-right font-[850] text-[#111111]">{paceSummary.daysLeft} days</strong>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-[12px] border-t border-[#eee7de] pt-[10px]">
+              <span className="font-[750] text-[#625a52]">Status</span>
+              <strong className="text-right font-[850] text-[#167026]">{paceSummary.statusLabel}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function TodayTargetSettingsModal({
+  activeProject,
+  onClose,
+  onSave,
+  settings,
+  todayTarget,
+}: {
+  activeProject: Project;
+  onClose: () => void;
+  onSave: (settings: DashboardTargetSettings) => void;
+  settings: DashboardTargetSettings;
+  todayTarget?: DashboardDerivedState["todayTarget"];
+}) {
+  const [draft, setDraft] = useState<DashboardTargetSettings>(settings);
+  const [optionalSettingsOpen, setOptionalSettingsOpen] = useState(true);
+  const draftSummary = getDashboardTargetPaceSummary(draft);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/35 px-4 py-5">
+      <section className="w-full max-w-[610px] rounded-[15px] border border-[#aaa39c] bg-[#fffefa] px-[22px] py-[22px] shadow-[0_24px_70px_rgba(28,20,13,0.18)] md:px-[28px]">
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <h2 className="text-[28px] font-[850] leading-none text-[#111111]">Target Settings</h2>
+            <p className="mt-[8px] text-[12px] font-[700] text-[#625a52]">
+              These settings calculate your daily target to keep pace.
+            </p>
+          </div>
+          <button
+            aria-label="Close target settings"
+            className="-mr-[8px] -mt-[8px] flex h-[36px] w-[36px] items-center justify-center rounded-full text-[30px] font-[650] leading-none text-[#625a52] hover:bg-[#f4f0eb]"
+            onClick={onClose}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mt-[22px]">
+          <label className="block text-[12px] font-[850] text-[#625a52]">Project</label>
+          <div className="mt-[8px] flex h-[42px] items-center justify-between rounded-[9px] border border-[#ded8d0] bg-white px-[12px] text-[13px] font-[850] text-[#111111]">
+            <span className="truncate">{activeProject.name}</span>
+            <AppIcon className="h-[14px] w-[14px] shrink-0 text-[#625a52]" name="folder" />
+          </div>
+        </div>
+
+        <div className="mt-[18px] grid gap-[16px] md:grid-cols-[210px_minmax(0,1fr)]">
+          <div>
+            <label className="block text-[12px] font-[850] text-[#625a52]" htmlFor="dashboard-target-deadline">
+              Deadline
+            </label>
+            <input
+              className="mt-[8px] h-[44px] w-full rounded-[9px] border border-[#ded8d0] bg-white px-[12px] text-[13px] font-[850] text-[#111111]"
+              id="dashboard-target-deadline"
+              onChange={(event) => setDraft((current) => ({ ...current, deadlineDate: event.target.value }))}
+              type="date"
+              value={draft.deadlineDate}
+            />
+          </div>
+
+          <div>
+            <p className="text-[12px] font-[850] text-[#625a52]">Pace</p>
+            <div className="mt-[8px] grid gap-[8px] sm:grid-cols-3">
+              {DASHBOARD_PACE_OPTIONS.map((option) => {
+                const selected = draft.paceMode === option.mode;
+
+                return (
+                  <button
+                    className={`min-h-[74px] rounded-[9px] border px-[7px] py-[9px] text-center ${
+                      selected
+                        ? "border-[#b6844e] bg-[#fffaf2] text-[#8f6132]"
+                        : "border-[#e5ded5] bg-white text-[#111111]"
+                    }`}
+                    key={option.mode}
+                    onClick={() => setDraft((current) => ({ ...current, paceMode: option.mode }))}
+                    type="button"
+                  >
+                    <span className="block text-[13px] font-[850] leading-none">{option.label}</span>
+                    <span className="mt-[7px] block text-[10px] font-[750] leading-[1.2] text-[#625a52]">
+                      {option.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-[16px] rounded-[10px] border border-[#eadfce] bg-[#fffaf2] px-[14px] py-[11px] text-[12px] font-[750] text-[#3b342e]">
+          <strong className="font-[850] text-[#8f6132]">{draftSummary.paceLabel} pace</strong> aims to {draftSummary.paceDescription.toLowerCase()}.
+          <span className="ml-[6px] font-[850] text-[#8f6132]">Expected finish: {draftSummary.expectedFinishLabel}</span>
+        </div>
+
+        <details
+          className="mt-[16px] rounded-[10px] border border-[#e8e3dc] bg-white px-[14px] py-[13px]"
+          onToggle={(event) => setOptionalSettingsOpen(event.currentTarget.open)}
+          open={optionalSettingsOpen}
+        >
+          <summary className="flex cursor-pointer list-none items-center gap-[4px] text-[13px] font-[850] text-[#3b342e] marker:hidden">
+            <AppIcon className={`h-[12px] w-[12px] transition-transform ${optionalSettingsOpen ? "" : "-rotate-90"}`} name="chevron-down" />
+            Optional settings
+          </summary>
+          <div className="mt-[14px] grid gap-[12px] md:grid-cols-2">
+            <label className="block text-[11px] font-[750] text-[#625a52]">
+              Work days per week
+              <select
+                className="mt-[7px] h-[40px] w-full rounded-[8px] border border-[#ded8d0] bg-white px-[11px] text-[12px] font-[850] text-[#111111]"
+                onChange={(event) => setDraft((current) => ({ ...current, workDaysPerWeek: Number(event.target.value) }))}
+                value={draft.workDaysPerWeek}
+              >
+                {[4, 5, 6, 7].map((days) => (
+                  <option key={days} value={days}>
+                    {days} days
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-[11px] font-[750] text-[#625a52]">
+              Daily work goal
+              <select
+                className="mt-[7px] h-[40px] w-full rounded-[8px] border border-[#ded8d0] bg-white px-[11px] text-[12px] font-[850] text-[#111111]"
+                onChange={(event) => setDraft((current) => ({ ...current, dailyWorkGoalMinutes: Number(event.target.value) }))}
+                value={draft.dailyWorkGoalMinutes}
+              >
+                {[45, 60, 90, 120].map((minutes) => (
+                  <option key={minutes} value={minutes}>
+                    {minutes} min
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="mt-[13px] flex items-center gap-[10px] text-[12px] font-[800] text-[#625a52]">
+            <input
+              checked={draft.manualOverride}
+              className="h-[16px] w-[16px] rounded-[4px] accent-[#b6844e]"
+              onChange={(event) => setDraft((current) => ({ ...current, manualOverride: event.target.checked }))}
+              type="checkbox"
+            />
+            Override daily target manually
+          </label>
+          <input
+            className="mt-[10px] h-[40px] w-full rounded-[8px] border border-[#ded8d0] bg-white px-[11px] text-[12px] font-[750] text-[#111111] disabled:bg-[#f6f2eb] disabled:text-[#9d958c]"
+            disabled={!draft.manualOverride}
+            onChange={(event) => setDraft((current) => ({ ...current, manualTargetPercent: event.target.value }))}
+            placeholder="Enter % per day"
+            type="number"
+            value={draft.manualTargetPercent}
+          />
+        </details>
+
+        <div className="mt-[22px]">
+          <p className="text-[12px] font-[850] text-[#625a52]">Preview</p>
+          <TodayTargetModalPreviewCard data={todayTarget} paceSummary={draftSummary} />
+        </div>
+
+        <div className="mt-[22px] flex justify-end gap-[10px]">
+          <button
+            className="h-[38px] rounded-[8px] border border-[#ded8d0] bg-white px-[22px] text-[12px] font-[850] text-[#111111]"
+            onClick={() => {
+              setDraft(settings);
+              setOptionalSettingsOpen(true);
+            }}
+            type="button"
+          >
+            Reset
+          </button>
+          <button
+            className="h-[38px] rounded-[8px] bg-[#b6844e] px-[24px] text-[12px] font-[850] text-white"
+            onClick={() => onSave(draft)}
+            type="button"
+          >
+            Save &amp; Calculate Target
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+const localSetupLabels: Record<string, string> = {
+  Agent: "Agent ready",
+  Ollama: "Ollama ready",
+  Folder: "Folder connected",
+  Safety: "Safety checked",
+};
+
+function RecentChangesCard({ changes }: { changes?: DashboardDerivedState["recentChanges"] }) {
+  const items =
+    changes && changes.length > 0
+      ? changes
+      : [
+          { title: "Saved source from ScholarAsk", subtitle: "ScholarAsk • Evidence Library", time: "1h ago" },
+          { title: "Updated literature review row", subtitle: "Literature Review Table", time: "2h ago" },
+          { title: "Mapped synthesis assumptions", subtitle: "Meta-analysis • Synthesis Workspace", time: "5h ago" },
+          { title: "Saved citation-linked draft note", subtitle: "Paper Draft • Citations", time: "22h ago" },
+        ];
+
+  return (
+    <Card className="h-[186px] overflow-hidden p-[14px]">
+      <div className="flex items-start justify-between gap-4">
+        <h2 className="text-[13px] font-[850] text-[#111111]">Activity Log</h2>
+        <span className="text-[8.5px] font-[750] leading-none text-[#8a837c]">Latest work</span>
+      </div>
+      <div className="relative mt-[13px]">
+        <div className="grid gap-[6px]">
+          {items.slice(0, 4).map((item, index) => (
+            <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-[8px]" key={`${item.title}-${item.time}-${index}`}>
+              <div className="min-w-0 pb-[2px] last:pb-0">
+                <p className="truncate text-[10.5px] font-[850] leading-tight text-[#2a2826]">{item.title}</p>
+                <p className="mt-[2px] truncate text-[8.5px] font-[650] leading-none text-[#77716b]">{item.subtitle}</p>
+              </div>
+              <span className="text-right text-[8.5px] font-[750] leading-tight text-[#77716b]">{item.time}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
   );
 }
 
@@ -439,9 +705,9 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
   const currentProject = dashboardData?.currentProject;
   const localSetup = dashboardData?.localSetup;
   const continueLearning = dashboardData?.continueLearning;
-  const todayTasks = (dashboardData?.todayTaskLabels?.length
-    ? dashboardData.todayTaskLabels
-    : ["2 literature rows", "3 highlights", "1 synthesis paragraph"]).slice(0, 3);
+  const [targetSettingsOpen, setTargetSettingsOpen] = useState(false);
+  const [targetSettings, setTargetSettings] = useState<DashboardTargetSettings>(() => getDefaultDashboardTargetSettings());
+  const targetPaceSummary = getDashboardTargetPaceSummary(targetSettings);
 
   return (
     <div className="dashboard-exact-template w-full max-w-[1428px] font-sans text-[#111111]">
@@ -511,12 +777,12 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
         </div>
       ) : null}
 
-        <div className="dashboard-exact-grid grid grid-cols-1 gap-[22px] 2xl:grid-cols-[minmax(0,1124px)_282px]">
+      <div className="dashboard-exact-grid grid grid-cols-1 gap-[22px] 2xl:grid-cols-[minmax(0,1124px)_282px]">
         <div className="min-w-0">
-          <section className="dashboard-exact-top grid grid-cols-[210px_184px_180px_290px_220px] gap-[10px]">
+          <section className="dashboard-exact-top grid max-w-[1124px] grid-cols-[210px_350px_210px_324px] gap-[10px]">
             <Card className="h-[186px] p-[14px]">
               <p className="text-[13px] font-[850]">Current project</p>
-              <div className="relative mt-[10px] flex h-[36px] items-center rounded-[8px] border border-[#e5e1dc] bg-white px-2.5 text-[10px] font-[850]">
+              <div className="relative mt-[10px] flex h-[36px] items-center rounded-[8px] border border-[#e5e1dc] bg-white px-2.5 text-[10.5px] font-[850]">
                 <select
                   aria-label="Current project"
                   className="h-full w-full appearance-none bg-transparent pr-5 font-[850] text-[#111111] !outline-none ring-0 focus:!outline-none focus:ring-0 focus-visible:!outline-none focus-visible:ring-0"
@@ -531,58 +797,49 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
                 </select>
                 <AppIcon className="pointer-events-none absolute right-2.5 h-3.5 w-3.5 shrink-0" name="chevron-down" />
               </div>
-      <p className="mt-[9px] inline-flex rounded-full bg-[#f6efe4] px-2 py-1 text-[9px] font-[850] text-[#8f6132]">
-        {currentProject?.tag ?? "Literature sprint"}
-      </p>
-              <p className="mt-[10px] text-[11px] font-[600] text-[#625a52]">Current section</p>
-              <p className="text-[13px] font-[850]">{currentProject?.currentSection ?? "Meta-analysis"}</p>
-              <p className="mt-[5px] text-[11px] text-[#625a52]">{currentProject?.lastOpened ?? "Last opened 2h ago"}</p>
+              <p className="mt-[9px] inline-flex rounded-full bg-[#f6efe4] px-2 py-1 text-[9.5px] font-[850] text-[#8f6132]">
+                {currentProject?.tag ?? "Literature sprint"}
+              </p>
+              <p className="mt-[11px] text-[10.5px] font-[700] text-[#625a52]">Current section</p>
+              <p className="text-[12.5px] font-[850] leading-tight">{currentProject?.currentSection ?? "Meta-analysis"}</p>
+              <p className="mt-[6px] text-[10.5px] font-[600] text-[#625a52]">{currentProject?.lastOpened ?? "Last opened 2h ago"}</p>
             </Card>
 
-            <TodayTargetCard data={dashboardData?.todayTarget} />
+            <TodayTargetCard
+              data={dashboardData?.todayTarget}
+              onOpenSettings={() => setTargetSettingsOpen(true)}
+              paceSummary={targetPaceSummary}
+            />
 
             <Card className="h-[186px] p-[14px]">
-              <p className="text-[13px] font-[850]">Today&apos;s Tasks</p>
-              <div className="mt-[23px] grid gap-[15px] text-[12px] font-[800]">
-                {todayTasks.map((task, index) => (
-                  <div className="flex min-w-0 items-center gap-[10px]" key={`${task}-${index}`}>
-                    <span className="flex h-[13px] w-[13px] items-center justify-center rounded-[3px] bg-[#b6844e]">
-                      <svg aria-hidden="true" className="h-[9px] w-[9px] fill-none stroke-white stroke-[2.4]" viewBox="0 0 12 12">
-                        <path d="m2 6.2 2.4 2.4L10 3" />
-                      </svg>
+              <p className="text-[13px] font-[850] text-[#111111]">Local Setup</p>
+              <div className="mt-[15px] flex items-end justify-between gap-3">
+                <p className="text-[15px] font-[850] leading-none text-[#111111]">
+                  {localSetup?.readyCount ?? 4}/{localSetup?.totalCount ?? 4}{" "}
+                  <span className="text-[10.5px] font-[750] text-[#625a52]">checks ready</span>
+                </p>
+                <span className="pb-[2px] text-[10.5px] font-[850] leading-none text-[#8e6837]">{localSetup?.percent ?? 100}% ready</span>
+              </div>
+              <div className="mt-[10px] h-[6px] overflow-hidden rounded-full bg-[#eee7de]">
+                <div className="h-full rounded-full bg-[#d6ad6f]" style={{ width: `${localSetup?.percent ?? 100}%` }} />
+              </div>
+              <div className="mt-[13px] grid gap-[8px] text-[10.5px] leading-none">
+                {(localSetup?.checks ?? [["Agent", agentReady], ["Ollama", ollamaReady], ["Folder", agentReady], ["Safety", safetyReady]]).map(([label, ready], index) => (
+                  <div className="flex items-center justify-between gap-4" key={label}>
+                    <span className="flex min-w-0 items-center gap-[8px] font-[750] text-[#625a52]">
+                      <span
+                        className="h-[6px] w-[6px] shrink-0 rounded-full bg-[#d6ad6f]"
+                        style={{ opacity: 1 - index * 0.12 }}
+                      />
+                      <span className="truncate">{localSetupLabels[label] ?? label}</span>
                     </span>
-                    <span className="min-w-0 leading-[1.18]">{task}</span>
+                    <span className={`font-[850] ${ready ? "text-[#5f7d4d]" : "text-[#a87f4f]"}`}>{ready ? "Yes" : "Soon"}</span>
                   </div>
                 ))}
               </div>
             </Card>
 
-            <Card className="h-[186px] p-[14px]">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-[13px] font-[850] leading-tight">Local Setup</p>
-                <span className="rounded-full bg-[#f6efe4] px-2.5 py-1 text-[10px] font-[850] leading-none text-[#8e6837]">{localSetup?.percent ?? 92}% ready</span>
-              </div>
-              <div className="mt-[16px] grid grid-cols-[minmax(0,1fr)_112px] gap-[14px]">
-                <div className="min-w-0">
-                  <p className="text-[18px] font-[850] leading-none">{localSetup?.readyCount ?? 4}/{localSetup?.totalCount ?? 4}</p>
-                  <p className="mt-[4px] text-[11px] font-[650] text-[#625a52]">checks ready</p>
-                  <div className="mt-[13px] h-[6px] rounded-full bg-[#e8e5e1]">
-                    <div className="h-full rounded-full bg-[#d6ad6f]" style={{ width: `${localSetup?.percent ?? 92}%` }} />
-                  </div>
-                  <p className="mt-[9px] text-[10px] font-[650] text-[#625a52]">{localSetup?.summary ?? "Local agent and folder access are connected."}</p>
-                </div>
-                <div className="grid gap-[6px] text-[9px]">
-                  {(localSetup?.checks ?? [["Agent", agentReady], ["Ollama", ollamaReady], ["Folder", agentReady], ["Safety", safetyReady]]).map(([label, ready]) => (
-                    <div className="flex h-[24px] items-center justify-between rounded-[6px] bg-[#fbfaf7] px-[7px]" key={label}>
-                      <span className="font-[650] text-[#625a52]">{label}</span>
-                      <span className={`font-[850] ${ready ? "text-[#5f7d4d]" : "text-[#a87f4f]"}`}>{ready ? "Yes" : "Soon"}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-
-            <AnalyticsStack data={dashboardData?.analytics} />
+            <RecentChangesCard changes={dashboardData?.recentChanges} />
           </section>
 
           <section className="mt-[16px] grid grid-cols-1 gap-[14px] 2xl:grid-cols-[820px_290px]">
@@ -714,6 +971,19 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
           </Link>
         </nav>
       </footer>
+
+      {targetSettingsOpen ? (
+        <TodayTargetSettingsModal
+          activeProject={activeProject}
+          onClose={() => setTargetSettingsOpen(false)}
+          onSave={(nextSettings) => {
+            setTargetSettings(nextSettings);
+            setTargetSettingsOpen(false);
+          }}
+          settings={targetSettings}
+          todayTarget={dashboardData?.todayTarget}
+        />
+      ) : null}
     </div>
   );
 }

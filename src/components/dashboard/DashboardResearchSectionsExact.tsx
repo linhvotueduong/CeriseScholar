@@ -512,7 +512,7 @@ export default function DashboardResearchSectionsExact({
         {selected.stats.map(([value, label], index) => {
           const x = 770 + index * 240;
           return (
-            <g key={label}>
+            <g key={`${label}-${index}`}>
               {index > 0 ? <line stroke={palette.activeStroke} strokeOpacity="0.7" strokeWidth="2" x1={x - 120} x2={x - 120} y1="336" y2="398" /> : null}
               <text fill={palette.activeBar} fontSize="40" fontWeight="850" textAnchor="middle" x={x} y="362">
                 {value}
@@ -534,7 +534,7 @@ export default function DashboardResearchSectionsExact({
         </text>
         <text fill={palette.text} fontSize="22" fontWeight="600" x="764" y="494">
           {selected.bottleneck.map((line, index) => (
-            <tspan key={line} x="764" dy={index === 0 ? 0 : 29}>
+            <tspan key={`${line}-${index}`} x="764" dy={index === 0 ? 0 : 29}>
               {line}
             </tspan>
           ))}
@@ -545,7 +545,7 @@ export default function DashboardResearchSectionsExact({
         </text>
         {selected.activity && selected.activity.length > 0 ? (
           selected.activity.map(([glyph, text, time], index) => (
-            <g key={text}>
+            <g key={`${glyph}-${text}-${time}-${index}`}>
               <circle cx="706" cy={608 + index * 30} fill={palette.activeIcon} r="12" />
               <Icon glyph={glyph} x={699} y={601 + index * 30} size={0.38} />
               <text fill={palette.text} fontSize="21" fontWeight="600" x="728" y={615 + index * 30}>
@@ -560,7 +560,7 @@ export default function DashboardResearchSectionsExact({
         ) : (
           <text fill={palette.text} fontSize="23" fontWeight="560" x="682" y="618">
             {selected.next.map((line, index) => (
-              <tspan key={line} x="682" dy={index === 0 ? 0 : 30}>
+              <tspan key={`${line}-${index}`} x="682" dy={index === 0 ? 0 : 30}>
                 {line}
               </tspan>
             ))}
