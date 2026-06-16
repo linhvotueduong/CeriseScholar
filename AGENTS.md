@@ -33,3 +33,13 @@ Deployment rules:
 - After finishing feature/function work, offer safe generated-cache cleanup to save Mac storage; never delete source code, assets, user data, `.env*`, Supabase data, or project documents as "cache."
 - Run `npm run check:legacy` before deployment to prevent wrong-app material from re-entering active production paths.
 - Run `npm run check:storage-strategy` before deployment-sensitive source-file work. New research source files should go through the Local Agent/local vault path, not new Supabase Storage upload/download paths.
+
+# Terminology (naming convention — use consistently in code, comments, docs, commits, and chat)
+
+To avoid confusion (especially once the Admin Dashboard is built), these names mean specific things:
+
+- **dashboard** (lowercase) — the single stats/cards page at the `/dashboard` route (Today's Target, Weekly Activity, Research Sections, Continue Learning, etc.). The `docs/backend-foundation-roadmap.md` and `docs/dashboard-metric-contract.md` both refer to THIS page only.
+- **User Dashboard** — the whole signed-in member experience as one umbrella: **Dashboard + Research Desk + Course Library + Schedule + Help Center + Settings**. Use this when referring to the entire user-facing app, not a single page.
+- **Admin Dashboard** — the separate admin-only area (to be built later; today only the `/admin` route exists, restricted to `cerisescholar@gmail.com`). Never conflate the User Dashboard with the Admin Dashboard.
+
+When a request says "dashboard," assume the `/dashboard` cards page unless "User Dashboard" or "Admin Dashboard" is written.

@@ -2,7 +2,15 @@
 
 > This file is kept up to date as the project evolves. It describes every folder and file so you always know what's where.
 
-**Last updated:** 2026-04-24
+**Last updated:** 2026-06-15
+
+---
+
+## Terminology (naming convention)
+
+- **dashboard** — the single stats/cards page at `/dashboard` (Today's Target, Weekly Activity, Research Sections, etc.). The Backend Foundation Roadmap and Dashboard Metric Contract refer to THIS page.
+- **User Dashboard** — the whole signed-in member experience as one umbrella: **Dashboard + Research Desk + Course Library + Schedule + Help Center + Settings**.
+- **Admin Dashboard** — the separate admin-only area (built later; today only `/admin`, restricted to the admin email). Never conflate the User Dashboard with the Admin Dashboard.
 
 ---
 
