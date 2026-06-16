@@ -4,14 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { logDashboardActivity } from "@/lib/dashboard/activity";
 import {
-  buildDefaultDashboardTasks,
   deriveDashboardState,
   type DashboardDerivedState,
+  type DashboardSectionId,
   type DashboardSourceData,
   type DashboardTask,
 } from "@/lib/dashboard/deriveDashboardState";
 import { applyDemoDashboardFallback, buildDemoDashboardSourceData } from "@/lib/dashboard/demoDashboardData";
 import { getLocalDay } from "@/lib/dashboard/localDay";
+import { recommendSchedule } from "@/lib/dashboard/recommendSchedule";
 import {
   getDefaultDashboardTargetSettings,
   type DashboardTargetSettings,
@@ -60,6 +61,21 @@ async function safeSelect<T>(query: PromiseLike<{ data: unknown; error: unknown 
   if (error || !data) return fallback;
   return data as T;
 }
+
+// Neutral local-setup for the schedule's section-progress read only. The five
+// research sections below don't depend on local-agent status, so this keeps the
+// recommendation independent of agent/ollama/folder readiness.
+const NEUTRAL_LOCAL_SETUP = { agentReady: false, ollamaReady: false, safetyReady: false };
+
+// Sections the schedule engine may recommend work on (excludes the "notes"/Cerise
+// support tile, which is help links, not a research work area).
+const RECOMMENDABLE_SECTIONS = new Set<DashboardSectionId>([
+  "meta-analysis",
+  "literature-review",
+  "workspace",
+  "draft",
+  "citations",
+]);
 
 export function useDashboardState({
   project,
@@ -176,13 +192,79 @@ export function useDashboardState({
           .order("sort_order", { ascending: true }),
         []
       );
-      const existingKeys = new Set(existingTasks.map((task) => task.generation_key));
-      const defaultTasks = buildDefaultDashboardTasks(userId, project.id, taskDate).filter((task) => !existingKeys.has(task.generation_key));
 
-      if (defaultTasks.length > 0) {
-        const { error: insertError } = await supabase.from("dashboard_tasks").insert(defaultTasks);
+      // Everything in the source data except tasks/activity (which load below). Used
+      // both for the schedule's section-progress read and the final source data.
+      const realSourceBase = {
+        pdfs,
+        highlights,
+        annotations,
+        literatureEntries,
+        paperSections,
+        metaAnalysis: metaAnalysisRows[0] ?? null,
+        codes,
+        courseModules,
+        courseVideos,
+        courseProgress,
+        courseNotes,
+      };
+
+      // Load Today's Target settings first — pace drives the schedule's intensity.
+      const fallbackDeadline = getDefaultDashboardTargetSettings().deadlineDate;
+      const persisted =
+        (await fetchPersistedTargetSettings(supabase, project.id, fallbackDeadline)) ??
+        getDefaultPersistedDashboardTargetSettings(fallbackDeadline);
+      persistedSettingsRef.current = persisted;
+      setTargetSettings(persistedToUiSettings(persisted));
+
+      // Seed today's recommended schedule ONCE per day. Recommendations target the
+      // weakest research sections (same per-section progress the dashboard shows) and
+      // pace sets intensity. We only seed when no auto-generated tasks exist for today,
+      // so saved tasks, completion checkmarks, and manual tasks are never disturbed.
+      const hasAutoTasksToday = existingTasks.some(
+        (task) => !task.deleted_at && !task.generation_key.startsWith("manual:")
+      );
+
+      if (!hasAutoTasksToday) {
+        const sectionProgress = deriveDashboardState(
+          project,
+          { ...realSourceBase, tasks: existingTasks, activityEvents: [] },
+          NEUTRAL_LOCAL_SETUP,
+          taskDate
+        )
+          .researchSections.filter((section) => RECOMMENDABLE_SECTIONS.has(section.id))
+          .map((section) => ({ sectionId: section.id, percent: section.percent }));
+
+        const recommendation = recommendSchedule({
+          projectId: project.id,
+          taskDate,
+          paceMode: persisted.paceMode,
+          sections: sectionProgress,
+        });
+        const runId = crypto.randomUUID();
+        const recommendedRows = recommendation.tasks.map((spec) => ({
+          user_id: userId,
+          project_id: project.id,
+          task_date: taskDate,
+          scheduled_time: spec.scheduled_time,
+          title: spec.title,
+          subtitle: spec.subtitle,
+          section_id: spec.section_id,
+          status: "pending" as const,
+          sort_order: spec.sort_order,
+          generation_key: spec.generation_key,
+          origin: spec.origin,
+          task_weight: spec.task_weight,
+          counts_toward_daily_target: spec.counts_toward_daily_target,
+          estimated_minutes: spec.estimated_minutes,
+          difficulty: spec.difficulty,
+          input_hash: recommendation.inputHash,
+          recommendation_run_id: runId,
+        }));
+
+        const { error: insertError } = await supabase.from("dashboard_tasks").insert(recommendedRows);
         if (!insertError) setPersistenceReady(true);
-      } else if (existingTasks.length > 0) {
+      } else {
         setPersistenceReady(true);
       }
 
@@ -206,17 +288,7 @@ export function useDashboardState({
       );
 
       const realSourceData: DashboardSourceData = {
-        pdfs,
-        highlights,
-        annotations,
-        literatureEntries,
-        paperSections,
-        metaAnalysis: metaAnalysisRows[0] ?? null,
-        codes,
-        courseModules,
-        courseVideos,
-        courseProgress,
-        courseNotes,
+        ...realSourceBase,
         tasks,
         activityEvents,
       };
@@ -230,16 +302,6 @@ export function useDashboardState({
       }
 
       setSourceData(nextSource.data);
-
-      // Today's Target settings: load the persisted row, else fall back to the
-      // canonical real default ("moderate" pace). Failures (e.g. migration 016
-      // not yet applied) return null and we use defaults — the dashboard never breaks.
-      const fallbackDeadline = getDefaultDashboardTargetSettings().deadlineDate;
-      const persisted =
-        (await fetchPersistedTargetSettings(supabase, project.id, fallbackDeadline)) ??
-        getDefaultPersistedDashboardTargetSettings(fallbackDeadline);
-      persistedSettingsRef.current = persisted;
-      setTargetSettings(persistedToUiSettings(persisted));
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Dashboard data could not load.");
       setPersistenceReady(false);
@@ -392,6 +454,9 @@ export function useDashboardState({
           completed_at: null,
           created_at: now,
           updated_at: now,
+          origin: "manual",
+          // Manual tasks do NOT count toward the daily target unless the user opts in.
+          counts_toward_daily_target: false,
         };
         setSourceData((current) => ({ ...current, tasks: [...current.tasks, localTask] }));
         return;
@@ -411,6 +476,9 @@ export function useDashboardState({
           status: "pending",
           sort_order: nextOrder,
           generation_key: generationKey,
+          origin: "manual",
+          // Manual tasks do NOT count toward the daily target unless the user opts in.
+          counts_toward_daily_target: false,
         })
         .select()
         .single();

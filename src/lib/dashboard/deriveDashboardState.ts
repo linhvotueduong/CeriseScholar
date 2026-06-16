@@ -12,6 +12,8 @@ export type DashboardSectionId =
 
 export type DashboardTaskStatus = "pending" | "completed";
 
+export type DashboardTaskOrigin = "default" | "recommended" | "manual";
+
 export type DashboardTask = {
   id: string;
   user_id: string;
@@ -28,6 +30,15 @@ export type DashboardTask = {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+  // Recommendation-engine metadata (migration 017). Optional so existing rows and
+  // the demo/fixture tasks remain valid without them.
+  origin?: DashboardTaskOrigin | string | null;
+  task_weight?: number | null;
+  counts_toward_daily_target?: boolean | null;
+  estimated_minutes?: number | null;
+  difficulty?: "easy" | "medium" | "hard" | string | null;
+  input_hash?: string | null;
+  recommendation_run_id?: string | null;
 };
 
 export type DashboardActivityEvent = {
@@ -405,7 +416,20 @@ export function deriveDashboardState(
   const weeklyActivity = pct((thisWeek / 45) * 100);
   const weeklyDelta = pct(previousWeek ? ((thisWeek - previousWeek) / previousWeek) * 100 : thisWeek ? 8 : 0);
   const target = Math.max(6, Math.min(18, Math.round((100 - totalProgress) / 8)));
-  const todayWorkUnits = completedToday * ACTIVITY_WEIGHTS.dashboard_task_completed + todayActivityUnits;
+  // Today's Target counts ONLY tasks flagged counts_toward_daily_target (manual tasks
+  // are excluded unless opted in) and weights each by task_weight when present —
+  // recommended tasks carry normalized weights (sum 1.0); legacy/weightless tasks
+  // weight equally, matching the old count-based behavior.
+  const dailyTargetTasks = todayTasks.filter((task) => task.counts_toward_daily_target !== false);
+  const taskTargetWeight = (task: DashboardTask) =>
+    typeof task.task_weight === "number" && Number.isFinite(task.task_weight) ? task.task_weight : 1;
+  const totalTaskWeight = dailyTargetTasks.reduce((sum, task) => sum + taskTargetWeight(task), 0);
+  const completedTaskWeight = dailyTargetTasks
+    .filter((task) => task.status === "completed")
+    .reduce((sum, task) => sum + taskTargetWeight(task), 0);
+  const taskCompletionFraction = totalTaskWeight > 0 ? completedTaskWeight / totalTaskWeight : 0;
+  // Completing all counting tasks fills the daily work-unit goal; activity adds on top.
+  const todayWorkUnits = taskCompletionFraction * TODAY_TARGET_WORK_UNIT_GOAL + todayActivityUnits;
   const todayDone = Math.min(target, Math.round((todayWorkUnits / TODAY_TARGET_WORK_UNIT_GOAL) * target));
   const litRowsLeft = Math.max(0, literatureTargetRows - litCount);
   const plannedLiteratureRows = Math.max(1, Math.min(4, litRowsLeft || 2));
