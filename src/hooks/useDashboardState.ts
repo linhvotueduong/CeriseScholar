@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { logDashboardActivity } from "@/lib/dashboard/activity";
 import {
@@ -12,6 +12,18 @@ import {
 } from "@/lib/dashboard/deriveDashboardState";
 import { applyDemoDashboardFallback, buildDemoDashboardSourceData } from "@/lib/dashboard/demoDashboardData";
 import { getLocalDay } from "@/lib/dashboard/localDay";
+import {
+  getDefaultDashboardTargetSettings,
+  type DashboardTargetSettings,
+} from "@/lib/dashboard/targetPace";
+import {
+  fetchPersistedTargetSettings,
+  getDefaultPersistedDashboardTargetSettings,
+  persistedToUiSettings,
+  uiToPersistedSettings,
+  upsertPersistedTargetSettings,
+} from "@/lib/dashboard/projectSettings";
+import type { PersistedDashboardTargetSettings } from "@/lib/dashboard/types";
 import type { Project } from "@/types/project";
 import type { MetaAnalysis } from "@/types/meta-analysis";
 
@@ -61,6 +73,14 @@ export function useDashboardState({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [persistenceReady, setPersistenceReady] = useState(false);
+  // Today's Target settings (UI-local shape). Seeded with the demo/preview default
+  // ("high" pace); for real users it is replaced by the persisted row in refetch.
+  const [targetSettings, setTargetSettings] = useState<DashboardTargetSettings>(() =>
+    getDefaultDashboardTargetSettings()
+  );
+  // The full persisted shape last seen/written, so saves never wipe fields the
+  // modal can't edit yet (skipped_dates, manual_target_date).
+  const persistedSettingsRef = useRef<PersistedDashboardTargetSettings | null>(null);
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -74,6 +94,9 @@ export function useDashboardState({
           projectId: project.id,
         })
       );
+      // Demo/preview: keep the tuned seed settings; never persist.
+      persistedSettingsRef.current = null;
+      setTargetSettings(getDefaultDashboardTargetSettings());
       setPersistenceReady(false);
       setLoading(false);
       return;
@@ -207,6 +230,16 @@ export function useDashboardState({
       }
 
       setSourceData(nextSource.data);
+
+      // Today's Target settings: load the persisted row, else fall back to the
+      // canonical real default ("moderate" pace). Failures (e.g. migration 016
+      // not yet applied) return null and we use defaults — the dashboard never breaks.
+      const fallbackDeadline = getDefaultDashboardTargetSettings().deadlineDate;
+      const persisted =
+        (await fetchPersistedTargetSettings(supabase, project.id, fallbackDeadline)) ??
+        getDefaultPersistedDashboardTargetSettings(fallbackDeadline);
+      persistedSettingsRef.current = persisted;
+      setTargetSettings(persistedToUiSettings(persisted));
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Dashboard data could not load.");
       setPersistenceReady(false);
@@ -391,15 +424,39 @@ export function useDashboardState({
     [derived.activeSectionId, persistenceReady, project.id, project.user_id, refetch, sourceData.tasks, taskDate, userId]
   );
 
+  const saveTargetSettings = useCallback(
+    async (next: DashboardTargetSettings) => {
+      // Optimistic: update the visible settings immediately.
+      setTargetSettings(next);
+
+      const base =
+        persistedSettingsRef.current ??
+        getDefaultPersistedDashboardTargetSettings(
+          next.deadlineDate || getDefaultDashboardTargetSettings().deadlineDate
+        );
+      const persisted = uiToPersistedSettings(next, base);
+      persistedSettingsRef.current = persisted;
+
+      // Demo/preview never persists.
+      if (!userId || project.user_id === "fixture") return;
+
+      const supabase = createClient();
+      await upsertPersistedTargetSettings(supabase, userId, project.id, persisted);
+    },
+    [project.id, project.user_id, userId]
+  );
+
   return {
     data: derived,
     loading,
     error,
     persistenceReady,
+    targetSettings,
     refetch,
     completeTask,
     updateTask,
     deleteTask,
     addTask,
+    saveTargetSettings,
   };
 }

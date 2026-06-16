@@ -176,11 +176,13 @@ export default function DashboardPage() {
       onNewNameChange={setNewName}
       onOpenResearchSection={handleOpenResearchSection}
       onProjectChange={setActiveProjectId}
+      onSaveTargetSettings={dashboardState.saveTargetSettings}
       onToggleCreate={() => setShowCreate((current) => !current)}
       onToggleSection={toggleSection}
       projectOptions={projectOptions}
       safetyReady={safetyReady}
       showCreate={showCreate}
+      targetSettings={dashboardState.targetSettings}
       visibleSections={visibleSections}
     />
   );

@@ -38,6 +38,10 @@ type DashboardExactTemplateProps = {
   dashboardData?: DashboardDerivedState;
   dashboardError?: string | null;
   dashboardLoading?: boolean;
+  /** Persisted Today's Target settings (from useDashboardState). Falls back to a local default when omitted. */
+  targetSettings?: DashboardTargetSettings;
+  /** Persist Today's Target settings. When omitted, saves stay in local component state. */
+  onSaveTargetSettings?: (settings: DashboardTargetSettings) => void;
   projectOptions: Project[];
   safetyReady: boolean;
   showCreate: boolean;
@@ -698,6 +702,8 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
     dashboardData,
     dashboardError,
     dashboardLoading,
+    targetSettings: targetSettingsProp,
+    onSaveTargetSettings,
     projectOptions,
     safetyReady,
     showCreate,
@@ -706,7 +712,12 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
   const localSetup = dashboardData?.localSetup;
   const continueLearning = dashboardData?.continueLearning;
   const [targetSettingsOpen, setTargetSettingsOpen] = useState(false);
-  const [targetSettings, setTargetSettings] = useState<DashboardTargetSettings>(() => getDefaultDashboardTargetSettings());
+  // Persisted settings come in via props; keep a local fallback so the modal still
+  // works (in-memory only) if a host doesn't wire persistence.
+  const [localTargetSettings, setLocalTargetSettings] = useState<DashboardTargetSettings>(() =>
+    getDefaultDashboardTargetSettings()
+  );
+  const targetSettings = targetSettingsProp ?? localTargetSettings;
   const targetPaceSummary = getDashboardTargetPaceSummary(targetSettings);
 
   return (
@@ -977,7 +988,8 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
           activeProject={activeProject}
           onClose={() => setTargetSettingsOpen(false)}
           onSave={(nextSettings) => {
-            setTargetSettings(nextSettings);
+            if (onSaveTargetSettings) onSaveTargetSettings(nextSettings);
+            else setLocalTargetSettings(nextSettings);
             setTargetSettingsOpen(false);
           }}
           settings={targetSettings}
