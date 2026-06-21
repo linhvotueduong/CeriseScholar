@@ -2,6 +2,7 @@ import type { Project } from "@/types/project";
 import type { MetaAnalysis } from "@/types/meta-analysis";
 import { getLocalDay, isSameLocalDay } from "@/lib/dashboard/localDay";
 import { isMeaningfulLabel, isMeaningfulText } from "@/lib/dashboard/meaningfulWork";
+import { evaluateResearchQuality, type ResearchTextSample } from "@/lib/dashboard/aiQualityEvaluator";
 import {
   computeTodayTargetModel,
   DEFAULT_PROJECT_SCOPE,
@@ -606,6 +607,23 @@ export function deriveDashboardState(
     effectsMapped: mappingCount + canvasCount,
     forestPlotReady: canvasCount > 0,
   };
+  // AI quality evaluator (deterministic): score the meaningful note/synthesis text so
+  // longer fake text (e.g. "this is a test note") lowers section progress via the
+  // aiQualityMultiplier. It can only reduce shallow/placeholder work, never inflate.
+  const qualitySamples: ResearchTextSample[] = [
+    ...meaningfulNoteRows.map((entry) => ({
+      text: String(entry.user_notes ?? ""),
+      kind: "note" as const,
+      sourceLinked: sourceLinked(entry),
+    })),
+    ...meaningfulSynthesisRows.map((entry) => ({
+      text: String(entry.synthesis_paragraph ?? ""),
+      kind: "synthesis" as const,
+      sourceLinked: true,
+    })),
+  ];
+  const aiSignals = evaluateResearchQuality(qualitySamples);
+
   const todayTargetModel = computeTodayTargetModel({
     projectType: targetSettings.projectType,
     scope: targetSettings.scope,
@@ -618,6 +636,7 @@ export function deriveDashboardState(
     skippedDates: targetSettings.skippedDates,
     completedTaskWeightToday: taskCompletionFraction,
     manualTargetPercent: targetSettings.manualTargetPercent,
+    aiSignals,
   });
   const todayTargetSummary = todayTargetModelToPaceSummary(todayTargetModel, targetSettings.paceMode);
   const targetDisplay = todayTargetModel.dailyTargetPercent;

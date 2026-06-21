@@ -36,8 +36,8 @@ export type SectionProgressOptions = {
   signals?: AiQualitySignals;
 };
 
-/** AI may reduce a section by at most (1 - AI_QUALITY_FLOOR); it can never raise it. */
-const AI_QUALITY_FLOOR = 0.4;
+/** Placeholder/test/keyword-stuffed work drops to this strongest reduction. */
+const PLACEHOLDER_MULTIPLIER = 0.12;
 
 function clamp01(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -48,11 +48,32 @@ function cover(count: number, denominator: number): number {
   return clamp01(count / Math.max(denominator, 1));
 }
 
-/** AI quality multiplier for a section (bounded). Placeholder work caps at the floor. */
-function aiMultiplier(signals: AiQualitySignals | undefined, relevant: number | undefined): number {
+/**
+ * Map a composite quality score (0..1) to a multiplier with conservative bands:
+ *   >= 0.70 no penalty · 0.55-0.70 gentle · 0.35-0.55 moderate · < 0.35 strong.
+ * Never exceeds 1, so it can never invent progress.
+ */
+function qualityToMultiplier(q: number): number {
+  if (q >= 0.7) return 1;
+  if (q >= 0.55) return 0.8 + ((q - 0.55) / 0.15) * 0.2; // 0.80 .. 1.00
+  if (q >= 0.35) return 0.45 + ((q - 0.35) / 0.2) * 0.35; // 0.45 .. 0.80
+  return 0.15 + (Math.max(0, q) / 0.35) * 0.3; // 0.15 .. 0.45 (strong)
+}
+
+/** Weighted average over the AI signals that are present (undefined ones are skipped). */
+function composite(parts: Array<{ v: number | undefined; w: number }>): number | undefined {
+  const present = parts.filter((p) => p.v != null);
+  if (!present.length) return undefined;
+  const weightSum = present.reduce((sum, p) => sum + p.w, 0);
+  return present.reduce((sum, p) => sum + (p.v as number) * p.w, 0) / weightSum;
+}
+
+/** Section AI multiplier (bounded, <=1). Placeholder -> strongest; else from composite quality. */
+function aiMultiplier(signals: AiQualitySignals | undefined, quality: number | undefined): number {
   if (!signals) return 1;
-  if (signals.isPlaceholder) return AI_QUALITY_FLOOR;
-  return relevant == null ? 1 : Math.max(AI_QUALITY_FLOOR, Math.min(1, relevant));
+  if (signals.isPlaceholder) return PLACEHOLDER_MULTIPLIER;
+  if (quality == null) return 1;
+  return qualityToMultiplier(quality);
 }
 
 /** Layers -> final section score: min(coverage, milestone cap) then AI multiplier. */
@@ -80,7 +101,12 @@ function literatureReview(c: ResearchCounts, t: SectionTargets, s?: AiQualitySig
   else if (c.synthesisUnits === 0) cap = 0.5; // coded across themes but no synthesis
   else if (c.apaReadyReferences === 0) cap = 0.75; // synthesis but not review/citation-ready
 
-  return combine(rawCoverage, cap, aiMultiplier(s, s?.evidenceSpecificity ?? s?.noteMeaningfulness));
+  const quality = composite([
+    { v: s?.noteMeaningfulness, w: 0.5 },
+    { v: s?.sourceGrounded, w: 0.25 },
+    { v: s?.evidenceSpecificity, w: 0.25 },
+  ]);
+  return combine(rawCoverage, cap, aiMultiplier(s, quality));
 }
 
 // --- Workspace / Synthesis ---------------------------------------------------
@@ -102,7 +128,12 @@ function workspaceSynthesis(c: ResearchCounts, t: SectionTargets, s?: AiQualityS
   else if (c.synthesisUnits === 0) cap = 0.4; // codes/themes but no synthesis
   else if (c.evidenceSupportedSections === 0) cap = 0.7; // synthesis but not used downstream
 
-  return combine(rawCoverage, cap, aiMultiplier(s, s?.noteMeaningfulness));
+  const quality = composite([
+    { v: s?.noteMeaningfulness, w: 0.5 },
+    { v: s?.synthesisReadiness, w: 0.25 },
+    { v: s?.sourceGrounded, w: 0.25 },
+  ]);
+  return combine(rawCoverage, cap, aiMultiplier(s, quality));
 }
 
 // --- Paper Draft -------------------------------------------------------------
@@ -122,14 +153,19 @@ function paperDraft(c: ResearchCounts, t: SectionTargets, s?: AiQualitySignals):
   else if (c.evidenceSupportedSections === 0) cap = 0.3; // paragraphs without evidence
   else if (c.citedSections === 0) cap = 0.7; // evidence-linked but not citation-supported
 
-  return combine(rawCoverage, cap, aiMultiplier(s, s?.synthesisReadiness));
+  // Draft quality leans on synthesis readiness + evidence specificity.
+  const quality = composite([
+    { v: s?.synthesisReadiness, w: 0.6 },
+    { v: s?.evidenceSpecificity, w: 0.4 },
+  ]);
+  return combine(rawCoverage, cap, aiMultiplier(s, quality));
 }
 
 // --- Citations / References --------------------------------------------------
 // Literature rows are NOT completed citations: real readiness needs metadata,
 // APA/reference readiness, and links to evidence/draft claims.
 
-function citations(c: ResearchCounts, t: SectionTargets, s?: AiQualitySignals): number {
+function citations(c: ResearchCounts, t: SectionTargets): number {
   const duplicateCleanup =
     c.referencesCount > 0 ? clamp01(1 - c.duplicateIssues / Math.max(c.referencesCount, 1)) : 0;
   const rawCoverage =
@@ -146,7 +182,9 @@ function citations(c: ResearchCounts, t: SectionTargets, s?: AiQualitySignals): 
   else if (c.referencesLinkedToRows === 0) cap = 0.6; // APA but not linked to evidence
   else if (c.citedSections === 0) cap = 0.75; // linked but not used in draft
 
-  return combine(rawCoverage, cap, aiMultiplier(s, s?.citationReadiness));
+  // Citations are structural: they must come from real metadata/APA/links, never from
+  // note text quality. No AI multiplier here — the deterministic caps above govern it.
+  return combine(rawCoverage, cap, 1);
 }
 
 // --- Meta-analysis / Analysis ------------------------------------------------
@@ -180,7 +218,7 @@ export function computeSectionProgress(
     literatureReviewScore: literatureReview(counts, targets, s),
     workspaceSynthesisScore: workspaceSynthesis(counts, targets, s),
     paperDraftScore: paperDraft(counts, targets, s),
-    citationScore: citations(counts, targets, s),
+    citationScore: citations(counts, targets),
     metaAnalysisScore: metaAnalysis(counts, targets, opts.metaRelevant),
   };
 }
