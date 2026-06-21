@@ -4,10 +4,6 @@ import type {
   DashboardSourceData,
 } from "@/lib/dashboard/deriveDashboardState";
 import {
-  getDashboardTargetPaceSummary,
-  type DashboardTargetSettings,
-} from "@/lib/dashboard/targetPace";
-import {
   demoCard,
   realCard,
   type CardState,
@@ -62,20 +58,8 @@ function parseMinutesRange(label: string): [number, number] {
   return [10, 15];
 }
 
-/** Adapt the persisted settings to the UI-local shape the pace summary helper expects. */
-function toPaceSummaryInput(settings: PersistedDashboardTargetSettings): DashboardTargetSettings {
-  return {
-    deadlineDate: settings.deadlineDate,
-    paceMode: settings.paceMode,
-    workDaysPerWeek: settings.workWeekdays.length,
-    dailyWorkGoalMinutes: settings.dailyWorkGoalMinutes,
-    manualOverride: settings.manualTargetDate != null,
-    manualTargetPercent: settings.manualTargetPercent != null ? String(settings.manualTargetPercent) : "",
-  };
-}
-
 export function buildDashboardSnapshot(input: BuildDashboardSnapshotInput): DashboardSnapshot {
-  const { project, data, derived, settings, now, usingDemo = false } = input;
+  const { project, data, derived, now, usingDemo = false } = input;
   const computedAt = now.toISOString();
 
   // Foundation default: every card inherits the snapshot-level demo flag. Per-card
@@ -86,12 +70,10 @@ export function buildDashboardSnapshot(input: BuildDashboardSnapshotInput): Dash
   const projectProgress01 = clamp01(derived.analytics.totalProgress / 100);
   const lastActivityAt = data.activityEvents[0]?.created_at ?? project.updated_at ?? null;
 
-  // Today's Target — reuse the existing pace math; daily numbers come from `derived`.
-  const paceSummary = getDashboardTargetPaceSummary(toPaceSummaryInput(settings), now, now);
-  const { target, done, remaining } = derived.todayTarget;
-  const deadlineAchievable = paceSummary.daysLeft > 0;
-  const status: TodayTargetStatus =
-    projectProgress01 >= 1 ? "complete" : !deadlineAchievable ? "deadline_at_risk" : "on_track";
+  // Today's Target — every number comes from the SAME unified model on `derived`.
+  const tt = derived.todayTargetModel;
+  const todayTargetStatus: TodayTargetStatus =
+    tt.status === "at_risk" ? "deadline_at_risk" : tt.status === "in_progress" ? "behind" : tt.status;
 
   const activeSection = derived.researchSections.find((section) => section.id === derived.activeSectionId);
 
@@ -116,14 +98,14 @@ export function buildDashboardSnapshot(input: BuildDashboardSnapshotInput): Dash
         isPinned: false,
       }),
       todayTarget: card({
-        dailyTargetPercent: target,
-        doneTodayPercent: done,
-        remainingTodayPercent: remaining,
-        ringProgress: target > 0 ? clamp01(done / target) : 0,
-        deadlineAchievable,
-        status,
-        daysLeft: paceSummary.daysLeft,
-        expectedFinishLabel: paceSummary.expectedFinishLabel,
+        dailyTargetPercent: tt.dailyTargetPercent,
+        doneTodayPercent: tt.doneTodayPercent,
+        remainingTodayPercent: tt.remainingTodayPercent,
+        ringProgress: clamp01(tt.ringProgress),
+        deadlineAchievable: tt.deadlineAchievable,
+        status: todayTargetStatus,
+        daysLeft: tt.activeDaysLeft,
+        expectedFinishLabel: tt.expectedFinishLabel,
       }),
       schedule: card({
         selectedDate: input.taskDate ?? "",

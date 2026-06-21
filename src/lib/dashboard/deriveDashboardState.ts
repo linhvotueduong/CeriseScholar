@@ -1,6 +1,22 @@
 import type { Project } from "@/types/project";
 import type { MetaAnalysis } from "@/types/meta-analysis";
 import { getLocalDay, isSameLocalDay } from "@/lib/dashboard/localDay";
+import { isMeaningfulLabel, isMeaningfulText } from "@/lib/dashboard/meaningfulWork";
+import {
+  computeTodayTargetModel,
+  DEFAULT_PROJECT_SCOPE,
+  DEFAULT_PROJECT_TYPE,
+  type ProjectScope,
+  type ProjectType,
+  type ResearchCounts,
+  type TodayTargetModel,
+} from "@/lib/dashboard/todayTargetModel";
+import {
+  DASHBOARD_PACE_OPTIONS,
+  type DashboardPaceMode,
+  type DashboardTargetPaceSummary,
+  type DashboardTargetSettings,
+} from "@/lib/dashboard/targetPace";
 
 export type DashboardSectionId =
   | "meta-analysis"
@@ -93,7 +109,17 @@ export type DashboardDerivedState = {
     target: number;
     done: number;
     remaining: number;
+    /** doneToday / dailyTarget (0..1), precise — for the card ring, not rounded display. */
+    ringProgress: number;
   };
+  /** Pace/finish summary for the card — derived from the SAME todayTargetModel. */
+  todayTargetSummary: DashboardTargetPaceSummary;
+  /** The full unified Today's Target model (single source for every target number). */
+  todayTargetModel: TodayTargetModel;
+  /** Raw research counts — lets the Target Settings preview recompute the SAME model. */
+  researchCounts: ResearchCounts;
+  /** Weighted completion fraction of today's counting tasks (0..1). */
+  todayTaskCompletion: number;
   todayTaskLabels: string[];
   localSetup: {
     readyCount: number;
@@ -205,15 +231,6 @@ const ACTIVITY_WEIGHTS: Record<string, number> = {
   meta_analysis_updated: 5,
   paper_draft_saved: 5,
 };
-
-const TODAY_TARGET_ACTIVITY_EXCLUSIONS = new Set([
-  "project_opened",
-  "research_focus_opened",
-  "dashboard_schedule_updated",
-  "dashboard_task_completed",
-]);
-
-const TODAY_TARGET_WORK_UNIT_GOAL = 10;
 
 function activityWeight(event: DashboardActivityEvent) {
   return ACTIVITY_WEIGHTS[event.event_type] ?? 1;
@@ -329,11 +346,115 @@ export function buildDefaultDashboardTasks(userId: string, projectId: string, ta
   }));
 }
 
+/** Persisted settings the unified Today's Target model needs (subset of the row). */
+export type TodayTargetSettingsInput = {
+  paceMode: DashboardPaceMode;
+  deadlineDate: string;
+  workWeekdays: number[];
+  skippedDates: string[];
+  dailyWorkGoalMinutes: number;
+  manualTargetPercent: number | null;
+  projectType: ProjectType;
+  scope: ProjectScope;
+};
+
+export type TodayTargetContext = {
+  settings: TodayTargetSettingsInput;
+  projectStartDate: Date;
+  today: Date;
+};
+
+const DEFAULT_TARGET_SETTINGS: TodayTargetSettingsInput = {
+  paceMode: "moderate",
+  deadlineDate: "",
+  workWeekdays: [1, 2, 3, 4, 5],
+  skippedDates: [],
+  dailyWorkGoalMinutes: 90,
+  manualTargetPercent: null,
+  projectType: DEFAULT_PROJECT_TYPE,
+  scope: { ...DEFAULT_PROJECT_SCOPE },
+};
+
+function parseLocalDate(value: string): Date | null {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+/** "work days per week" count -> sorted weekday array (Mon-first), matching projectSettings. */
+function countToWeekdaysLocal(count: number): number[] {
+  const n = Math.max(1, Math.min(7, Math.round(count) || 5));
+  return [1, 2, 3, 4, 5, 6, 0].slice(0, n).sort((a, b) => a - b);
+}
+
+function targetStatusLabel(status: TodayTargetModel["status"]): string {
+  switch (status) {
+    case "complete":
+      return "Project complete";
+    case "deadline_at_risk":
+      return "Deadline at risk";
+    case "at_risk":
+      return "At risk";
+    case "on_track":
+      return "On track";
+    default:
+      return "In progress";
+  }
+}
+
+/** Build the card's pace/finish summary from the unified model (same source). */
+export function todayTargetModelToPaceSummary(
+  model: TodayTargetModel,
+  paceMode: DashboardPaceMode
+): DashboardTargetPaceSummary {
+  const pace = DASHBOARD_PACE_OPTIONS.find((option) => option.mode === paceMode) ?? DASHBOARD_PACE_OPTIONS[0];
+  return {
+    deadlineLabel: model.deadlineLabel ?? "Not set",
+    daysLeft: model.activeDaysLeft,
+    expectedFinishDate: model.paceTargetDate,
+    expectedFinishLabel: model.expectedFinishLabel,
+    paceDescription: pace.description,
+    paceLabel: pace.label,
+    paceMultiplier: pace.multiplier,
+    statusLabel: targetStatusLabel(model.status),
+  };
+}
+
+/**
+ * Compute the unified Today's Target model from the UI-local settings shape. Used by
+ * the Target Settings preview so the modal and the main card read the EXACT same model
+ * for the same settings (count<->weekday and deadline string<->Date are converted here).
+ */
+export function computeTodayTargetFromUiSettings(
+  ui: DashboardTargetSettings,
+  counts: ResearchCounts,
+  projectStartDate: Date,
+  today: Date,
+  completedTaskWeightToday: number,
+  base?: { skippedDates?: string[] }
+): TodayTargetModel {
+  const manualPercent = ui.manualOverride ? Number(ui.manualTargetPercent) : NaN;
+  return computeTodayTargetModel({
+    projectType: ui.projectType,
+    scope: ui.scope,
+    counts,
+    projectStartDate,
+    today,
+    userDeadline: parseLocalDate(ui.deadlineDate),
+    paceMode: ui.paceMode,
+    workWeekdays: countToWeekdaysLocal(ui.workDaysPerWeek),
+    skippedDates: base?.skippedDates ?? [],
+    completedTaskWeightToday,
+    manualTargetPercent: Number.isFinite(manualPercent) ? manualPercent : null,
+  });
+}
+
 export function deriveDashboardState(
   project: Project,
   data: DashboardSourceData,
   localSetup: LocalSetupInput,
-  taskDate = getLocalDay()
+  taskDate = getLocalDay(),
+  targetContext?: TodayTargetContext
 ): DashboardDerivedState {
   const pdfCount = data.pdfs.length;
   const highlightCount = data.highlights.length;
@@ -376,29 +497,13 @@ export function deriveDashboardState(
       Math.min(20, mappingCount * 4) +
       Math.min(25, canvasCount * 25)
   );
-  const draftProgress = pct(
-    Math.min(60, draftSections.length * 8) +
-      Math.min(25, meaningfulDraftSections.length * 6) +
-      Math.min(15, synthesisRows * 2)
-  );
-  const citationsProgress = pct(
-    Math.min(60, apaReady * 5) +
-      Math.min(25, citationMetadata * 4) +
-      (litCount && apaReady >= Math.max(1, Math.round(litCount * 0.8)) ? 15 : 0)
-  );
+  // Cerise readiness is a SEPARATE readiness signal (Ready / Learning / Needs setup),
+  // not research completion — it never feeds the project progress / completion model.
   const ceriseReadiness = pct(
     (project ? 25 : 0) +
       (workspaceProgress > 0 ? 25 : 0) +
       (literatureProgress > 0 ? 25 : 0) +
       (localSetup.agentReady || localSetup.ollamaReady ? 25 : 0)
-  );
-  const totalProgress = pct(
-    workspaceProgress * 0.15 +
-      literatureProgress * 0.25 +
-      metaProgress * 0.2 +
-      draftProgress * 0.25 +
-      citationsProgress * 0.1 +
-      ceriseReadiness * 0.05
   );
   const readyChecks = [
     ["Agent", localSetup.agentReady],
@@ -410,16 +515,13 @@ export function deriveDashboardState(
   const thisWeek = activityUnits(data.activityEvents, 7);
   const previousWeek = activityUnits(data.activityEvents, 7, 7);
   const weeklySeries = activityUnitSeries(data.activityEvents);
-  const todayActivityUnits = data.activityEvents
-    .filter((event) => isSameLocalDay(event.created_at, taskDate) && !TODAY_TARGET_ACTIVITY_EXCLUSIONS.has(event.event_type))
-    .reduce((sum, event) => sum + activityWeight(event), 0);
   const weeklyActivity = pct((thisWeek / 45) * 100);
   const weeklyDelta = pct(previousWeek ? ((thisWeek - previousWeek) / previousWeek) * 100 : thisWeek ? 8 : 0);
-  const target = Math.max(6, Math.min(18, Math.round((100 - totalProgress) / 8)));
-  // Today's Target counts ONLY tasks flagged counts_toward_daily_target (manual tasks
-  // are excluded unless opted in) and weights each by task_weight when present —
-  // recommended tasks carry normalized weights (sum 1.0); legacy/weightless tasks
-  // weight equally, matching the old count-based behavior.
+
+  // --- Today's Target: ONE unified model drives every number ----------------
+  // Only tasks flagged counts_toward_daily_target count (manual tasks excluded unless
+  // opted in), weighted by task_weight (recommended weights sum to 1.0; legacy tasks
+  // weight equally). This weighted completion fraction feeds the model's done/ring.
   const dailyTargetTasks = todayTasks.filter((task) => task.counts_toward_daily_target !== false);
   const taskTargetWeight = (task: DashboardTask) =>
     typeof task.task_weight === "number" && Number.isFinite(task.task_weight) ? task.task_weight : 1;
@@ -428,9 +530,113 @@ export function deriveDashboardState(
     .filter((task) => task.status === "completed")
     .reduce((sum, task) => sum + taskTargetWeight(task), 0);
   const taskCompletionFraction = totalTaskWeight > 0 ? completedTaskWeight / totalTaskWeight : 0;
-  // Completing all counting tasks fills the daily work-unit goal; activity adds on top.
-  const todayWorkUnits = taskCompletionFraction * TODAY_TARGET_WORK_UNIT_GOAL + todayActivityUnits;
-  const todayDone = Math.min(target, Math.round((todayWorkUnits / TODAY_TARGET_WORK_UNIT_GOAL) * target));
+
+  const targetSettings = targetContext?.settings ?? DEFAULT_TARGET_SETTINGS;
+
+  // Real research counts -> the capped section-progress model scores each section
+  // against the project type's targets. Some fields are best-available proxies (rows
+  // with citation links, evidence-supported / cited / revised sections) until richer
+  // signals exist; milestone caps stop early actions from overinflating progress.
+  // MEANINGFUL-WORK GATE: count only research evidence that is real, not placeholder/
+  // test text and not raw activity. A note counts when it has meaningful text AND is
+  // source-linked; a code/theme when it is a real label; synthesis when it reads like
+  // a real paragraph; a reference when it has real metadata.
+  const sourceLinked = (entry: Record<string, unknown>) =>
+    nonEmpty(entry.pdf_id) || nonEmpty(entry.highlight_id) || nonEmpty(entry.source);
+  const meaningfulNoteRows = data.literatureEntries.filter(
+    (entry) => sourceLinked(entry) && isMeaningfulText(entry.user_notes)
+  );
+  const meaningfulSynthesisRows = data.literatureEntries.filter((entry) => isMeaningfulText(entry.synthesis_paragraph));
+  const meaningfulCodedRows = data.literatureEntries.filter(
+    (entry) => isMeaningfulLabel(entry.code_name) && isMeaningfulLabel(entry.theme_category)
+  );
+  const evidenceFieldRows = data.literatureEntries.filter(
+    (entry) =>
+      isMeaningfulText(entry.user_notes) ||
+      isMeaningfulText(entry.synthesis_paragraph) ||
+      (isMeaningfulLabel(entry.code_name) && isMeaningfulLabel(entry.theme_category))
+  );
+  const themeCount = new Set(
+    data.literatureEntries.filter((entry) => isMeaningfulLabel(entry.theme_category)).map((entry) => entry.theme_category)
+  ).size;
+  // A reference needs at least a real source/title; metadata needs author + year too.
+  const referenceRows = data.literatureEntries.filter((entry) => isMeaningfulLabel(entry.source) || nonEmpty(entry.authors));
+  const referencesWithMetadata = data.literatureEntries.filter(
+    (entry) => nonEmpty(entry.authors) && nonEmpty(entry.year) && (isMeaningfulLabel(entry.source) || nonEmpty(entry.apa_reference))
+  ).length;
+  // A source is "engaged" (vs intake-only) when it has linked highlights or real evidence.
+  const engagedPdfIds = new Set(
+    [
+      ...data.highlights.map((highlight) => highlight.pdf_id),
+      ...meaningfulNoteRows.map((entry) => entry.pdf_id),
+    ].filter(Boolean)
+  );
+  // Meaningful notes include source highlights/annotations only insofar as they are real.
+  const meaningfulNotes = meaningfulNoteRows.length;
+  const rowsWithCitationLinks = data.literatureEntries.filter(
+    (entry) => nonEmpty(entry.apa_reference) || nonEmpty(entry.highlight_id)
+  ).length;
+
+  const researchCounts: ResearchCounts = {
+    uploadedSources: pdfCount,
+    engagedSources: engagedPdfIds.size,
+    literatureRows: litCount,
+    codedRows: meaningfulCodedRows.length,
+    rowsWithNotes: meaningfulNotes,
+    rowsWithEvidenceFields: evidenceFieldRows.length,
+    rowsWithCitationLinks,
+    synthesisUnits: meaningfulSynthesisRows.length,
+    highlights: highlightCount,
+    notes: meaningfulNotes,
+    themeCount,
+    outlineSections: data.paperSections.length,
+    draftSections: draftSections.length,
+    meaningfulLengthSections: meaningfulDraftSections.length,
+    evidenceSupportedSections: meaningfulSynthesisRows.length > 0 ? meaningfulDraftSections.length : 0,
+    citedSections: apaReady > 0 ? meaningfulDraftSections.length : 0,
+    revisedSections: meaningfulDraftSections.length,
+    referencesCount: referenceRows.length,
+    citationsWithMetadata: referencesWithMetadata,
+    apaReadyReferences: apaReady,
+    referencesLinkedToRows: Math.min(referencesWithMetadata, meaningfulNoteRows.length + meaningfulSynthesisRows.length),
+    duplicateIssues: 0,
+    metaQuestionSet: nonEmpty(meta?.research_question),
+    metaHypothesisSet: nonEmpty(meta?.hypothesis),
+    metaTestSelected: nonEmpty(meta?.hypothesis_type),
+    effectsMapped: mappingCount + canvasCount,
+    forestPlotReady: canvasCount > 0,
+  };
+  const todayTargetModel = computeTodayTargetModel({
+    projectType: targetSettings.projectType,
+    scope: targetSettings.scope,
+    counts: researchCounts,
+    projectStartDate: targetContext?.projectStartDate ?? new Date(project.created_at),
+    today: targetContext?.today ?? new Date(),
+    userDeadline: parseLocalDate(targetSettings.deadlineDate),
+    paceMode: targetSettings.paceMode,
+    workWeekdays: targetSettings.workWeekdays,
+    skippedDates: targetSettings.skippedDates,
+    completedTaskWeightToday: taskCompletionFraction,
+    manualTargetPercent: targetSettings.manualTargetPercent,
+  });
+  const todayTargetSummary = todayTargetModelToPaceSummary(todayTargetModel, targetSettings.paceMode);
+  const targetDisplay = todayTargetModel.dailyTargetPercent;
+  const doneDisplay = Math.round(todayTargetModel.doneTodayPercent);
+  const remainingDisplay = Math.max(0, targetDisplay - doneDisplay);
+
+  // Research Sections card percents come from the SAME capped section-progress model
+  // (0..1 -> 0-100%), so the card, the analytics total, and Today's Target all agree.
+  const sectionScores = todayTargetModel.sectionScores;
+  const sectionPercents = {
+    metaAnalysis: pct(sectionScores.metaAnalysisScore * 100),
+    literatureReview: pct(sectionScores.literatureReviewScore * 100),
+    workspaceSynthesis: pct(sectionScores.workspaceSynthesisScore * 100),
+    paperDraft: pct(sectionScores.paperDraftScore * 100),
+    citations: pct(sectionScores.citationScore * 100),
+  };
+  const activeSectionId: DashboardSectionId =
+    sectionScores.metaAnalysisScore >= sectionScores.literatureReviewScore ? "meta-analysis" : "literature-review";
+
   const litRowsLeft = Math.max(0, literatureTargetRows - litCount);
   const plannedLiteratureRows = Math.max(1, Math.min(4, litRowsLeft || 2));
   const plannedHighlights = Math.max(1, Math.min(3, Math.max(0, pdfCount * 2 - highlightCount) || 3));
@@ -445,18 +651,23 @@ export function deriveDashboardState(
     }));
 
   return {
-    activeSectionId: metaProgress >= literatureProgress ? "meta-analysis" : "literature-review",
+    activeSectionId,
     currentProject: {
       title: project.name,
       tag: litCount > 0 ? "Literature sprint" : "Project setup",
-      currentSection: metaProgress >= literatureProgress ? "Meta-analysis" : "Literature Review Table",
+      currentSection: activeSectionId === "meta-analysis" ? "Meta-analysis" : "Literature Review Table",
       lastOpened: relativeTime(lastActivity),
     },
     todayTarget: {
-      target,
-      done: todayDone,
-      remaining: Math.max(0, target - todayDone),
+      target: targetDisplay,
+      done: doneDisplay,
+      remaining: remainingDisplay,
+      ringProgress: todayTargetModel.ringProgress,
     },
+    todayTargetSummary,
+    todayTargetModel,
+    researchCounts,
+    todayTaskCompletion: taskCompletionFraction,
     todayTaskLabels: [
       `${plannedLiteratureRows} literature ${plannedLiteratureRows === 1 ? "row" : "rows"}`,
       `${plannedHighlights} ${plannedHighlights === 1 ? "highlight" : "highlights"}`,
@@ -473,7 +684,7 @@ export function deriveDashboardState(
       weeklyActivity,
       weeklyDelta,
       weeklySeries,
-      totalProgress,
+      totalProgress: pct(todayTargetModel.projectProgressPercent),
       totalDelta: Math.max(0, Math.min(20, completedToday + Math.round(thisWeek / 3))),
     },
     recentChanges: [...recentChanges, ...RECENT_CHANGE_FALLBACKS].slice(0, 4),
@@ -481,7 +692,7 @@ export function deriveDashboardState(
       {
         id: "meta-analysis",
         label: "Meta-analysis",
-        percent: metaProgress,
+        percent: sectionPercents.metaAnalysis,
         stats: [
           [nonEmpty(meta?.research_question) ? "1" : "0", "Question set"],
           [nonEmpty(meta?.hypothesis_type) ? "1" : "0", "Test selected"],
@@ -500,7 +711,7 @@ export function deriveDashboardState(
       {
         id: "literature-review",
         label: "Literature Review Table",
-        percent: literatureProgress,
+        percent: sectionPercents.literatureReview,
         stats: [
           [String(litSources || pdfCount), "Sources"],
           [String(litCount), "Evidence rows"],
@@ -519,7 +730,7 @@ export function deriveDashboardState(
       {
         id: "workspace",
         label: "Workspace",
-        percent: workspaceProgress,
+        percent: sectionPercents.workspaceSynthesis,
         stats: [
           [String(pdfCount), "PDFs"],
           [String(highlightCount), "Highlights"],
@@ -539,7 +750,7 @@ export function deriveDashboardState(
       {
         id: "draft",
         label: "Paper Draft",
-        percent: draftProgress,
+        percent: sectionPercents.paperDraft,
         stats: [
           [String(data.paperSections.length), "Sections"],
           [String(draftSections.length), "With drafts"],
@@ -558,7 +769,7 @@ export function deriveDashboardState(
       {
         id: "citations",
         label: "Citations",
-        percent: citationsProgress,
+        percent: sectionPercents.citations,
         stats: [
           [String(litCount), "References"],
           [String(apaReady), "APA ready"],
@@ -601,10 +812,10 @@ export function deriveDashboardState(
           ? "Review model assumptions before adding another analytics chart."
           : "Complete literature rows before moving into another synthesis step.",
       health: [
-        { label: "Evidence balance", value: literatureProgress >= 45 ? "Good" : "Needs work", tone: literatureProgress >= 45 ? "green" : "amber" },
-        { label: "Citation coverage", value: citationsProgress >= 70 ? "Good" : "Needs work", tone: citationsProgress >= 70 ? "green" : "amber" },
+        { label: "Evidence balance", value: sectionScores.literatureReviewScore >= 0.45 ? "Good" : "Needs work", tone: sectionScores.literatureReviewScore >= 0.45 ? "green" : "amber" },
+        { label: "Citation coverage", value: sectionScores.citationScore >= 0.7 ? "Good" : "Needs work", tone: sectionScores.citationScore >= 0.7 ? "green" : "amber" },
         { label: "Theme clarity", value: codedRows >= 3 ? "Strong" : "Build up", tone: codedRows >= 3 ? "green" : "amber" },
-        { label: "Draft readiness", value: draftProgress >= 60 ? "Ready" : "In progress", tone: draftProgress >= 60 ? "green" : "purple" },
+        { label: "Draft readiness", value: sectionScores.paperDraftScore >= 0.6 ? "Ready" : "In progress", tone: sectionScores.paperDraftScore >= 0.6 ? "green" : "purple" },
       ],
       watchPoint: noteRows > 2 ? `Notes in ${Math.min(noteRows, 9)} rows.` : "Notes in 3 papers.",
       estimatedTime: `${readyCount === readyChecks.length ? "25-35" : "10-15"} min`,

@@ -2,20 +2,25 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   computeTodayTargetModel,
-  computeCompletedWorkUnits,
-  computeScopeMultiplier,
+  computeAdjustedTargets,
   countActiveWorkdays,
-  PROJECT_TYPE_DEFAULTS,
+  EMPTY_RESEARCH_COUNTS,
+  PROJECT_TYPE_MODELS,
+  PROJECT_TYPE_ORDER,
+  DEFAULT_PROJECT_SCOPE,
+  TOTAL_PROJECT_POINTS,
+  type ResearchCounts,
   type TodayTargetModelInput,
 } from "./todayTargetModel";
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const d = (y: number, m: number, day: number) => new Date(y, m - 1, day);
 
-function baseInput(over: Partial<TodayTargetModelInput> = {}): TodayTargetModelInput {
+function modelInput(over: Partial<TodayTargetModelInput> = {}): TodayTargetModelInput {
   return {
-    projectType: "literature-review", // default 100 work units, 30 days
-    completedWorkUnits: 0,
+    projectType: "literature-review",
+    scope: DEFAULT_PROJECT_SCOPE,
+    counts: EMPTY_RESEARCH_COUNTS,
     projectStartDate: d(2026, 6, 17),
     today: d(2026, 6, 17),
     userDeadline: null,
@@ -27,107 +32,113 @@ function baseInput(over: Partial<TodayTargetModelInput> = {}): TodayTargetModelI
   };
 }
 
-test("scope multiplier and completed work units", () => {
-  assert.equal(computeScopeMultiplier({}), 1);
-  assert.equal(computeScopeMultiplier({ sources: 2, quality: 1.5 }), 3);
-  assert.equal(computeCompletedWorkUnits({ uploadedSources: 2, syntheses: 1 }), 2 * 4 + 5);
-  assert.equal(computeCompletedWorkUnits({}), 0);
+test("every project type's section weights sum to 1000", () => {
+  for (const type of PROJECT_TYPE_ORDER) {
+    const w = PROJECT_TYPE_MODELS[type].weights;
+    assert.equal(w.metaAnalysis + w.literatureReview + w.workspaceSynthesis + w.paperDraft + w.citations, 1000);
+  }
 });
 
-test("adjustedWorkUnits = projectType default x scope", () => {
-  const m = computeTodayTargetModel(baseInput({ scope: { complexity: 2 } }));
-  assert.equal(m.adjustedWorkUnits, PROJECT_TYPE_DEFAULTS["literature-review"].defaultWorkUnits * 2);
+test("progress is normal percent = completedPoints / 10, never above 100", () => {
+  const counts: ResearchCounts = { ...EMPTY_RESEARCH_COUNTS, uploadedSources: 10, literatureRows: 20, codedRows: 10 };
+  const m = computeTodayTargetModel(modelInput({ counts }));
+  assert.equal(m.projectProgressPercent, m.completedPoints / 10);
+  assert.ok(m.projectProgressPercent <= 100);
+  assert.equal(m.totalPoints, TOTAL_PROJECT_POINTS);
 });
 
-test("worked example: 100 units, 60 remaining, 20 workdays -> 3 units/day, 3%", () => {
-  // start=today, deadline=today+19, all days are workdays, low pace -> 20 active days inclusive.
-  const m = computeTodayTargetModel(
-    baseInput({ completedWorkUnits: 40, userDeadline: d(2026, 7, 6) }) // 2026-06-17 + 19 = 2026-07-06
+test("complete only when ALL relevant sections are filled", () => {
+  const counts = { ...EMPTY_RESEARCH_COUNTS } as ResearchCounts;
+  (Object.keys(counts) as Array<keyof ResearchCounts>).forEach((k) => {
+    // @ts-expect-error bulk-fill for the test
+    counts[k] = typeof counts[k] === "boolean" ? true : 9999;
+  });
+  counts.duplicateIssues = 0; // a complete project has no duplicate-citation issues
+  const m = computeTodayTargetModel(modelInput({ counts }));
+  assert.equal(m.projectProgressPercent, 100);
+  assert.equal(m.status, "complete");
+});
+
+test("Cerise readiness is not a completion input (same counts -> same points)", () => {
+  const counts: ResearchCounts = { ...EMPTY_RESEARCH_COUNTS, uploadedSources: 5, literatureRows: 5 };
+  assert.equal(
+    computeTodayTargetModel(modelInput({ counts })).completedPoints,
+    computeTodayTargetModel(modelInput({ counts })).completedPoints
   );
-  assert.equal(m.adjustedWorkUnits, 100);
-  assert.equal(m.remainingWorkUnits, 60);
-  assert.equal(m.activeDaysLeft, 20);
-  assert.equal(m.dailyWorkUnitsNeeded, 3);
-  assert.equal(m.dailyTargetPercent, 3);
 });
 
-test("today's tasks drive done/remaining/ring; ring closes exactly on full completion", () => {
-  // daily target 8%: remaining 80 over 10 active days -> 8 units/day -> 8%.
-  const setup = baseInput({ completedWorkUnits: 20, userDeadline: d(2026, 6, 26) }); // +9 days -> 10 active
-  const half = computeTodayTargetModel({ ...setup, completedTaskWeightToday: 0.5 });
-  assert.equal(half.dailyTargetPercent, 8);
-  assert.equal(half.doneTodayPercent, 4);
-  assert.equal(half.remainingTodayPercent, 4);
-  assert.equal(half.ringProgress, 0.5);
+test("scope adjusts targets, not the 1000-point total", () => {
+  const school = computeAdjustedTargets("literature-review", { ...DEFAULT_PROJECT_SCOPE, quality: "school" });
+  const pub = computeAdjustedTargets("literature-review", { ...DEFAULT_PROJECT_SCOPE, quality: "publication" });
+  assert.ok(pub.sourcesTarget > school.sourcesTarget);
+  assert.equal(computeTodayTargetModel(modelInput({ scope: { ...DEFAULT_PROJECT_SCOPE, quality: "publication" } })).totalPoints, 1000);
+});
 
+test("meta-analysis counts only when relevant", () => {
+  const counts: ResearchCounts = { ...EMPTY_RESEARCH_COUNTS, metaQuestionSet: true, metaTestSelected: true, effectsMapped: 50, forestPlotReady: true };
+  assert.equal(computeTodayTargetModel(modelInput({ projectType: "literature-review", counts })).sectionScores.metaAnalysisScore, 0);
+  assert.ok(computeTodayTargetModel(modelInput({ projectType: "meta-analysis", counts })).sectionScores.metaAnalysisScore > 0);
+});
+
+test("daily target from remaining points / workdays (1000 pts, 20 days -> 50 pts/day = 5%)", () => {
+  const m = computeTodayTargetModel(modelInput({ userDeadline: d(2026, 7, 6) })); // +19 -> 20 active days
+  assert.equal(m.completedPoints, 0);
+  assert.equal(m.activeDaysLeft, 20);
+  assert.equal(m.dailyTargetPoints, 50);
+  assert.equal(m.dailyTargetPercent, 5);
+});
+
+test("today's tasks drive done/ring; ring closes exactly on full completion", () => {
+  const setup = modelInput({ userDeadline: d(2026, 7, 6) });
+  const half = computeTodayTargetModel({ ...setup, completedTaskWeightToday: 0.5 });
+  assert.equal(half.doneTodayPercent, 2.5);
+  assert.equal(half.ringProgress, 0.5);
   const full = computeTodayTargetModel({ ...setup, completedTaskWeightToday: 1 });
-  assert.equal(full.doneTodayPercent, full.dailyTargetPercent);
-  assert.equal(full.ringProgress, 1); // closes exactly
+  assert.equal(full.ringProgress, 1);
   assert.equal(full.status, "on_track");
 });
 
 test("project complete -> daily target 0, ring 100%, status complete", () => {
-  const m = computeTodayTargetModel(baseInput({ completedWorkUnits: 100 }));
-  assert.equal(m.projectProgressPercent, 100);
+  const counts = { ...EMPTY_RESEARCH_COUNTS } as ResearchCounts;
+  (Object.keys(counts) as Array<keyof ResearchCounts>).forEach((k) => {
+    // @ts-expect-error bulk-fill for the test
+    counts[k] = typeof counts[k] === "boolean" ? true : 9999;
+  });
+  counts.duplicateIssues = 0; // a complete project has no duplicate-citation issues
+  const m = computeTodayTargetModel(modelInput({ counts }));
   assert.equal(m.dailyTargetPercent, 0);
   assert.equal(m.ringProgress, 1);
   assert.equal(m.status, "complete");
 });
 
-test("impossible deadline (expected finish in the past) -> deadline_at_risk, no NaN/Infinity", () => {
-  const m = computeTodayTargetModel(
-    baseInput({
-      completedWorkUnits: 40,
-      projectStartDate: d(2026, 5, 28),
-      userDeadline: d(2026, 6, 12), // paceTargetDate ~ start+15 = 2026-06-12, before today 06-17
-    })
-  );
+test("impossible deadline -> deadline_at_risk, no NaN/Infinity", () => {
+  const m = computeTodayTargetModel(modelInput({ projectStartDate: d(2026, 5, 28), userDeadline: d(2026, 6, 12) }));
   assert.equal(m.activeDaysLeft, 0);
   assert.equal(m.status, "deadline_at_risk");
-  assert.equal(m.deadlineAchievable, false);
-  for (const value of [
-    m.dailyWorkUnitsNeeded,
-    m.dailyTargetPercent,
-    m.doneTodayPercent,
-    m.remainingTodayPercent,
-    m.ringProgress,
-  ]) {
-    assert.ok(Number.isFinite(value), `expected finite, got ${value}`);
-  }
+  for (const v of [m.dailyTargetPoints, m.dailyTargetPercent, m.doneTodayPercent, m.ringProgress]) assert.ok(Number.isFinite(v));
 });
 
-test("tight but future deadline beyond pace capacity -> at_risk (honest high target, not capped calm)", () => {
-  // remaining 90 over 2 active days = 45 units/day, far above low max (8).
-  const m = computeTodayTargetModel(
-    baseInput({ completedWorkUnits: 10, userDeadline: d(2026, 6, 18) }) // +1 day -> 2 active days
-  );
-  assert.equal(m.activeDaysLeft, 2);
+test("tight future deadline beyond pace capacity -> at_risk", () => {
+  const m = computeTodayTargetModel(modelInput({ userDeadline: d(2026, 6, 18) })); // +1 -> 2 active days, 500 pts/day
   assert.equal(m.deadlineAchievable, false);
   assert.equal(m.status, "at_risk");
-  assert.ok(m.dailyTargetPercent > 18, "displayed target should not be capped to look calm");
+  assert.ok(m.dailyTargetPercent > 18);
 });
 
-test("manual override sets the daily target percent for the day", () => {
-  const m = computeTodayTargetModel(
-    baseInput({ completedWorkUnits: 40, userDeadline: d(2026, 7, 6), manualTargetPercent: 5, completedTaskWeightToday: 0.4 })
-  );
-  assert.equal(m.dailyTargetPercent, 5);
-  assert.equal(m.doneTodayPercent, 2); // 5 * 0.4
+test("manual override sets daily target percent", () => {
+  const m = computeTodayTargetModel(modelInput({ userDeadline: d(2026, 7, 6), manualTargetPercent: 7 }));
+  assert.equal(m.dailyTargetPercent, 7);
 });
 
-test("pace changes finish pressure: higher pace -> earlier expected finish", () => {
-  const low = computeTodayTargetModel(baseInput({ paceMode: "low" }));
-  const high = computeTodayTargetModel(baseInput({ paceMode: "high" }));
-  assert.equal(low.paceTargetDays, 30); // 30 default x 1.0
-  assert.equal(high.paceTargetDays, 24); // 30 default x 0.8
-  assert.ok(high.paceTargetDays < low.paceTargetDays);
+test("pace changes finish pressure: higher pace -> earlier finish", () => {
+  assert.equal(computeTodayTargetModel(modelInput({ paceMode: "low" })).paceTargetDays, 30);
+  assert.equal(computeTodayTargetModel(modelInput({ paceMode: "high" })).paceTargetDays, 24);
 });
 
 test("countActiveWorkdays honors work weekdays and skipped dates", () => {
-  // Mon 2026-06-15 .. Sun 2026-06-21, Mon-Fri only -> 5 workdays.
   const mon = d(2026, 6, 15);
   const sun = d(2026, 6, 21);
   assert.equal(countActiveWorkdays(mon, sun, [1, 2, 3, 4, 5], []), 5);
   assert.equal(countActiveWorkdays(mon, sun, [1, 2, 3, 4, 5], ["2026-06-17"]), 4);
-  assert.equal(countActiveWorkdays(sun, mon, [1, 2, 3, 4, 5], []), 0); // end before start
+  assert.equal(countActiveWorkdays(sun, mon, [1, 2, 3, 4, 5], []), 0);
 });

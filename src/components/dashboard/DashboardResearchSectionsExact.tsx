@@ -33,7 +33,7 @@ const fallbackSections: SectionDetail[] = [
   {
     id: "meta-analysis",
     label: "Meta-analysis",
-    percent: 72,
+    percent: 0,
     y: 112,
     fill: "#faf6ef",
     stroke: "#d8c8b7",
@@ -62,7 +62,7 @@ const fallbackSections: SectionDetail[] = [
   {
     id: "literature-review",
     label: "Literature Review Table",
-    percent: 58,
+    percent: 0,
     y: 209,
     fill: "#faf6ef",
     stroke: "#d8c8b7",
@@ -91,7 +91,7 @@ const fallbackSections: SectionDetail[] = [
   {
     id: "workspace",
     label: "Workspace",
-    percent: 41,
+    percent: 0,
     y: 306,
     fill: "#faf6ef",
     stroke: "#d8c8b7",
@@ -125,7 +125,7 @@ const fallbackSections: SectionDetail[] = [
   {
     id: "draft",
     label: "Paper Draft",
-    percent: 22,
+    percent: 0,
     y: 403,
     fill: "#faf6ef",
     stroke: "#d8c8b7",
@@ -154,7 +154,7 @@ const fallbackSections: SectionDetail[] = [
   {
     id: "citations",
     label: "Citations",
-    percent: 80,
+    percent: 0,
     y: 500,
     fill: "#faf6ef",
     stroke: "#d8c8b7",
@@ -183,7 +183,7 @@ const fallbackSections: SectionDetail[] = [
   {
     id: "notes",
     label: "Cerise Scholar",
-    percent: 34,
+    percent: 0,
     badgeLabel: "Ready",
     y: 597,
     fill: "#faf6ef",

@@ -4,6 +4,12 @@ import type {
   DashboardTask,
 } from "@/lib/dashboard/deriveDashboardState";
 import type { DashboardPaceMode } from "@/lib/dashboard/targetPace";
+import {
+  DEFAULT_PROJECT_SCOPE,
+  DEFAULT_PROJECT_TYPE,
+  type ProjectScope,
+  type ProjectType,
+} from "@/lib/dashboard/todayTargetModel";
 
 /**
  * Dashboard foundation types (Phase A).
@@ -201,6 +207,8 @@ export type PersistedDashboardTargetSettings = {
   dailyWorkGoalMinutes: number; // <-> preferred_daily_minutes
   manualTargetDate: string | null; // <-> manual_target_date
   manualTargetPercent: number | null; // <-> manual_target_percent
+  projectType: ProjectType; // <-> project_type (migration 018)
+  scope: ProjectScope; // <-> project_scope JSONB (migration 018)
 };
 
 /** Real/persisted default pace (NOT the demo/preview seed, which may be "high"). */
@@ -226,5 +234,7 @@ export function getDefaultPersistedDashboardTargetSettings(
     dailyWorkGoalMinutes,
     manualTargetDate: null,
     manualTargetPercent: null,
+    projectType: DEFAULT_PROJECT_TYPE,
+    scope: { ...DEFAULT_PROJECT_SCOPE },
   };
 }

@@ -1,6 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DashboardPaceMode, DashboardTargetSettings } from "@/lib/dashboard/targetPace";
 import {
+  DEFAULT_PROJECT_SCOPE,
+  DEFAULT_PROJECT_TYPE,
+  PROJECT_TYPE_MODELS,
+  type ProjectComplexity,
+  type ProjectQuality,
+  type ProjectScope,
+  type ProjectType,
+} from "@/lib/dashboard/todayTargetModel";
+import {
   DEFAULT_WORK_WEEKDAYS,
   getDefaultPersistedDashboardTargetSettings,
   type PersistedDashboardTargetSettings,
@@ -39,12 +48,39 @@ type DashboardProjectSettingsRow = {
   skipped_dates: string[] | null;
   manual_target_date: string | null;
   manual_target_percent: number | null;
+  project_type: string | null;
+  project_scope: unknown;
   created_at: string;
   updated_at: string;
 };
 
 function isPaceMode(value: unknown): value is DashboardPaceMode {
   return typeof value === "string" && PACE_MODES.includes(value as DashboardPaceMode);
+}
+
+function isProjectType(value: unknown): value is ProjectType {
+  return typeof value === "string" && value in PROJECT_TYPE_MODELS;
+}
+
+const QUALITIES: ProjectQuality[] = ["school", "professional", "publication"];
+const COMPLEXITIES: ProjectComplexity[] = ["simple", "standard", "complex"];
+
+/** Coerce arbitrary JSON into a valid ProjectScope, falling back to defaults. */
+function sanitizeScope(raw: unknown): ProjectScope {
+  const obj = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const num = (v: unknown): number | null =>
+    typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.round(v) : null;
+  return {
+    expectedSources: num(obj.expectedSources),
+    expectedPagesOrSections: num(obj.expectedPagesOrSections),
+    quality: QUALITIES.includes(obj.quality as ProjectQuality)
+      ? (obj.quality as ProjectQuality)
+      : DEFAULT_PROJECT_SCOPE.quality,
+    complexity: COMPLEXITIES.includes(obj.complexity as ProjectComplexity)
+      ? (obj.complexity as ProjectComplexity)
+      : DEFAULT_PROJECT_SCOPE.complexity,
+    metaAnalysisRequired: obj.metaAnalysisRequired === true,
+  };
 }
 
 function clampCount(value: number): number {
@@ -84,6 +120,8 @@ function rowToPersisted(
     dailyWorkGoalMinutes: row.preferred_daily_minutes ?? 90,
     manualTargetDate: row.manual_target_date ?? null,
     manualTargetPercent: row.manual_target_percent ?? null,
+    projectType: isProjectType(row.project_type) ? row.project_type : DEFAULT_PROJECT_TYPE,
+    scope: sanitizeScope(row.project_scope),
   };
 }
 
@@ -99,6 +137,8 @@ export function persistedToUiSettings(
     dailyWorkGoalMinutes: persisted.dailyWorkGoalMinutes,
     manualOverride: persisted.manualTargetPercent != null,
     manualTargetPercent: persisted.manualTargetPercent != null ? String(persisted.manualTargetPercent) : "",
+    projectType: persisted.projectType,
+    scope: { ...persisted.scope },
   };
 }
 
@@ -120,6 +160,8 @@ export function uiToPersistedSettings(
     dailyWorkGoalMinutes: ui.dailyWorkGoalMinutes,
     manualTargetDate: manualPercent != null ? base?.manualTargetDate ?? null : null,
     manualTargetPercent: manualPercent,
+    projectType: ui.projectType,
+    scope: { ...ui.scope },
   };
 }
 
@@ -171,6 +213,8 @@ export async function upsertPersistedTargetSettings(
         target_completion_date: settings.deadlineDate || null,
         manual_target_date: settings.manualTargetDate,
         manual_target_percent: settings.manualTargetPercent,
+        project_type: settings.projectType,
+        project_scope: settings.scope,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id,project_id" }

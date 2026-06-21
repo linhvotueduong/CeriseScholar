@@ -1,3 +1,10 @@
+import {
+  DEFAULT_PROJECT_SCOPE,
+  DEFAULT_PROJECT_TYPE,
+  type ProjectScope,
+  type ProjectType,
+} from "@/lib/dashboard/todayTargetModel";
+
 export type DashboardPaceMode = "low" | "moderate" | "high";
 
 export type DashboardTargetSettings = {
@@ -7,6 +14,8 @@ export type DashboardTargetSettings = {
   dailyWorkGoalMinutes: number;
   manualOverride: boolean;
   manualTargetPercent: string;
+  projectType: ProjectType;
+  scope: ProjectScope;
 };
 
 export type DashboardTargetPaceSummary = {
@@ -74,6 +83,8 @@ export function getDefaultDashboardTargetSettings(today = new Date()): Dashboard
     dailyWorkGoalMinutes: 90,
     manualOverride: false,
     manualTargetPercent: "",
+    projectType: DEFAULT_PROJECT_TYPE,
+    scope: { ...DEFAULT_PROJECT_SCOPE },
   };
 }
 

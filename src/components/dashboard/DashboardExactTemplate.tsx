@@ -8,7 +8,13 @@ import { AppIcon } from "@/components/app-shell/AppIcons";
 import type { AppIconName } from "@/components/app-shell/AppIcons";
 import DashboardResearchSectionsExact from "@/components/dashboard/DashboardResearchSectionsExact";
 import { dashboardContinueLearning } from "@/lib/app-data/dashboard";
-import type { DashboardDerivedState, DashboardSectionId, DashboardTask } from "@/lib/dashboard/deriveDashboardState";
+import {
+  computeTodayTargetFromUiSettings,
+  todayTargetModelToPaceSummary,
+  type DashboardDerivedState,
+  type DashboardSectionId,
+  type DashboardTask,
+} from "@/lib/dashboard/deriveDashboardState";
 import {
   DASHBOARD_PACE_OPTIONS,
   getDashboardTargetPaceSummary,
@@ -16,6 +22,15 @@ import {
   type DashboardTargetPaceSummary,
   type DashboardTargetSettings,
 } from "@/lib/dashboard/targetPace";
+import {
+  EMPTY_RESEARCH_COUNTS,
+  PROJECT_TYPE_LABELS,
+  PROJECT_TYPE_MODELS,
+  PROJECT_TYPE_ORDER,
+  type ProjectComplexity,
+  type ProjectQuality,
+  type ResearchCounts,
+} from "@/lib/dashboard/todayTargetModel";
 import type { Project } from "@/types/project";
 
 type DashboardExactTemplateProps = {
@@ -114,6 +129,9 @@ function Card({
   );
 }
 
+// SVG ring arc circumference (r=36), used to bind the arc fill to ring progress.
+const TARGET_RING_CIRCUMFERENCE = 2 * Math.PI * 36;
+
 function TodayTargetCard({
   data,
   onOpenSettings,
@@ -126,6 +144,9 @@ function TodayTargetCard({
   const target = data?.target ?? 6;
   const done = data?.done ?? 3;
   const remaining = data?.remaining ?? 3;
+  // ringProgress = doneToday / dailyTarget. Use the model's precise value (the rounded
+  // done/target can mislead at tiny 1% targets); fall back to the ratio only if absent.
+  const ringProgress = data?.ringProgress ?? (target > 0 ? Math.max(0, Math.min(1, done / target)) : 1);
 
   return (
     <Card className="h-[186px] p-[14px]">
@@ -151,7 +172,16 @@ function TodayTargetCard({
             >
               <svg aria-hidden="true" className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                 <circle className="cerise-target-ring-track" cx="50" cy="50" r="36" />
-                <circle className="cerise-target-ring-arc" cx="50" cy="50" r="36" />
+                <circle
+                  className="cerise-target-ring-arc"
+                  cx="50"
+                  cy="50"
+                  r="36"
+                  style={{
+                    strokeDasharray: TARGET_RING_CIRCUMFERENCE,
+                    strokeDashoffset: TARGET_RING_CIRCUMFERENCE * (1 - ringProgress),
+                  }}
+                />
               </svg>
               <span className="cerise-target-ring-large-center relative z-10 flex h-[58px] w-[58px] flex-col items-center justify-center rounded-full">
                 <span className="text-[17px] font-[850] leading-none text-[#b6844e]">{target}%</span>
@@ -208,6 +238,7 @@ function TodayTargetModalPreviewCard({
   const target = data?.target ?? 9;
   const done = data?.done ?? 6;
   const remaining = data?.remaining ?? 3;
+  const ringProgress = data?.ringProgress ?? (target > 0 ? Math.max(0, Math.min(1, done / target)) : 1);
 
   return (
     <div className="mt-[10px] rounded-[14px] border border-[#e8e2da] bg-white px-[16px] py-[18px] md:px-[20px]">
@@ -218,7 +249,16 @@ function TodayTargetModalPreviewCard({
             <span className="cerise-target-ring-large relative flex h-[82px] w-[82px] items-center justify-center rounded-full">
               <svg aria-hidden="true" className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                 <circle className="cerise-target-ring-track" cx="50" cy="50" r="36" />
-                <circle className="cerise-target-ring-arc" cx="50" cy="50" r="36" />
+                <circle
+                  className="cerise-target-ring-arc"
+                  cx="50"
+                  cy="50"
+                  r="36"
+                  style={{
+                    strokeDasharray: TARGET_RING_CIRCUMFERENCE,
+                    strokeDashoffset: TARGET_RING_CIRCUMFERENCE * (1 - ringProgress),
+                  }}
+                />
               </svg>
               <span className="cerise-target-ring-large-center relative z-10 flex h-[58px] w-[58px] flex-col items-center justify-center rounded-full">
                 <span className="text-[18px] font-[850] leading-none text-[#b6844e]">{target}%</span>
@@ -277,17 +317,37 @@ function TodayTargetSettingsModal({
   onClose,
   onSave,
   settings,
-  todayTarget,
+  researchCounts,
+  completedTaskWeightToday,
 }: {
   activeProject: Project;
   onClose: () => void;
   onSave: (settings: DashboardTargetSettings) => void;
   settings: DashboardTargetSettings;
-  todayTarget?: DashboardDerivedState["todayTarget"];
+  researchCounts?: ResearchCounts;
+  completedTaskWeightToday?: number;
 }) {
   const [draft, setDraft] = useState<DashboardTargetSettings>(settings);
   const [optionalSettingsOpen, setOptionalSettingsOpen] = useState(true);
-  const draftSummary = getDashboardTargetPaceSummary(draft);
+  const [projectModelOpen, setProjectModelOpen] = useState(false);
+
+  // Preview reads the SAME unified model as the main card, computed from the draft.
+  const draftModel = computeTodayTargetFromUiSettings(
+    draft,
+    researchCounts ?? EMPTY_RESEARCH_COUNTS,
+    new Date(activeProject.created_at),
+    new Date(),
+    completedTaskWeightToday ?? 0
+  );
+  const draftSummary = todayTargetModelToPaceSummary(draftModel, draft.paceMode);
+  const previewDone = Math.round(draftModel.doneTodayPercent);
+  const previewData: DashboardDerivedState["todayTarget"] = {
+    target: draftModel.dailyTargetPercent,
+    done: previewDone,
+    remaining: Math.max(0, draftModel.dailyTargetPercent - previewDone),
+    ringProgress: draftModel.ringProgress,
+  };
+  const metaRelevant = PROJECT_TYPE_MODELS[draft.projectType].weights.metaAnalysis > 0 || draft.projectType === "meta-analysis";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/35 px-4 py-5">
@@ -297,6 +357,9 @@ function TodayTargetSettingsModal({
             <h2 className="text-[28px] font-[850] leading-none text-[#111111]">Target Settings</h2>
             <p className="mt-[8px] text-[12px] font-[700] text-[#625a52]">
               These settings calculate your daily target to keep pace.
+            </p>
+            <p className="mt-[5px] text-[11px] font-[800] italic text-[#a87f4f]">
+              Where 1000% dedication meets measurable breakthroughs.
             </p>
           </div>
           <button
@@ -422,9 +485,96 @@ function TodayTargetSettingsModal({
           />
         </details>
 
+        <details
+          className="mt-[12px] rounded-[10px] border border-[#e8e3dc] bg-white px-[14px] py-[13px]"
+          onToggle={(event) => setProjectModelOpen(event.currentTarget.open)}
+          open={projectModelOpen}
+        >
+          <summary className="flex cursor-pointer list-none items-center gap-[4px] text-[13px] font-[850] text-[#3b342e] marker:hidden">
+            <AppIcon className={`h-[12px] w-[12px] transition-transform ${projectModelOpen ? "" : "-rotate-90"}`} name="chevron-down" />
+            Project model
+          </summary>
+          <label className="mt-[14px] block text-[11px] font-[750] text-[#625a52]">
+            Project type
+            <select
+              className="mt-[7px] h-[40px] w-full rounded-[8px] border border-[#ded8d0] bg-white px-[11px] text-[12px] font-[850] text-[#111111]"
+              onChange={(event) => setDraft((current) => ({ ...current, projectType: event.target.value as DashboardTargetSettings["projectType"] }))}
+              value={draft.projectType}
+            >
+              {PROJECT_TYPE_ORDER.map((type) => (
+                <option key={type} value={type}>
+                  {PROJECT_TYPE_LABELS[type]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="mt-[12px] grid gap-[12px] md:grid-cols-2">
+            <label className="block text-[11px] font-[750] text-[#625a52]">
+              Quality level
+              <select
+                className="mt-[7px] h-[40px] w-full rounded-[8px] border border-[#ded8d0] bg-white px-[11px] text-[12px] font-[850] text-[#111111]"
+                onChange={(event) => setDraft((current) => ({ ...current, scope: { ...current.scope, quality: event.target.value as ProjectQuality } }))}
+                value={draft.scope.quality}
+              >
+                <option value="school">School</option>
+                <option value="professional">Professional</option>
+                <option value="publication">Publication-grade</option>
+              </select>
+            </label>
+            <label className="block text-[11px] font-[750] text-[#625a52]">
+              Complexity
+              <select
+                className="mt-[7px] h-[40px] w-full rounded-[8px] border border-[#ded8d0] bg-white px-[11px] text-[12px] font-[850] text-[#111111]"
+                onChange={(event) => setDraft((current) => ({ ...current, scope: { ...current.scope, complexity: event.target.value as ProjectComplexity } }))}
+                value={draft.scope.complexity}
+              >
+                <option value="simple">Simple</option>
+                <option value="standard">Standard</option>
+                <option value="complex">Complex</option>
+              </select>
+            </label>
+            <label className="block text-[11px] font-[750] text-[#625a52]">
+              Expected sources / studies
+              <input
+                className="mt-[7px] h-[40px] w-full rounded-[8px] border border-[#ded8d0] bg-white px-[11px] text-[12px] font-[750] text-[#111111]"
+                min={0}
+                onChange={(event) => setDraft((current) => ({ ...current, scope: { ...current.scope, expectedSources: event.target.value ? Number(event.target.value) : null } }))}
+                placeholder="Auto"
+                type="number"
+                value={draft.scope.expectedSources ?? ""}
+              />
+            </label>
+            <label className="block text-[11px] font-[750] text-[#625a52]">
+              Expected pages or sections
+              <input
+                className="mt-[7px] h-[40px] w-full rounded-[8px] border border-[#ded8d0] bg-white px-[11px] text-[12px] font-[750] text-[#111111]"
+                min={0}
+                onChange={(event) => setDraft((current) => ({ ...current, scope: { ...current.scope, expectedPagesOrSections: event.target.value ? Number(event.target.value) : null } }))}
+                placeholder="Auto"
+                type="number"
+                value={draft.scope.expectedPagesOrSections ?? ""}
+              />
+            </label>
+          </div>
+          {metaRelevant ? (
+            <label className="mt-[13px] flex items-center gap-[10px] text-[12px] font-[800] text-[#625a52]">
+              <input
+                checked={draft.scope.metaAnalysisRequired}
+                className="h-[16px] w-[16px] rounded-[4px] accent-[#b6844e]"
+                onChange={(event) => setDraft((current) => ({ ...current, scope: { ...current.scope, metaAnalysisRequired: event.target.checked } }))}
+                type="checkbox"
+              />
+              Meta-analysis required
+            </label>
+          ) : null}
+          <p className="mt-[12px] text-[10px] font-[600] leading-[1.4] text-[#9d958c]">
+            Cerise measures your project on a 1000-point internal scale for precision, then displays progress as a normal 0-100%.
+          </p>
+        </details>
+
         <div className="mt-[22px]">
           <p className="text-[12px] font-[850] text-[#625a52]">Preview</p>
-          <TodayTargetModalPreviewCard data={todayTarget} paceSummary={draftSummary} />
+          <TodayTargetModalPreviewCard data={previewData} paceSummary={draftSummary} />
         </div>
 
         <div className="mt-[22px] flex justify-end gap-[10px]">
@@ -819,7 +969,7 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
             <TodayTargetCard
               data={dashboardData?.todayTarget}
               onOpenSettings={() => setTargetSettingsOpen(true)}
-              paceSummary={targetPaceSummary}
+              paceSummary={dashboardData?.todayTargetSummary ?? targetPaceSummary}
             />
 
             <Card className="h-[186px] p-[14px]">
@@ -993,7 +1143,8 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
             setTargetSettingsOpen(false);
           }}
           settings={targetSettings}
-          todayTarget={dashboardData?.todayTarget}
+          researchCounts={dashboardData?.researchCounts}
+          completedTaskWeightToday={dashboardData?.todayTaskCompletion}
         />
       ) : null}
     </div>

@@ -342,9 +342,18 @@ export function useDashboardState({
           ollamaReady,
           safetyReady,
         },
-        taskDate
+        taskDate,
+        {
+          // The unified Today's Target model reads the live settings (pace, deadline,
+          // work weekdays, skipped dates, manual override). Convert the current UI
+          // settings to the persisted shape, merging the ref for fields the modal can't
+          // edit yet (skipped_dates, manual_target_date).
+          settings: uiToPersistedSettings(targetSettings, persistedSettingsRef.current),
+          projectStartDate: new Date(project.created_at),
+          today: new Date(),
+        }
       ),
-    [agentReady, ollamaReady, project, safetyReady, sourceData, taskDate]
+    [agentReady, ollamaReady, project, safetyReady, sourceData, targetSettings, taskDate]
   );
 
   const completeTask = useCallback(
