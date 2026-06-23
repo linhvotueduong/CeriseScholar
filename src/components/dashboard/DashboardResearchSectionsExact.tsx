@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import type { DashboardSectionData, DashboardSectionId } from "@/lib/dashboard/deriveDashboardState";
 
 type Glyph = "chart" | "file" | "folder" | "edit" | "quote" | "clipboard";
@@ -248,6 +249,27 @@ const svgTone = {
   alertDot: "var(--dashboard-bridge-alert-dot, #fffdfb)",
 } as const;
 
+function wrapDetailLines(lines: string[], maxLength: number) {
+  return lines.flatMap((line) => {
+    const words = line.split(" ");
+    const wrapped: string[] = [];
+    let current = "";
+
+    words.forEach((word) => {
+      const next = current ? `${current} ${word}` : word;
+      if (next.length > maxLength && current) {
+        wrapped.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    });
+
+    if (current) wrapped.push(current);
+    return wrapped;
+  });
+}
+
 function selectedShapePath(rowY: number) {
   const rowX = 64;
   const rowW = 582;
@@ -418,14 +440,23 @@ function mergeSections(sections?: DashboardSectionData[]) {
 
 export default function DashboardResearchSectionsExact({
   sections: dynamicSections,
+  feedbackSlot,
   onOpenSection,
+  onSelectSection,
 }: {
   sections?: DashboardSectionData[];
+  feedbackSlot?: ReactNode;
   onOpenSection?: (sectionId: DashboardSectionId) => void;
+  onSelectSection?: (sectionId: DashboardSectionId) => void;
 }) {
   const sections = mergeSections(dynamicSections);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selected = sections[selectedIndex];
+
+  // Surface the selected section id so the parent can attach feedback controls.
+  useEffect(() => {
+    onSelectSection?.(selected.id);
+  }, [onSelectSection, selected.id]);
   const isCeriseScholar = selected.id === "notes";
   const progressTrackWidth = 900;
   const progressWidth = Math.round((selected.percent / 100) * progressTrackWidth);
@@ -434,6 +465,9 @@ export default function DashboardResearchSectionsExact({
   const actionButtonWidth = needsRoomyAction ? 268 : 238;
   const actionTextX = needsRoomyAction ? 1516 : 1614;
   const actionTextAnchor = needsRoomyAction ? "start" : "middle";
+  const hasActivity = selected.activity && selected.activity.length > 0;
+  const bottleneckLines = wrapDetailLines(selected.bottleneck, hasActivity ? 36 : 42).slice(0, 4);
+  const nextLines = wrapDetailLines(selected.next, 30).slice(0, 4);
 
   return (
     <section
@@ -524,48 +558,81 @@ export default function DashboardResearchSectionsExact({
           );
         })}
 
-        <text fill={palette.text} fontSize="22" fontWeight="850" x="682" y="446">
-          {selected.bottleneckLabel}
-        </text>
-        <rect fill={palette.activeAlert} height="86" rx="9" stroke={palette.activeStroke} strokeOpacity="0.9" strokeWidth="1.6" width="1070" x="682" y="462" />
-        <circle cx="722" cy="505" fill={svgTone.alertDot} r="22" stroke={palette.activeStroke} strokeWidth="1.6" />
-        <text fill={palette.activeBar} fontSize="30" fontWeight="850" textAnchor="middle" x="722" y="516">
-          !
-        </text>
-        <text fill={palette.text} fontSize="22" fontWeight="600" x="764" y="494">
-          {selected.bottleneck.map((line, index) => (
-            <tspan key={`${line}-${index}`} x="764" dy={index === 0 ? 0 : 29}>
-              {line}
-            </tspan>
-          ))}
-        </text>
+        {hasActivity ? (
+          <>
+            <text fill={palette.text} fontSize="21" fontWeight="850" x="682" y="446">
+              {selected.bottleneckLabel}
+            </text>
+            <rect fill={palette.activeAlert} height="112" rx="9" stroke={palette.activeStroke} strokeOpacity="0.9" strokeWidth="1.6" width="514" x="682" y="462" />
+            <circle cx="714" cy="504" fill={svgTone.alertDot} r="18" stroke={palette.activeStroke} strokeWidth="1.6" />
+            <text fill={palette.activeBar} fontSize="25" fontWeight="850" textAnchor="middle" x="714" y="513">
+              !
+            </text>
+            <text fill={palette.text} fontSize="18" fontWeight="600" x="744" y="490">
+              {bottleneckLines.map((line, index) => (
+                <tspan key={`${line}-${index}`} x="744" dy={index === 0 ? 0 : 22}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
 
-        <text fill={palette.text} fontSize="22" fontWeight="850" x="682" y="584">
-          {selected.nextLabel}
-        </text>
-        {selected.activity && selected.activity.length > 0 ? (
-          selected.activity.map(([glyph, text, time], index) => (
-            <g key={`${glyph}-${text}-${time}-${index}`}>
-              <circle cx="706" cy={608 + index * 30} fill={palette.activeIcon} r="12" />
-              <Icon glyph={glyph} x={699} y={601 + index * 30} size={0.38} />
-              <text fill={palette.text} fontSize="21" fontWeight="600" x="728" y={615 + index * 30}>
-                {text}
-              </text>
-              <text fill={palette.muted} fontSize="19" fontWeight="620" textAnchor="end" x="1682" y={615 + index * 30}>
-                {time}
-              </text>
-              {index < 2 ? <line stroke={palette.activeStroke} strokeOpacity="0.55" x1="682" x2="1694" y1={627 + index * 30} y2={627 + index * 30} /> : null}
-            </g>
-          ))
-        ) : (
-          <text fill={palette.text} fontSize="23" fontWeight="560" x="682" y="618">
-            {selected.next.map((line, index) => (
-              <tspan key={`${line}-${index}`} x="682" dy={index === 0 ? 0 : 30}>
-                {line}
-              </tspan>
+            <text fill={palette.text} fontSize="21" fontWeight="850" x="1224" y="446">
+              {selected.nextLabel}
+            </text>
+            <rect fill={palette.activeAlert} height="112" rx="9" stroke={palette.activeStroke} strokeOpacity="0.9" strokeWidth="1.6" width="528" x="1224" y="462" />
+            {selected.activity?.slice(0, 3).map(([glyph, text, time], index) => (
+              <g key={`${glyph}-${text}-${time}-${index}`}>
+                <circle cx="1248" cy={490 + index * 31} fill={palette.activeIcon} r="11" />
+                <Icon glyph={glyph} x={1242} y={484 + index * 31} size={0.34} />
+                <text fill={palette.text} fontSize="17" fontWeight="650" x="1270" y={497 + index * 31}>
+                  {text}
+                </text>
+                <text fill={palette.muted} fontSize="16" fontWeight="700" textAnchor="end" x="1724" y={497 + index * 31}>
+                  {time}
+                </text>
+                {index < 2 ? <line stroke={palette.activeStroke} strokeOpacity="0.5" x1="1238" x2="1738" y1={509 + index * 31} y2={509 + index * 31} /> : null}
+              </g>
             ))}
-          </text>
+          </>
+        ) : (
+          <>
+            <text fill={palette.text} fontSize="21" fontWeight="850" x="682" y="446">
+              {selected.bottleneckLabel}
+            </text>
+            <rect fill={palette.activeAlert} height="104" rx="9" stroke={palette.activeStroke} strokeOpacity="0.9" strokeWidth="1.6" width="596" x="682" y="462" />
+            <circle cx="714" cy="505" fill={svgTone.alertDot} r="18" stroke={palette.activeStroke} strokeWidth="1.6" />
+            <text fill={palette.activeBar} fontSize="25" fontWeight="850" textAnchor="middle" x="714" y="514">
+              !
+            </text>
+            <text fill={palette.text} fontSize="18" fontWeight="600" x="744" y="490">
+              {bottleneckLines.map((line, index) => (
+                <tspan key={`${line}-${index}`} x="744" dy={index === 0 ? 0 : 22}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+
+            <text fill={palette.text} fontSize="21" fontWeight="850" x="1304" y="446">
+              {selected.nextLabel}
+            </text>
+            <rect fill={palette.activeAlert} height="104" rx="9" stroke={palette.activeStroke} strokeOpacity="0.9" strokeWidth="1.6" width="448" x="1304" y="462" />
+            <text fill={palette.text} fontSize="18" fontWeight="600" x="1328" y="492">
+              {nextLines.map((line, index) => (
+                <tspan key={`${line}-${index}`} x="1328" dy={index === 0 ? 0 : 22}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+          </>
         )}
+
+        {feedbackSlot ? (
+          <foreignObject height="82" width="1070" x="682" y={hasActivity ? "596" : "592"}>
+            <div className="flex h-full items-center px-[18px] text-[24px] font-[750] text-[#625a52]">
+              {feedbackSlot}
+            </div>
+          </foreignObject>
+        ) : null}
 
       </svg>
     </section>

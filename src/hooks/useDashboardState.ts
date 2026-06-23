@@ -14,6 +14,13 @@ import { applyDemoDashboardFallback, buildDemoDashboardSourceData } from "@/lib/
 import { getLocalDay } from "@/lib/dashboard/localDay";
 import { recommendSchedule } from "@/lib/dashboard/recommendSchedule";
 import {
+  submitProgressFeedback,
+  upsertAiEvaluation,
+  type ProgressFeedbackDetails,
+  type ProgressFeedbackVerdict,
+  type SectionScoreSnapshot,
+} from "@/lib/dashboard/aiEvaluationStore";
+import {
   getDefaultDashboardTargetSettings,
   type DashboardTargetSettings,
 } from "@/lib/dashboard/targetPace";
@@ -97,6 +104,8 @@ export function useDashboardState({
   // The full persisted shape last seen/written, so saves never wipe fields the
   // modal can't edit yet (skipped_dates, manual_target_date).
   const persistedSettingsRef = useRef<PersistedDashboardTargetSettings | null>(null);
+  // Dedupe AI-evaluation writes: only persist when the snapshot actually changes.
+  const lastEvaluationHashRef = useRef<string>("");
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -356,6 +365,34 @@ export function useDashboardState({
     [agentReady, ollamaReady, project, safetyReady, sourceData, targetSettings, taskDate]
   );
 
+  // Section percents the evaluator produced (research sections only), for storage/feedback.
+  const sectionScoreSnapshot = useMemo<SectionScoreSnapshot>(() => {
+    const snapshot: SectionScoreSnapshot = {};
+    for (const section of derived.researchSections) {
+      if (section.id !== "notes") snapshot[section.id] = section.percent;
+    }
+    return snapshot;
+  }, [derived.researchSections]);
+
+  // Persist the latest evaluator snapshot per project (deduped). Calibration storage
+  // only — never changes what the dashboard shows. Demo/unauth never writes.
+  useEffect(() => {
+    if (!userId || project.user_id === "fixture" || !persistenceReady) return;
+    const hash = JSON.stringify({ s: derived.aiSignals, p: sectionScoreSnapshot });
+    if (hash === lastEvaluationHashRef.current) return;
+    lastEvaluationHashRef.current = hash;
+    void upsertAiEvaluation(createClient(), userId, project.id, derived.aiSignals, sectionScoreSnapshot);
+  }, [derived.aiSignals, sectionScoreSnapshot, persistenceReady, project.id, project.user_id, userId]);
+
+  const submitSectionFeedback = useCallback(
+    async (sectionId: string, verdict: ProgressFeedbackVerdict, details?: ProgressFeedbackDetails) => {
+      if (!userId || project.user_id === "fixture") return;
+      const evaluatedPercent = sectionScoreSnapshot[sectionId] ?? null;
+      await submitProgressFeedback(createClient(), userId, project.id, sectionId, verdict, evaluatedPercent, details);
+    },
+    [project.id, project.user_id, sectionScoreSnapshot, userId]
+  );
+
   const completeTask = useCallback(
     async (taskId: string) => {
       const task = sourceData.tasks.find((item) => item.id === taskId);
@@ -535,5 +572,6 @@ export function useDashboardState({
     deleteTask,
     addTask,
     saveTargetSettings,
+    submitSectionFeedback,
   };
 }

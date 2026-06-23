@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { AppIcon } from "@/components/app-shell/AppIcons";
 import type { AppIconName } from "@/components/app-shell/AppIcons";
@@ -50,6 +50,11 @@ type DashboardExactTemplateProps = {
   onAddScheduleTask?: () => void;
   onCompleteTask?: (taskId: string) => void;
   onOpenResearchSection?: (sectionId: DashboardSectionId) => void;
+  onSectionFeedback?: (
+    sectionId: DashboardSectionId,
+    verdict: "too_high" | "about_right" | "too_low",
+    details?: { suggestedPercent?: number | null; explanation?: string | null }
+  ) => void;
   dashboardData?: DashboardDerivedState;
   dashboardError?: string | null;
   dashboardLoading?: boolean;
@@ -847,6 +852,7 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
     onAddScheduleTask,
     onCompleteTask,
     onOpenResearchSection,
+    onSectionFeedback,
     onProjectChange,
     onToggleCreate,
     dashboardData,
@@ -862,6 +868,14 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
   const localSetup = dashboardData?.localSetup;
   const continueLearning = dashboardData?.continueLearning;
   const [targetSettingsOpen, setTargetSettingsOpen] = useState(false);
+  const [feedbackSectionId, setFeedbackSectionId] = useState<DashboardSectionId | null>(null);
+  const [feedbackSavedFor, setFeedbackSavedFor] = useState<string | null>(null);
+  const [feedbackDraft, setFeedbackDraft] = useState<{
+    sectionId: DashboardSectionId;
+    verdict: "too_high" | "about_right" | "too_low";
+  } | null>(null);
+  const [feedbackPercent, setFeedbackPercent] = useState("");
+  const [feedbackExplanation, setFeedbackExplanation] = useState("");
   // Persisted settings come in via props; keep a local fallback so the modal still
   // works (in-memory only) if a host doesn't wire persistence.
   const [localTargetSettings, setLocalTargetSettings] = useState<DashboardTargetSettings>(() =>
@@ -869,6 +883,60 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
   );
   const targetSettings = targetSettingsProp ?? localTargetSettings;
   const targetPaceSummary = getDashboardTargetPaceSummary(targetSettings);
+  const selectedFeedbackSection = feedbackSectionId
+    ? dashboardData?.researchSections.find((section) => section.id === feedbackSectionId)
+    : null;
+  const handleResearchSectionSelect = useCallback((id: DashboardSectionId) => {
+    setFeedbackSectionId(id);
+    setFeedbackSavedFor(null);
+    setFeedbackDraft(null);
+    setFeedbackPercent("");
+    setFeedbackExplanation("");
+  }, []);
+  const openFeedbackDraft = (sectionId: DashboardSectionId, verdict: "too_high" | "about_right" | "too_low") => {
+    setFeedbackDraft({ sectionId, verdict });
+    setFeedbackSavedFor(null);
+    setFeedbackPercent("");
+    setFeedbackExplanation("");
+  };
+  const saveFeedbackDraft = (includeDetails: boolean) => {
+    if (!feedbackDraft || !onSectionFeedback) return;
+    const parsedPercent = Number(feedbackPercent);
+    const suggestedPercent =
+      includeDetails && feedbackPercent.trim() && Number.isFinite(parsedPercent)
+        ? Math.max(0, Math.min(100, parsedPercent))
+        : null;
+    const explanation = includeDetails ? feedbackExplanation.trim() || null : null;
+    onSectionFeedback(feedbackDraft.sectionId, feedbackDraft.verdict, {
+      suggestedPercent,
+      explanation,
+    });
+    setFeedbackSavedFor(feedbackDraft.verdict);
+    setFeedbackDraft(null);
+    setFeedbackPercent("");
+    setFeedbackExplanation("");
+  };
+  const sectionFeedbackSlot =
+    onSectionFeedback && feedbackSectionId && feedbackSectionId !== "notes" ? (
+      <div className="flex w-full flex-wrap items-center gap-[10px]">
+        <span className="mr-[2px] shrink-0 text-[24px] font-[760] leading-none text-[#625a52]">
+          Does this section&apos;s progress feel accurate?
+        </span>
+        {(["too_high", "about_right", "too_low"] as const).map((verdict) => (
+          <button
+            className="rounded-full border border-[#ded8d0] bg-white px-[16px] py-[7px] text-[21px] font-[850] leading-none text-[#3b342e] hover:bg-[#f4f0eb]"
+            key={verdict}
+            onClick={() => {
+              openFeedbackDraft(feedbackSectionId, verdict);
+            }}
+            type="button"
+          >
+            {verdict === "too_high" ? "Too high" : verdict === "about_right" ? "About right" : "Too low"}
+          </button>
+        ))}
+        {feedbackSavedFor ? <span className="text-[21px] font-[850] leading-none text-[#5f7d4d]">Thanks — saved</span> : null}
+      </div>
+    ) : null;
 
   return (
     <div className="dashboard-exact-template w-full max-w-[1428px] font-sans text-[#111111]">
@@ -930,6 +998,62 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
             {creating ? "Creating..." : "Create"}
           </button>
         </form>
+      ) : null}
+
+      {feedbackDraft ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/18 px-4">
+          <div className="w-full max-w-[420px] rounded-[12px] border border-[#d8c8b7] bg-white p-[18px] shadow-[0_18px_50px_rgba(32,24,18,0.18)]">
+            <p className="text-[12px] font-[850] uppercase tracking-[0.08em] text-[#a87f4f]">Thank you for the feedback</p>
+            <h2 className="mt-[8px] text-[20px] font-[850] leading-tight text-[#111111]">Help Cerise calibrate this progress</h2>
+            <p className="mt-[8px] text-[13px] font-[600] leading-[1.45] text-[#625a52]">
+              Current estimate: {selectedFeedbackSection?.percent ?? "--"}% for {selectedFeedbackSection?.label ?? "this section"}.
+              What percent feels more accurate right now?
+            </p>
+            <label className="mt-[14px] block text-[12px] font-[850] text-[#3b342e]" htmlFor="feedback-percent">
+              Better percent (optional)
+            </label>
+            <div className="mt-[6px] flex items-center gap-2">
+              <input
+                className="h-[38px] w-[96px] rounded-[8px] border border-[#ded8d0] px-3 text-[14px] font-[800] text-[#111111] outline-none focus:border-[#b6844e]"
+                id="feedback-percent"
+                inputMode="numeric"
+                max="100"
+                min="0"
+                onChange={(event) => setFeedbackPercent(event.target.value)}
+                placeholder={`${selectedFeedbackSection?.percent ?? 0}`}
+                type="number"
+                value={feedbackPercent}
+              />
+              <span className="text-[13px] font-[750] text-[#625a52]">%</span>
+            </div>
+            <label className="mt-[12px] block text-[12px] font-[850] text-[#3b342e]" htmlFor="feedback-explanation">
+              Explanation (optional)
+            </label>
+            <textarea
+              className="mt-[6px] h-[82px] w-full resize-none rounded-[8px] border border-[#ded8d0] px-3 py-2 text-[13px] font-[600] leading-[1.4] text-[#111111] outline-none focus:border-[#b6844e]"
+              id="feedback-explanation"
+              onChange={(event) => setFeedbackExplanation(event.target.value)}
+              placeholder="Example: I already finished more evidence rows, so this should be closer to 40%."
+              value={feedbackExplanation}
+            />
+            <div className="mt-[16px] flex flex-wrap justify-end gap-[8px]">
+              <button
+                className="h-[36px] rounded-[8px] border border-[#ded8d0] bg-white px-3 text-[12px] font-[850] text-[#3b342e]"
+                onClick={() => saveFeedbackDraft(false)}
+                type="button"
+              >
+                Skip details
+              </button>
+              <button
+                className="h-[36px] rounded-[8px] bg-[#111111] px-4 text-[12px] font-[850] text-white"
+                onClick={() => saveFeedbackDraft(true)}
+                type="button"
+              >
+                Save feedback
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {dashboardError ? (
@@ -1004,7 +1128,12 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
           </section>
 
           <section className="mt-[16px] grid grid-cols-1 gap-[14px] 2xl:grid-cols-[820px_290px]">
-            <DashboardResearchSectionsExact onOpenSection={onOpenResearchSection} sections={dashboardData?.researchSections} />
+            <DashboardResearchSectionsExact
+              feedbackSlot={sectionFeedbackSlot}
+              onOpenSection={onOpenResearchSection}
+              onSelectSection={handleResearchSectionSelect}
+              sections={dashboardData?.researchSections}
+            />
             <div className="hidden 2xl:block">
               <ResearchFocusCard data={dashboardData?.researchFocus} onStartNextMove={() => onOpenResearchSection?.(dashboardData?.activeSectionId ?? "meta-analysis")} />
             </div>

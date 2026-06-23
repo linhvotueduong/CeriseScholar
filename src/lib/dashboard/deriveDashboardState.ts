@@ -3,6 +3,7 @@ import type { MetaAnalysis } from "@/types/meta-analysis";
 import { getLocalDay, isSameLocalDay } from "@/lib/dashboard/localDay";
 import { isMeaningfulLabel, isMeaningfulText } from "@/lib/dashboard/meaningfulWork";
 import { evaluateResearchQuality, type ResearchTextSample } from "@/lib/dashboard/aiQualityEvaluator";
+import type { AiQualitySignals } from "@/lib/dashboard/sectionProgress";
 import {
   computeTodayTargetModel,
   DEFAULT_PROJECT_SCOPE,
@@ -119,6 +120,8 @@ export type DashboardDerivedState = {
   todayTargetModel: TodayTargetModel;
   /** Raw research counts — lets the Target Settings preview recompute the SAME model. */
   researchCounts: ResearchCounts;
+  /** Deterministic AI quality signals used for this snapshot (for storage/calibration). */
+  aiSignals: AiQualitySignals;
   /** Weighted completion fraction of today's counting tasks (0..1). */
   todayTaskCompletion: number;
   todayTaskLabels: string[];
@@ -686,6 +689,7 @@ export function deriveDashboardState(
     todayTargetSummary,
     todayTargetModel,
     researchCounts,
+    aiSignals,
     todayTaskCompletion: taskCompletionFraction,
     todayTaskLabels: [
       `${plannedLiteratureRows} literature ${plannedLiteratureRows === 1 ? "row" : "rows"}`,
