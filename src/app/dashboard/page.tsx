@@ -11,6 +11,7 @@ import { dashboardSections } from "@/lib/app-data/dashboard";
 import { useDashboardState } from "@/hooks/useDashboardState";
 import { useLocalAgentStatus } from "@/hooks/useLocalAgentStatus";
 import { useUser } from "@/hooks/useUser";
+import { useProfile } from "@/hooks/useProfile";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@/types/project";
 
@@ -40,6 +41,9 @@ export default function DashboardPage() {
   const loggedProjectOpenRef = useRef("");
   const router = useRouter();
   const { user } = useUser();
+  // Greeting name from the profile/display-name helper; never expose the raw email.
+  const { displayName } = useProfile("");
+  const greetingName = displayName && displayName !== user?.email ? displayName.split(/\s+/)[0] : "";
   const localAgent = useLocalAgentStatus();
   const projectOptions = projects.length ? projects : fallbackProjects;
   const activeProject = projectOptions.find((project) => project.id === activeProjectId) || projectOptions[0];
@@ -178,6 +182,7 @@ export default function DashboardPage() {
       onSectionFeedback={dashboardState.submitSectionFeedback}
       usingDemo={dashboardState.usingDemo}
       demoCards={dashboardState.demoCards}
+      userName={greetingName}
       onProjectChange={setActiveProjectId}
       onSaveTargetSettings={dashboardState.saveTargetSettings}
       onToggleCreate={() => setShowCreate((current) => !current)}

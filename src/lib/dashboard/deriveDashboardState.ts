@@ -83,6 +83,13 @@ export type DashboardSourceData = {
   courseNotes: Array<Record<string, unknown>>;
   tasks: DashboardTask[];
   activityEvents: DashboardActivityEvent[];
+  /**
+   * Meaningful activity events for the Activity Log, fetched separately with page-load
+   * noise (project_opened/research_focus_opened) excluded at the DB level — so real
+   * events surface even when recent rows are dominated by opens. Falls back to
+   * activityEvents when absent (e.g. demo).
+   */
+  activityFeed?: DashboardActivityEvent[];
 };
 
 export type DashboardSectionData = {
@@ -99,8 +106,12 @@ export type DashboardSectionData = {
   button: string;
 };
 
+export type GreetingTimeOfDay = "morning" | "afternoon" | "evening";
+
 export type DashboardDerivedState = {
   activeSectionId: DashboardSectionId;
+  /** Deterministic greeting: time-of-day + the real "useful move today" line. */
+  greeting: { timeOfDay: GreetingTimeOfDay; focusLine: string };
   currentProject: {
     title: string;
     tag: string;
@@ -211,9 +222,9 @@ function uniqueCount(rows: Array<Record<string, unknown>>, key: string) {
   return new Set(rows.map((row) => row[key]).filter(Boolean)).size;
 }
 
-function relativeTime(value?: string) {
+function relativeTime(value?: string, now: number = Date.now()) {
   if (!value) return "Not opened yet";
-  const delta = Date.now() - new Date(value).getTime();
+  const delta = now - new Date(value).getTime();
   if (!Number.isFinite(delta) || delta < 0) return "Recently";
   const minutes = Math.floor(delta / 60000);
   if (minutes < 60) return minutes <= 1 ? "Just now" : `${minutes}m ago`;
@@ -265,14 +276,50 @@ function activityUnitSeries(events: DashboardActivityEvent[], days = 7) {
   });
 }
 
-const RECENT_CHANGE_EXCLUSIONS = new Set(["project_opened", "research_focus_opened"]);
+// Page-load noise excluded from the Activity Log (also filtered at the DB query).
+const RECENT_CHANGE_EXCLUSIONS = new Set(["project_opened", "research_focus_opened", "dashboard_loaded"]);
 
-const RECENT_CHANGE_FALLBACKS = [
-  { title: "Saved source from ScholarAsk", subtitle: "ScholarAsk • Evidence Library", time: "1h ago" },
-  { title: "Updated literature review row", subtitle: "Literature Review Table", time: "2h ago" },
-  { title: "Mapped synthesis assumptions", subtitle: "Meta-analysis • Synthesis Workspace", time: "5h ago" },
-  { title: "Saved citation-linked draft note", subtitle: "Paper Draft • Citations", time: "22h ago" },
-];
+const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+
+/**
+ * Build the Activity Log from real events: drop page-load noise, dedupe repeated
+ * same-type events into 30-minute buckets, and keep the most recent 4. Returns an
+ * empty array when there is no meaningful activity (the UI shows an honest empty
+ * state — never fake rows).
+ */
+export function buildRecentChanges(
+  events: DashboardActivityEvent[],
+  now: number = Date.now()
+): Array<{ title: string; subtitle: string; time: string }> {
+  const meaningful = events
+    .filter((event) => !RECENT_CHANGE_EXCLUSIONS.has(event.event_type))
+    .slice()
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const seen = new Set<string>();
+  const deduped: DashboardActivityEvent[] = [];
+  for (const event of meaningful) {
+    const bucket = Math.floor(new Date(event.created_at).getTime() / THIRTY_MINUTES_MS);
+    const key = `${event.event_type}:${bucket}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(event);
+    if (deduped.length === 4) break;
+  }
+
+  return deduped.map((event) => ({
+    title: recentChangeTitle(event),
+    subtitle: recentChangeSubtitle(event),
+    time: relativeTime(event.created_at, now),
+  }));
+}
+
+/** Deterministic greeting: time-of-day + the supplied "useful move today" line. */
+export function buildGreeting(now: Date, focusLine: string): { timeOfDay: GreetingTimeOfDay; focusLine: string } {
+  const hour = now.getHours();
+  const timeOfDay: GreetingTimeOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+  return { timeOfDay, focusLine };
+}
 
 function recentChangeTitle(event: DashboardActivityEvent) {
   const label = event.label.trim();
@@ -662,18 +709,25 @@ export function deriveDashboardState(
   const litRowsLeft = Math.max(0, literatureTargetRows - litCount);
   const plannedLiteratureRows = Math.max(1, Math.min(4, litRowsLeft || 2));
   const plannedHighlights = Math.max(1, Math.min(3, Math.max(0, pdfCount * 2 - highlightCount) || 3));
+  const now = targetContext?.today ?? new Date();
   const lastActivity = data.activityEvents[0]?.created_at ?? project.updated_at;
-  const recentChanges = data.activityEvents
-    .filter((event) => !RECENT_CHANGE_EXCLUSIONS.has(event.event_type))
-    .slice(0, 4)
-    .map((event) => ({
-      title: recentChangeTitle(event),
-      subtitle: recentChangeSubtitle(event),
-      time: relativeTime(event.created_at),
-    }));
+  // The real "useful move today" line — shared by Research Focus and the greeting.
+  const researchRecommended =
+    metaProgress >= literatureProgress
+      ? "Review model assumptions before adding another analytics chart."
+      : "Complete literature rows before moving into another synthesis step.";
+  // Activity Log from the dedicated meaningful feed when it has rows; otherwise fall
+  // back to activityEvents (filtered in-code by buildRecentChanges). Using a length
+  // check (not ??) so an empty/failed feed query still falls through. Empty result =>
+  // honest empty state, never fake rows.
+  const activityForLog =
+    data.activityFeed && data.activityFeed.length > 0 ? data.activityFeed : data.activityEvents;
+  const recentChanges = buildRecentChanges(activityForLog, now.getTime());
+  const greeting = buildGreeting(now, researchRecommended);
 
   return {
     activeSectionId,
+    greeting,
     currentProject: {
       title: project.name,
       tag: litCount > 0 ? "Literature sprint" : "Project setup",
@@ -710,7 +764,7 @@ export function deriveDashboardState(
       totalProgress: pct(todayTargetModel.projectProgressPercent),
       totalDelta: Math.max(0, Math.min(20, completedToday + Math.round(thisWeek / 3))),
     },
-    recentChanges: [...recentChanges, ...RECENT_CHANGE_FALLBACKS].slice(0, 4),
+    recentChanges,
     researchSections: [
       {
         id: "meta-analysis",
@@ -830,10 +884,7 @@ export function deriveDashboardState(
       },
     ],
     researchFocus: {
-      recommended:
-        metaProgress >= literatureProgress
-          ? "Review model assumptions before adding another analytics chart."
-          : "Complete literature rows before moving into another synthesis step.",
+      recommended: researchRecommended,
       health: [
         { label: "Evidence balance", value: sectionScores.literatureReviewScore >= 0.45 ? "Good" : "Needs work", tone: sectionScores.literatureReviewScore >= 0.45 ? "green" : "amber" },
         { label: "Citation coverage", value: sectionScores.citationScore >= 0.7 ? "Good" : "Needs work", tone: sectionScores.citationScore >= 0.7 ? "green" : "amber" },

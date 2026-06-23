@@ -307,11 +307,28 @@ export function useDashboardState({
           .limit(60),
         []
       );
+      // Dedicated Activity Log feed: exclude page-load noise at the DB level so real
+      // meaningful events are found even when recent rows are dominated by opens.
+      // Chained neq (robust) instead of not-in, and a generous limit so older real
+      // events are not lost behind many recent opens.
+      const activityFeed = await safeSelect<Array<DashboardSourceData["activityEvents"][number]>>(
+        supabase
+          .from("dashboard_activity_events")
+          .select("*")
+          .eq("project_id", project.id)
+          .neq("event_type", "project_opened")
+          .neq("event_type", "research_focus_opened")
+          .neq("event_type", "dashboard_loaded")
+          .order("created_at", { ascending: false })
+          .limit(40),
+        []
+      );
 
       const realSourceData: DashboardSourceData = {
         ...realSourceBase,
         tasks,
         activityEvents,
+        activityFeed,
       };
       const nextSource = applyDemoDashboardFallback(realSourceData, {
         userId,

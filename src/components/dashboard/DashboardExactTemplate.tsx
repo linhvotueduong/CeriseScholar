@@ -62,6 +62,8 @@ type DashboardExactTemplateProps = {
   usingDemo?: boolean;
   /** Per-card sample flags so demo-filled cards (Schedule, Activity Log) show a tag. */
   demoCards?: { schedule?: boolean; activity?: boolean; research?: boolean };
+  /** Signed-in display name (first name) for the greeting; empty falls back to a neutral greeting. */
+  userName?: string;
   /** Persisted Today's Target settings (from useDashboardState). Falls back to a local default when omitted. */
   targetSettings?: DashboardTargetSettings;
   /** Persist Today's Target settings. When omitted, saves stay in local component state. */
@@ -630,15 +632,7 @@ function SampleTag() {
 }
 
 function RecentChangesCard({ changes, sample }: { changes?: DashboardDerivedState["recentChanges"]; sample?: boolean }) {
-  const items =
-    changes && changes.length > 0
-      ? changes
-      : [
-          { title: "Saved source from ScholarAsk", subtitle: "ScholarAsk • Evidence Library", time: "1h ago" },
-          { title: "Updated literature review row", subtitle: "Literature Review Table", time: "2h ago" },
-          { title: "Mapped synthesis assumptions", subtitle: "Meta-analysis • Synthesis Workspace", time: "5h ago" },
-          { title: "Saved citation-linked draft note", subtitle: "Paper Draft • Citations", time: "22h ago" },
-        ];
+  const items = (changes ?? []).slice(0, 4);
 
   return (
     <Card className="h-[186px] overflow-hidden p-[14px]">
@@ -650,17 +644,23 @@ function RecentChangesCard({ changes, sample }: { changes?: DashboardDerivedStat
         <span className="text-[8.5px] font-[750] leading-none text-[#8a837c]">Latest work</span>
       </div>
       <div className="relative mt-[13px]">
-        <div className="grid gap-[6px]">
-          {items.slice(0, 4).map((item, index) => (
-            <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-[8px]" key={`${item.title}-${item.time}-${index}`}>
-              <div className="min-w-0 pb-[2px] last:pb-0">
-                <p className="truncate text-[10.5px] font-[850] leading-tight text-[#2a2826]">{item.title}</p>
-                <p className="mt-[2px] truncate text-[8.5px] font-[650] leading-none text-[#77716b]">{item.subtitle}</p>
+        {items.length === 0 ? (
+          <p className="mt-[10px] text-[10.5px] font-[650] leading-[1.5] text-[#77716b]">
+            No recent activity yet — your saved sources, notes, and synthesis will show up here as you work.
+          </p>
+        ) : (
+          <div className="grid gap-[6px]">
+            {items.map((item, index) => (
+              <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-[8px]" key={`${item.title}-${item.time}-${index}`}>
+                <div className="min-w-0 pb-[2px] last:pb-0">
+                  <p className="truncate text-[10.5px] font-[850] leading-tight text-[#2a2826]">{item.title}</p>
+                  <p className="mt-[2px] truncate text-[8.5px] font-[650] leading-none text-[#77716b]">{item.subtitle}</p>
+                </div>
+                <span className="text-right text-[8.5px] font-[750] leading-tight text-[#77716b]">{item.time}</span>
               </div>
-              <span className="text-right text-[8.5px] font-[750] leading-tight text-[#77716b]">{item.time}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </Card>
   );
@@ -884,6 +884,7 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
     dashboardLoading,
     usingDemo,
     demoCards,
+    userName,
     targetSettings: targetSettingsProp,
     onSaveTargetSettings,
     projectOptions,
@@ -909,6 +910,19 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
   );
   const targetSettings = targetSettingsProp ?? localTargetSettings;
   const targetPaceSummary = getDashboardTargetPaceSummary(targetSettings);
+
+  // Deterministic greeting (no AI): time-of-day + name from the session, with honest
+  // fallbacks for error/demo/empty states.
+  const greeting = dashboardData?.greeting;
+  const greetingName = userName?.trim();
+  const greetingHeadline = greeting
+    ? `Good ${greeting.timeOfDay}${greetingName ? `, ${greetingName}` : ""}!`
+    : "Welcome back!";
+  const greetingSubline = dashboardError
+    ? "Showing safe fallback values while we reconnect your project data."
+    : usingDemo
+      ? "This is sample data — add your sources, notes, and synthesis to see your real progress."
+      : greeting?.focusLine ?? "Pick up where you left off on your research.";
   const selectedFeedbackSection = feedbackSectionId
     ? dashboardData?.researchSections.find((section) => section.id === feedbackSectionId)
     : null;
@@ -986,10 +1000,9 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
               </span>
             ) : null}
           </div>
-          <h1 className="text-[31px] font-[850] leading-none tracking-[-0.03em]">Good Morning Cerise!</h1>
+          <h1 className="text-[31px] font-[850] leading-none tracking-[-0.03em]">{greetingHeadline}</h1>
           <p className="mt-[11px] max-w-[555px] text-[13px] font-[500] leading-[1.42] text-[#3b342e]">
-            Your main research project is waiting at the synthesis step. The useful move today is to
-            turn existing evidence into writing, not open another analytics chart.
+            {greetingSubline}
           </p>
         </div>
         <div className="grid w-[282px] translate-y-[10px] grid-cols-[168px_104px] gap-[10px] pb-[2px]">
@@ -1120,11 +1133,11 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
                 <AppIcon className="pointer-events-none absolute right-2.5 h-3.5 w-3.5 shrink-0" name="chevron-down" />
               </div>
               <p className="mt-[9px] inline-flex rounded-full bg-[#f6efe4] px-2 py-1 text-[9.5px] font-[850] text-[#8f6132]">
-                {currentProject?.tag ?? "Literature sprint"}
+                {currentProject?.tag ?? "Project setup"}
               </p>
               <p className="mt-[11px] text-[10.5px] font-[700] text-[#625a52]">Current section</p>
-              <p className="text-[12.5px] font-[850] leading-tight">{currentProject?.currentSection ?? "Meta-analysis"}</p>
-              <p className="mt-[6px] text-[10.5px] font-[600] text-[#625a52]">{currentProject?.lastOpened ?? "Last opened 2h ago"}</p>
+              <p className="text-[12.5px] font-[850] leading-tight">{currentProject?.currentSection ?? "No active section yet"}</p>
+              <p className="mt-[6px] text-[10.5px] font-[600] text-[#625a52]">{currentProject?.lastOpened ?? "Not opened yet"}</p>
             </Card>
 
             <TodayTargetCard

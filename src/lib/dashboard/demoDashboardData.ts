@@ -76,7 +76,11 @@ export function applyDemoDashboardFallback(
       activity: needsDashboardDemo,
     };
     return {
-      data: needsDashboardDemo ? { ...data, tasks: demo.tasks, activityEvents: demo.activityEvents } : data,
+      // When the schedule/activity are sample, drop the real activityFeed so the
+      // Activity Log shows the demo events that match its "Sample" tag.
+      data: needsDashboardDemo
+        ? { ...data, tasks: demo.tasks, activityEvents: demo.activityEvents, activityFeed: undefined }
+        : data,
       usingDemo: state.usingDemo,
       demo: state,
     };
