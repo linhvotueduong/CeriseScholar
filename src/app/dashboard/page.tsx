@@ -40,7 +40,7 @@ export default function DashboardPage() {
   const [creating, setCreating] = useState(false);
   const loggedProjectOpenRef = useRef("");
   const router = useRouter();
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   // Greeting name from the profile/display-name helper; never expose the raw email.
   const { displayName } = useProfile("");
   const greetingName = displayName && displayName !== user?.email ? displayName.split(/\s+/)[0] : "";
@@ -153,7 +153,10 @@ export default function DashboardPage() {
     router.push(routes[sectionId]);
   }
 
-  if (loading) {
+  // Wait for projects, auth, AND the dashboard data to settle on the real project before
+  // rendering — otherwise the fixture/pre-auth demo state briefly flashes as if real.
+  // (Stale = data is for a different project/user; focus refetches are not stale.)
+  if (loading || userLoading || dashboardState.stale) {
     return (
       <div className="flex items-center justify-center py-20">
         <Spinner size="lg" />

@@ -100,6 +100,11 @@ export function useDashboardState({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [persistenceReady, setPersistenceReady] = useState(false);
+  // The (project + user) the current data was resolved for. While it differs from the
+  // current project/user, the dashboard is stale/loading — so we never render the
+  // previous project's (or pre-auth demo) content as if it were the real one.
+  const [settledKey, setSettledKey] = useState<string | null>(null);
+  const currentKey = `${project.id}:${userId ?? ""}`;
   // Which sources are sample/demo (drives the "Sample data" badge + per-card tags).
   const [demoState, setDemoState] = useState<DashboardDemoState>({
     usingDemo: false,
@@ -119,6 +124,7 @@ export function useDashboardState({
   const lastEvaluationHashRef = useRef<string>("");
 
   const refetch = useCallback(async () => {
+    const settleKey = `${project.id}:${userId ?? ""}`;
     setLoading(true);
     setError(null);
     setPersistenceReady(false);
@@ -135,6 +141,7 @@ export function useDashboardState({
       setTargetSettings(getDefaultDashboardTargetSettings());
       setPersistenceReady(false);
       setDemoState({ usingDemo: true, research: true, schedule: true, activity: true });
+      setSettledKey(settleKey);
       setLoading(false);
       return;
     }
@@ -354,6 +361,7 @@ export function useDashboardState({
             })
       );
     } finally {
+      setSettledKey(settleKey);
       setLoading(false);
     }
   }, [project, taskDate, userId]);
@@ -594,6 +602,10 @@ export function useDashboardState({
   return {
     data: derived,
     loading,
+    // True until the resolved data matches the current project/user. While stale, the
+    // page shows a neutral loading state so the previous project's data or pre-auth demo
+    // content is never flashed as the real dashboard. (Focus refetches are NOT stale.)
+    stale: settledKey !== currentKey,
     error,
     persistenceReady,
     usingDemo: demoState.usingDemo,
