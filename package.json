@@ -8,6 +8,7 @@
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx --test \"src/lib/dashboard/*.test.ts\"",
     "local-agent": "node scripts/local-agent.mjs",
     "local-agent:doctor": "node scripts/local-agent-doctor.mjs",
     "mock:local-agent": "node scripts/mock-local-agent.mjs",
@@ -46,6 +47,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }
