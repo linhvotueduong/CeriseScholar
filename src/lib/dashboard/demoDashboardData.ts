@@ -47,27 +47,45 @@ export function hasMeaningfulDashboardSourceData(data: DashboardSourceData) {
   return hasProjectDashboardData(data) || data.courseProgress.length > 0 || data.courseNotes.length > 0;
 }
 
+/**
+ * Per-source breakdown of which dashboard data is sample/demo (vs the user's real
+ * work). Drives the "Sample data" badge + per-card sample tags. `research` is true
+ * only when the project has no real research data at all (full demo).
+ */
+export type DashboardDemoState = {
+  usingDemo: boolean;
+  research: boolean;
+  schedule: boolean; // tasks (Today's Schedule)
+  activity: boolean; // activity events (Activity Log / Recent Changes)
+};
+
 export function applyDemoDashboardFallback(
   data: DashboardSourceData,
   params: BuildDemoDashboardSourceDataParams
-): { data: DashboardSourceData; usingDemo: boolean } {
+): { data: DashboardSourceData; usingDemo: boolean; demo: DashboardDemoState } {
   const demo = buildDemoDashboardSourceData(params);
 
   if (hasProjectDashboardData(data)) {
+    // Real research data wins — only the schedule + activity may be sample, and only
+    // when BOTH lack a real signal (unchanged behavior). Research is never demo here.
     const needsDashboardDemo = !hasUserTaskSignal(data.tasks) && !hasUserActivitySignal(data.activityEvents);
-
-    return {
-      data: needsDashboardDemo
-        ? {
-            ...data,
-            tasks: demo.tasks,
-            activityEvents: demo.activityEvents,
-          }
-        : data,
+    const state: DashboardDemoState = {
       usingDemo: needsDashboardDemo,
+      research: false,
+      schedule: needsDashboardDemo,
+      activity: needsDashboardDemo,
+    };
+    return {
+      data: needsDashboardDemo ? { ...data, tasks: demo.tasks, activityEvents: demo.activityEvents } : data,
+      usingDemo: state.usingDemo,
+      demo: state,
     };
   }
 
+  // No real research data -> full demo for research; tasks/activity stay real only if
+  // they carry a real signal (real-data-wins per source).
+  const scheduleDemo = !hasUserTaskSignal(data.tasks);
+  const activityDemo = !hasUserActivitySignal(data.activityEvents);
   return {
     data: {
       ...demo,
@@ -75,10 +93,11 @@ export function applyDemoDashboardFallback(
       courseVideos: data.courseVideos.length ? data.courseVideos : demo.courseVideos,
       courseProgress: data.courseProgress.length ? data.courseProgress : demo.courseProgress,
       courseNotes: data.courseNotes.length ? data.courseNotes : demo.courseNotes,
-      tasks: hasUserTaskSignal(data.tasks) ? data.tasks : demo.tasks,
-      activityEvents: hasUserActivitySignal(data.activityEvents) ? data.activityEvents : demo.activityEvents,
+      tasks: scheduleDemo ? demo.tasks : data.tasks,
+      activityEvents: activityDemo ? demo.activityEvents : data.activityEvents,
     },
     usingDemo: true,
+    demo: { usingDemo: true, research: true, schedule: scheduleDemo, activity: activityDemo },
   };
 }
 

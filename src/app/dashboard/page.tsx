@@ -176,6 +176,8 @@ export default function DashboardPage() {
       onNewNameChange={setNewName}
       onOpenResearchSection={handleOpenResearchSection}
       onSectionFeedback={dashboardState.submitSectionFeedback}
+      usingDemo={dashboardState.usingDemo}
+      demoCards={dashboardState.demoCards}
       onProjectChange={setActiveProjectId}
       onSaveTargetSettings={dashboardState.saveTargetSettings}
       onToggleCreate={() => setShowCreate((current) => !current)}

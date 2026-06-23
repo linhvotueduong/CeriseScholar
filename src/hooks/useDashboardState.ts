@@ -10,7 +10,11 @@ import {
   type DashboardSourceData,
   type DashboardTask,
 } from "@/lib/dashboard/deriveDashboardState";
-import { applyDemoDashboardFallback, buildDemoDashboardSourceData } from "@/lib/dashboard/demoDashboardData";
+import {
+  applyDemoDashboardFallback,
+  buildDemoDashboardSourceData,
+  type DashboardDemoState,
+} from "@/lib/dashboard/demoDashboardData";
 import { getLocalDay } from "@/lib/dashboard/localDay";
 import { recommendSchedule } from "@/lib/dashboard/recommendSchedule";
 import {
@@ -96,6 +100,13 @@ export function useDashboardState({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [persistenceReady, setPersistenceReady] = useState(false);
+  // Which sources are sample/demo (drives the "Sample data" badge + per-card tags).
+  const [demoState, setDemoState] = useState<DashboardDemoState>({
+    usingDemo: false,
+    research: false,
+    schedule: false,
+    activity: false,
+  });
   // Today's Target settings (UI-local shape). Seeded with the demo/preview default
   // ("high" pace); for real users it is replaced by the persisted row in refetch.
   const [targetSettings, setTargetSettings] = useState<DashboardTargetSettings>(() =>
@@ -123,6 +134,7 @@ export function useDashboardState({
       persistedSettingsRef.current = null;
       setTargetSettings(getDefaultDashboardTargetSettings());
       setPersistenceReady(false);
+      setDemoState({ usingDemo: true, research: true, schedule: true, activity: true });
       setLoading(false);
       return;
     }
@@ -309,11 +321,13 @@ export function useDashboardState({
       if (nextSource.usingDemo) {
         setPersistenceReady(false);
       }
+      setDemoState(nextSource.demo);
 
       setSourceData(nextSource.data);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Dashboard data could not load.");
       setPersistenceReady(false);
+      setDemoState({ usingDemo: true, research: true, schedule: true, activity: true });
       setSourceData((current) =>
         current.tasks.length
           ? current
@@ -565,6 +579,8 @@ export function useDashboardState({
     loading,
     error,
     persistenceReady,
+    usingDemo: demoState.usingDemo,
+    demoCards: { schedule: demoState.schedule, activity: demoState.activity, research: demoState.research },
     targetSettings,
     refetch,
     completeTask,

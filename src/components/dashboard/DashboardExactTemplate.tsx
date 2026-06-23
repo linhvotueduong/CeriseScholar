@@ -58,6 +58,10 @@ type DashboardExactTemplateProps = {
   dashboardData?: DashboardDerivedState;
   dashboardError?: string | null;
   dashboardLoading?: boolean;
+  /** True when any visible card is showing sample/demo content (shows the "Sample data" badge). */
+  usingDemo?: boolean;
+  /** Per-card sample flags so demo-filled cards (Schedule, Activity Log) show a tag. */
+  demoCards?: { schedule?: boolean; activity?: boolean; research?: boolean };
   /** Persisted Today's Target settings (from useDashboardState). Falls back to a local default when omitted. */
   targetSettings?: DashboardTargetSettings;
   /** Persist Today's Target settings. When omitted, saves stay in local component state. */
@@ -613,7 +617,19 @@ const localSetupLabels: Record<string, string> = {
   Safety: "Safety checked",
 };
 
-function RecentChangesCard({ changes }: { changes?: DashboardDerivedState["recentChanges"] }) {
+/** Tiny "Sample" chip for a card whose data is currently demo/fallback. */
+function SampleTag() {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center rounded-full bg-[#f6efe4] px-[6px] py-[1px] text-[8px] font-[850] uppercase tracking-[0.04em] text-[#8f6132]"
+      title="This card is showing example data until you add your own research."
+    >
+      Sample
+    </span>
+  );
+}
+
+function RecentChangesCard({ changes, sample }: { changes?: DashboardDerivedState["recentChanges"]; sample?: boolean }) {
   const items =
     changes && changes.length > 0
       ? changes
@@ -627,7 +643,10 @@ function RecentChangesCard({ changes }: { changes?: DashboardDerivedState["recen
   return (
     <Card className="h-[186px] overflow-hidden p-[14px]">
       <div className="flex items-start justify-between gap-4">
-        <h2 className="text-[13px] font-[850] text-[#111111]">Activity Log</h2>
+        <div className="flex items-center gap-[6px]">
+          <h2 className="text-[13px] font-[850] text-[#111111]">Activity Log</h2>
+          {sample ? <SampleTag /> : null}
+        </div>
         <span className="text-[8.5px] font-[750] leading-none text-[#8a837c]">Latest work</span>
       </div>
       <div className="relative mt-[13px]">
@@ -785,10 +804,12 @@ function TodayScheduleCard({
   compact = false,
   tasks,
   onCompleteTask,
+  sample,
 }: {
   compact?: boolean;
   tasks?: DashboardTask[];
   onCompleteTask?: (taskId: string) => void;
+  sample?: boolean;
 }) {
   const items = (tasks?.length ? tasks : scheduleItems.map(([time, title, body, icon], index) => ({
     id: `fixture-${index}`,
@@ -802,7 +823,10 @@ function TodayScheduleCard({
   return (
     <Card className={`${compact ? "h-[306px] p-[12px]" : "h-[358px] p-[16px]"} min-w-0`}>
       <div className="flex items-center justify-between">
-        <h2 className={`${compact ? "text-[13px]" : "text-[14px]"} font-[850]`}>Today&apos;s Schedule</h2>
+        <div className="flex items-center gap-[6px]">
+          <h2 className={`${compact ? "text-[13px]" : "text-[14px]"} font-[850]`}>Today&apos;s Schedule</h2>
+          {sample ? <SampleTag /> : null}
+        </div>
         <button className={`${compact ? "px-2 py-1 text-[10px]" : "px-3 py-1 text-[11px]"} rounded-[8px] border border-[#d8d3ce] font-[850]`} type="button">
           All
         </button>
@@ -858,6 +882,8 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
     dashboardData,
     dashboardError,
     dashboardLoading,
+    usingDemo,
+    demoCards,
     targetSettings: targetSettingsProp,
     onSaveTargetSettings,
     projectOptions,
@@ -948,7 +974,18 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
       </span>
       <div className="dashboard-exact-hero mb-[20px] flex items-end justify-between gap-6">
         <div className="pl-[6px]">
-          <p className="mb-[8px] text-[12px] font-[850] text-[#a87f4f]">Dashboard</p>
+          <div className="mb-[8px] flex items-center gap-[10px]">
+            <p className="text-[12px] font-[850] text-[#a87f4f]">Dashboard</p>
+            {usingDemo ? (
+              <span
+                className="inline-flex items-center gap-[5px] rounded-full bg-[#f6efe4] px-[8px] py-[2px] text-[10px] font-[850] text-[#8f6132]"
+                title="Some cards show example data until you add your own research."
+              >
+                <span aria-hidden="true" className="h-[5px] w-[5px] rounded-full bg-[#c89a5a]" />
+                Sample data
+              </span>
+            ) : null}
+          </div>
           <h1 className="text-[31px] font-[850] leading-none tracking-[-0.03em]">Good Morning Cerise!</h1>
           <p className="mt-[11px] max-w-[555px] text-[13px] font-[500] leading-[1.42] text-[#3b342e]">
             Your main research project is waiting at the synthesis step. The useful move today is to
@@ -1124,7 +1161,7 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
               </div>
             </Card>
 
-            <RecentChangesCard changes={dashboardData?.recentChanges} />
+            <RecentChangesCard changes={dashboardData?.recentChanges} sample={demoCards?.activity} />
           </section>
 
           <section className="mt-[16px] grid grid-cols-1 gap-[14px] 2xl:grid-cols-[820px_290px]">
@@ -1142,7 +1179,7 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
           <section className="mt-[14px] grid grid-cols-3 gap-[10px] 2xl:hidden">
             <ResearchFocusCard compact data={dashboardData?.researchFocus} onStartNextMove={() => onOpenResearchSection?.(dashboardData?.activeSectionId ?? "meta-analysis")} />
             <TodayPlanCard compact onAddTask={onAddScheduleTask} />
-            <TodayScheduleCard compact onCompleteTask={onCompleteTask} tasks={dashboardData?.scheduleTasks} />
+            <TodayScheduleCard compact onCompleteTask={onCompleteTask} sample={demoCards?.schedule} tasks={dashboardData?.scheduleTasks} />
           </section>
 
           <section className="mt-[14px] grid grid-cols-[minmax(0,1fr)_220px] gap-[10px] 2xl:grid-cols-[820px_290px] 2xl:gap-[14px]">
@@ -1243,7 +1280,7 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
 
         <aside className="hidden min-w-0 content-start gap-[14px] 2xl:grid">
           <TodayPlanCard onAddTask={onAddScheduleTask} />
-          <TodayScheduleCard onCompleteTask={onCompleteTask} tasks={dashboardData?.scheduleTasks} />
+          <TodayScheduleCard onCompleteTask={onCompleteTask} sample={demoCards?.schedule} tasks={dashboardData?.scheduleTasks} />
         </aside>
       </div>
 
