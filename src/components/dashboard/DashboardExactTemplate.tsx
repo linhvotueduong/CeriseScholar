@@ -125,6 +125,9 @@ const scheduleItems = [
   ["15:00", "Project check-in", "Review next steps", "edit"],
 ] as const;
 
+const DASHBOARD_MOTIVATION_LINE =
+  "Your mission is moving forward. Stay with the process, keep saving your work, and let the paper take shape step by step. Cerise Scholar is honored to be here with you this journey.";
+
 function Card({
   children,
   className = "",
@@ -955,7 +958,7 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
     ? "Showing safe fallback values while we reconnect your project data."
     : usingDemo
       ? "This is sample data — add your sources, notes, and synthesis to see your real progress."
-      : greeting?.focusLine ?? "Pick up where you left off on your research.";
+      : DASHBOARD_MOTIVATION_LINE;
   const selectedFeedbackSection = feedbackSectionId
     ? dashboardData?.researchSections.find((section) => section.id === feedbackSectionId)
     : null;
@@ -1034,7 +1037,7 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
             ) : null}
           </div>
           <h1 className="text-[31px] font-[850] leading-none tracking-[-0.03em]">{greetingHeadline}</h1>
-          <p className="mt-[11px] max-w-[555px] text-[13px] font-[500] leading-[1.42] text-[#3b342e]">
+          <p className="mt-[11px] max-w-[720px] text-[13px] font-[500] leading-[1.42] text-[#3b342e]">
             {greetingSubline}
           </p>
         </div>
