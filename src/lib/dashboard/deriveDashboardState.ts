@@ -165,12 +165,7 @@ export type DashboardDerivedState = {
     watchPoint: string;
     estimatedTime: string;
   };
-  continueLearning: {
-    lesson: string;
-    body: string;
-    progress: number;
-    stats: Array<[string, string, string]>;
-  };
+  continueLearning: ContinueLearningResult;
   scheduleTasks: DashboardTask[];
 };
 
@@ -449,6 +444,194 @@ export function computeResearchFocus(input: ResearchFocusInput): ResearchFocusRe
     ],
     watchPoint,
     estimatedTime: `${lo}-${hi} min`,
+  };
+}
+
+export type LearningStatus = "no_catalog" | "not_started" | "in_progress" | "complete" | "coming_soon";
+
+export type ContinueLearningResult = {
+  status: LearningStatus;
+  statusLabel: string;
+  statusTone: "green" | "amber" | "neutral";
+  lesson: string;
+  lessonNumber: string;
+  lessonTitle: string;
+  sectionLabel: string;
+  moduleLabel: string;
+  outputLabel: string;
+  body: string;
+  progress: number;
+  stats: Array<[string, string, string]>;
+};
+
+export type ContinueLearningInput = {
+  modules: Array<Record<string, unknown>>;
+  videos: Array<Record<string, unknown>>;
+  progress: Array<Record<string, unknown>>;
+  notes: Array<Record<string, unknown>>;
+};
+
+/**
+ * Deterministic, local Continue Learning from the real course catalog + the user's watched
+ * lessons and notes. Progress, "remaining", and module completion count PUBLISHED lessons
+ * only; lessons in not-yet-published modules are "coming soon" and never count toward
+ * progress. Honest empty/not-started states — the Sample tag is decided upstream and only
+ * applies to demo/fallback data, never to a real catalog a user simply hasn't started.
+ */
+export function computeContinueLearning(input: ContinueLearningInput): ContinueLearningResult {
+  const str = (value: unknown) => (typeof value === "string" ? value : "");
+  const num = (value: unknown) => (typeof value === "number" ? value : 0);
+
+  // The query already filters is_published; guard anyway so an unpublished row never leaks.
+  const publishedModules = input.modules.filter((module) => module.is_published !== false);
+  const publishedModuleIds = new Set(publishedModules.map((module) => str(module.id)).filter(Boolean));
+  const moduleOrder = new Map(publishedModules.map((module) => [str(module.id), num(module.module_order)]));
+
+  const isPublishedVideo = (video: Record<string, unknown>) => publishedModuleIds.has(str(video.module_id));
+  const publishedVideos = input.videos.filter(isPublishedVideo);
+  const upcomingVideos = input.videos.filter((video) => !isPublishedVideo(video));
+
+  const watched = new Set(input.progress.map((row) => str(row.video_id)).filter(Boolean));
+  const watchedCount = publishedVideos.filter((video) => watched.has(str(video.id))).length;
+  const publishedCount = publishedVideos.length;
+  const upcomingCount = upcomingVideos.length;
+  const remaining = Math.max(0, publishedCount - watchedCount);
+  const notesCount = input.notes.length;
+
+  // A module is "completed" only when it has published lessons and every one is watched.
+  const modulesCompleted = publishedModules.filter((module) => {
+    const lessons = publishedVideos.filter((video) => str(video.module_id) === str(module.id));
+    return lessons.length > 0 && lessons.every((video) => watched.has(str(video.id)));
+  }).length;
+
+  const progress = publishedCount > 0 ? Math.round((watchedCount / publishedCount) * 100) : 0;
+
+  // Next published lesson in (module order, lesson order).
+  const ordered = [...publishedVideos].sort((a, b) => {
+    const orderA = moduleOrder.get(str(a.module_id)) ?? 0;
+    const orderB = moduleOrder.get(str(b.module_id)) ?? 0;
+    if (orderA !== orderB) return orderA - orderB;
+    return num(a.video_order) - num(b.video_order);
+  });
+  const nextVideo = ordered.find((video) => !watched.has(str(video.id)));
+  const nextTitle = str(nextVideo?.title) || "Untitled lesson";
+  const nextModule = publishedModules.find((module) => str(module.id) === str(nextVideo?.module_id));
+  const nextModuleOrder = moduleOrder.get(str(nextVideo?.module_id)) ?? num(nextModule?.module_order);
+  const moduleNumber = str(nextModule?.module_number) || str(nextModule?.moduleNumber) || (nextModuleOrder > 0 ? String(nextModuleOrder) : "");
+  const moduleTitle = str(nextModule?.title) || "Course content";
+  const sectionNumber =
+    str(nextVideo?.section_number) ||
+    str(nextVideo?.sectionNumber) ||
+    (moduleNumber ? `${moduleNumber}.1` : "");
+  const sectionTitle = str(nextVideo?.section_title) || str(nextVideo?.sectionTitle) || moduleTitle;
+  const lessonNumber =
+    str(nextVideo?.lesson_number) ||
+    str(nextVideo?.lessonNumber) ||
+    (sectionNumber && num(nextVideo?.video_order) > 0 ? `${sectionNumber}.${num(nextVideo?.video_order)}` : "");
+  const currentModuleLabel = moduleNumber ? `Module ${moduleNumber} — ${moduleTitle}` : `Module — ${moduleTitle}`;
+  const currentSectionLabel = sectionNumber ? `Section ${sectionNumber} — ${sectionTitle}` : `Section — ${sectionTitle}`;
+  const outputText =
+    str(nextVideo?.student_output) ||
+    str(nextVideo?.studentOutput) ||
+    str(nextVideo?.lesson_output) ||
+    str(nextVideo?.lessonOutput) ||
+    str(nextVideo?.final_output) ||
+    str(nextVideo?.finalOutput) ||
+    str(nextVideo?.artifact_label) ||
+    str(nextVideo?.artifactLabel) ||
+    "Save this lesson artifact";
+  const currentOutputLabel = `Output — ${outputText}`;
+
+  let status: LearningStatus;
+  if (publishedCount === 0) status = upcomingCount > 0 ? "coming_soon" : "no_catalog";
+  else if (watchedCount === 0) status = "not_started";
+  else if (remaining > 0) status = "in_progress";
+  else status = "complete";
+
+  let lesson = "—";
+  let lessonNumberLabel = "";
+  let lessonTitle = "—";
+  let sectionLabel = "Section — Course content";
+  let moduleLabel = "Module — Course content";
+  let outputLabel = "Output — Course artifact";
+  let body = "";
+  let statusLabel = "Coming soon";
+  let statusTone: "green" | "amber" | "neutral" = "neutral";
+  switch (status) {
+    case "no_catalog":
+      lesson = "No lessons available yet";
+      lessonTitle = lesson;
+      sectionLabel = "Section — No lessons available yet";
+      moduleLabel = "Module — Course content";
+      outputLabel = "Output — Course artifact";
+      body = "Courses are coming soon — check back later.";
+      break;
+    case "coming_soon":
+      lesson = "New lessons coming soon";
+      lessonTitle = lesson;
+      sectionLabel = "Section — New lessons coming soon";
+      moduleLabel = "Module — Course content";
+      outputLabel = "Output — Course artifact";
+      body = "New modules are on the way — lessons will appear here once they're published.";
+      break;
+    case "not_started":
+      lesson = nextTitle;
+      lessonNumberLabel = lessonNumber;
+      lessonTitle = nextTitle;
+      sectionLabel = currentSectionLabel;
+      moduleLabel = currentModuleLabel;
+      outputLabel = currentOutputLabel;
+      body = `${publishedCount} ${publishedCount === 1 ? "lesson" : "lessons"} available. Start with “${nextTitle}”.`;
+      statusLabel = "Not started";
+      statusTone = "amber";
+      break;
+    case "in_progress":
+      lesson = nextTitle;
+      lessonNumberLabel = lessonNumber;
+      lessonTitle = nextTitle;
+      sectionLabel = currentSectionLabel;
+      moduleLabel = currentModuleLabel;
+      outputLabel = currentOutputLabel;
+      body = `${watchedCount} of ${publishedCount} lessons complete. Next up: “${nextTitle}”.`;
+      statusLabel = "In progress";
+      statusTone = "green";
+      break;
+    case "complete":
+      lesson = upcomingCount > 0 ? "You're caught up" : "You're all caught up";
+      lessonTitle = lesson;
+      sectionLabel = "Section — Published lessons complete";
+      moduleLabel = "Module — Course content";
+      outputLabel = "Output — Course artifacts complete";
+      body =
+        upcomingCount > 0
+          ? "You're caught up. New lessons are coming soon."
+          : "You've completed every published lesson. Nice work.";
+      statusLabel = "Complete";
+      statusTone = "green";
+      break;
+  }
+
+  // Badges are earned when a published module is fully completed.
+  const earnedBadges: [string, string, string] = [String(modulesCompleted), "Earned badges", "earned"];
+
+  return {
+    status,
+    statusLabel,
+    statusTone,
+    lesson,
+    lessonNumber: lessonNumberLabel,
+    lessonTitle,
+    sectionLabel,
+    moduleLabel,
+    outputLabel,
+    body,
+    progress,
+    stats: [
+      [String(modulesCompleted), "Modules", "completed"],
+      [String(watchedCount), "Lessons", "done"],
+      [String(notesCount), "Notes", "created"],
+      earnedBadges,
+    ],
   };
 }
 
@@ -1018,17 +1201,12 @@ export function deriveDashboardState(
       },
     ],
     researchFocus,
-    continueLearning: {
-      lesson: "Evidence synthesis",
-      body: "Learn how to code and connect evidence across studies, identify patterns, and build a strong synthesis table.",
-      progress: data.courseVideos.length ? pct((data.courseProgress.length / data.courseVideos.length) * 100) : 68,
-      stats: [
-        [String(data.courseModules.length), "Modules", "completed"],
-        [String(data.courseProgress.length), "Lessons", "done"],
-        [String(data.courseNotes.length), "Notes", "created"],
-        [String(Math.max(0, data.courseVideos.length - data.courseProgress.length)), "Lessons", "remaining"],
-      ],
-    },
+    continueLearning: computeContinueLearning({
+      modules: data.courseModules,
+      videos: data.courseVideos,
+      progress: data.courseProgress,
+      notes: data.courseNotes,
+    }),
     scheduleTasks: todayTasks,
   };
 }

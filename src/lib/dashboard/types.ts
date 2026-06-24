@@ -155,7 +155,7 @@ export type ContinueLearningState = {
   modulesCompleted: number;
   lessonsDone: number;
   notesCreated: number;
-  lessonsRemaining: number;
+  earnedBadges: number;
   progressPercent: number;
   pace: ContinueLearningPace;
 };

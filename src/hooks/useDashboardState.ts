@@ -111,6 +111,7 @@ export function useDashboardState({
     research: false,
     schedule: false,
     activity: false,
+    learning: false,
   });
   // Today's Target settings (UI-local shape). Seeded with the demo/preview default
   // ("high" pace); for real users it is replaced by the persisted row in refetch.
@@ -140,7 +141,7 @@ export function useDashboardState({
       persistedSettingsRef.current = null;
       setTargetSettings(getDefaultDashboardTargetSettings());
       setPersistenceReady(false);
-      setDemoState({ usingDemo: true, research: true, schedule: true, activity: true });
+      setDemoState({ usingDemo: true, research: true, schedule: true, activity: true, learning: true });
       setSettledKey(settleKey);
       setLoading(false);
       return;
@@ -194,11 +195,11 @@ export function useDashboardState({
             []
           ),
           safeSelect<Array<Record<string, unknown>>>(
-            supabase.from("course_modules").select("id, title, module_order, is_published").eq("is_published", true),
+            supabase.from("course_modules").select("*").eq("is_published", true),
             []
           ),
           safeSelect<Array<Record<string, unknown>>>(
-            supabase.from("course_videos").select("id, module_id, title, video_order"),
+            supabase.from("course_videos").select("*"),
             []
           ),
           safeSelect<Array<Record<string, unknown>>>(
@@ -351,7 +352,7 @@ export function useDashboardState({
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Dashboard data could not load.");
       setPersistenceReady(false);
-      setDemoState({ usingDemo: true, research: true, schedule: true, activity: true });
+      setDemoState({ usingDemo: true, research: true, schedule: true, activity: true, learning: true });
       setSourceData((current) =>
         current.tasks.length
           ? current
@@ -609,7 +610,7 @@ export function useDashboardState({
     error,
     persistenceReady,
     usingDemo: demoState.usingDemo,
-    demoCards: { schedule: demoState.schedule, activity: demoState.activity, research: demoState.research },
+    demoCards: { schedule: demoState.schedule, activity: demoState.activity, research: demoState.research, learning: demoState.learning },
     targetSettings,
     refetch,
     completeTask,

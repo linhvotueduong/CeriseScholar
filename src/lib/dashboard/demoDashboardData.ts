@@ -47,6 +47,18 @@ export function hasMeaningfulDashboardSourceData(data: DashboardSourceData) {
   return hasProjectDashboardData(data) || data.courseProgress.length > 0 || data.courseNotes.length > 0;
 }
 
+// Continue Learning shows real data whenever ANY real course row exists (the catalog is
+// global, so a real published catalog counts even with 0 watched lessons). Only a totally
+// empty catalog gets demo/fallback data — and only that case earns the "Sample" tag.
+function hasRealCourseData(data: DashboardSourceData) {
+  return (
+    data.courseModules.length > 0 ||
+    data.courseVideos.length > 0 ||
+    data.courseProgress.length > 0 ||
+    data.courseNotes.length > 0
+  );
+}
+
 /**
  * Per-source breakdown of which dashboard data is sample/demo (vs the user's real
  * work). Drives the "Sample data" badge + per-card sample tags. `research` is true
@@ -57,6 +69,7 @@ export type DashboardDemoState = {
   research: boolean;
   schedule: boolean; // tasks (Today's Schedule)
   activity: boolean; // activity events (Activity Log / Recent Changes)
+  learning: boolean; // course catalog/progress (Continue Learning)
 };
 
 export function applyDemoDashboardFallback(
@@ -74,6 +87,8 @@ export function applyDemoDashboardFallback(
       research: false,
       schedule: needsDashboardDemo,
       activity: needsDashboardDemo,
+      // Real research project keeps its real (global) course data — never demo here.
+      learning: false,
     };
     return {
       // When the schedule/activity are sample, drop the real activityFeed so the
@@ -101,7 +116,14 @@ export function applyDemoDashboardFallback(
       activityEvents: activityDemo ? demo.activityEvents : data.activityEvents,
     },
     usingDemo: true,
-    demo: { usingDemo: true, research: true, schedule: scheduleDemo, activity: activityDemo },
+    demo: {
+      usingDemo: true,
+      research: true,
+      schedule: scheduleDemo,
+      activity: activityDemo,
+      // Tagged only when the real catalog was empty and demo course data was substituted.
+      learning: !hasRealCourseData(data),
+    },
   };
 }
 

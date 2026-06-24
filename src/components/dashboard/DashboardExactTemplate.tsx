@@ -7,7 +7,6 @@ import type { FormEvent, ReactNode } from "react";
 import { AppIcon } from "@/components/app-shell/AppIcons";
 import type { AppIconName } from "@/components/app-shell/AppIcons";
 import DashboardResearchSectionsExact from "@/components/dashboard/DashboardResearchSectionsExact";
-import { dashboardContinueLearning } from "@/lib/app-data/dashboard";
 import {
   computeTodayTargetFromUiSettings,
   todayTargetModelToPaceSummary,
@@ -61,7 +60,7 @@ type DashboardExactTemplateProps = {
   /** True when any visible card is showing sample/demo content (shows the "Sample data" badge). */
   usingDemo?: boolean;
   /** Per-card sample flags so demo-filled cards (Schedule, Activity Log) show a tag. */
-  demoCards?: { schedule?: boolean; activity?: boolean; research?: boolean };
+  demoCards?: { schedule?: boolean; activity?: boolean; research?: boolean; learning?: boolean };
   /** Signed-in display name (first name) for the greeting; empty falls back to a neutral greeting. */
   userName?: string;
   /** Persisted Today's Target settings (from useDashboardState). Falls back to a local default when omitted. */
@@ -895,6 +894,39 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
   const currentProject = dashboardData?.currentProject;
   const localSetup = dashboardData?.localSetup;
   const continueLearning = dashboardData?.continueLearning;
+  const continueLearningLessonLine = continueLearning?.lessonNumber
+    ? `${continueLearning.lessonNumber} ${continueLearning.lessonTitle}`
+    : continueLearning?.lessonTitle ?? continueLearning?.lesson ?? "—";
+  const continueLearningMomentum =
+    continueLearning?.status === "complete"
+      ? {
+          title: "All published lessons complete",
+          body: "You are caught up with the available course work.",
+          lastLesson: "Completed",
+        }
+      : continueLearning?.status === "in_progress"
+        ? {
+            title: "Keep going with your next lesson",
+            body: "Resume the current lesson when you are ready.",
+            lastLesson: "In progress",
+          }
+        : continueLearning?.status === "coming_soon"
+          ? {
+              title: "New lessons are coming soon",
+              body: "Published lessons will appear here when they are ready.",
+              lastLesson: "—",
+            }
+          : continueLearning?.status === "no_catalog"
+            ? {
+                title: "No lessons available yet",
+                body: "Your course overview will fill in once lessons are published.",
+                lastLesson: "—",
+              }
+            : {
+                title: "No lessons completed yet",
+                body: "Start your first lesson to build momentum.",
+                lastLesson: "—",
+              };
   const [targetSettingsOpen, setTargetSettingsOpen] = useState(false);
   const [feedbackSectionId, setFeedbackSectionId] = useState<DashboardSectionId | null>(null);
   const [feedbackSavedFor, setFeedbackSavedFor] = useState<string | null>(null);
@@ -1197,75 +1229,135 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
           </section>
 
           <section className="mt-[14px] grid grid-cols-[minmax(0,1fr)_220px] gap-[10px] 2xl:grid-cols-[820px_290px] 2xl:gap-[14px]">
-            <Card className="h-[200px] p-[14px]">
-              <div className="flex items-center gap-[18px]">
-                <h2 className="shrink-0 text-[14px] font-[850] leading-none">Continue Learning</h2>
-                <div className="h-px flex-1 bg-[#eeeae5]" />
+            <Card className="h-[200px] overflow-hidden p-[14px]">
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-[8px]">
+                  <h2 className="shrink-0 text-[14px] font-[850] leading-none">Continue Learning</h2>
+                  {demoCards?.learning ? <SampleTag /> : null}
+                </div>
+                <p className="mt-[6px] min-w-0 truncate text-[10px] font-[600] leading-none text-[#625a52]">
+                  Pick up where you left off and keep your momentum going.
+                </p>
               </div>
 
-              <div className="mt-[13px] grid grid-cols-[104px_minmax(220px,1fr)_188px] gap-[12px] 2xl:grid-cols-[142px_minmax(0,1fr)_238px] 2xl:gap-[18px]">
-                <div className="relative h-[104px] w-[104px] overflow-hidden rounded-[12px] bg-[#f2eadb] 2xl:h-[126px] 2xl:w-[126px]">
+              <div className="mt-[11px] grid grid-cols-[88px_minmax(140px,0.82fr)_minmax(170px,1fr)] gap-[8px] 2xl:grid-cols-[100px_minmax(188px,0.66fr)_minmax(282px,1.14fr)] 2xl:gap-[11px]">
+                <div className="relative h-[84px] w-[88px] overflow-hidden rounded-[12px] bg-[#f2eadb] 2xl:h-[92px] 2xl:w-[100px]">
                   <Image
                     alt=""
-                    className="object-contain p-[17px] 2xl:p-[20px]"
+                    className="object-contain p-[12px] 2xl:p-[14px]"
                     fill
-                    sizes="126px"
+                    sizes="100px"
                     src="/assets/hedgehogs/hedgehog11LitBook.png"
                   />
                 </div>
 
-                <div className="min-w-0 pt-[4px] 2xl:pt-[8px]">
-                  <p className="text-[12.5px] font-[850] leading-[1.18] 2xl:text-[13px]">Current lesson - {continueLearning?.lesson ?? dashboardContinueLearning.lesson}</p>
-                  <p className="mt-[7px] max-w-[330px] text-[10px] font-[550] leading-[1.4] text-[#3f3933] 2xl:mt-[9px] 2xl:max-w-[350px] 2xl:text-[10.5px] 2xl:leading-[1.42]">
-                    {continueLearning?.body ?? "Learn how to code and connect evidence across studies, identify patterns, and build a strong synthesis table."}
+                <div className="min-w-0 pt-[5px] 2xl:pt-[6px]">
+                  <p className="truncate text-[11px] font-[850] leading-[1.15] 2xl:text-[13px]">
+                    {continueLearningLessonLine}
                   </p>
-                  <div className="mt-[8px] flex gap-[7px] 2xl:mt-[10px] 2xl:gap-[8px]">
+                  <p className="mt-[4px] text-[8px] font-[650] leading-[1.38] text-[#4f4943] 2xl:mt-[5px] 2xl:text-[9.5px]">
+                    <span className="block truncate">{continueLearning?.moduleLabel ?? "Module — Course content"}</span>
+                    <span className="block truncate">{continueLearning?.outputLabel ?? "Output — Course artifact"}</span>
+                  </p>
+                  <div className="mt-[7px] flex min-w-0 flex-nowrap gap-[5px] 2xl:mt-[7px] 2xl:gap-[6px]">
                     <Link
-                      className="inline-flex h-[30px] items-center gap-[7px] whitespace-nowrap rounded-[6px] bg-[#111111] px-[12px] text-[9.5px] font-[850] text-white no-underline 2xl:h-[31px] 2xl:gap-[8px] 2xl:px-[18px] 2xl:text-[10.5px]"
+                      className="inline-flex h-[24px] min-w-[78px] items-center justify-center gap-[4px] whitespace-nowrap rounded-[6px] bg-[#111111] px-[6px] text-[7.4px] font-[850] text-white no-underline 2xl:h-[24px] 2xl:min-w-[98px] 2xl:gap-[4px] 2xl:px-[7px] 2xl:text-[8.5px]"
                       href="/courses/learn"
                     >
-                      <AppIcon className="h-[12px] w-[12px]" name="play" />
-                      Resume lesson
+                      <AppIcon className="h-[8px] w-[8px] shrink-0 2xl:h-[9px] 2xl:w-[9px]" name="play" />
+                      <span className="truncate">Resume lesson</span>
                     </Link>
                     <Link
-                      className="inline-flex h-[30px] items-center gap-[7px] whitespace-nowrap rounded-[6px] border border-[#d8d3ce] px-[12px] text-[9.5px] font-[850] text-[#111111] no-underline 2xl:h-[31px] 2xl:gap-[8px] 2xl:px-[18px] 2xl:text-[10.5px]"
+                      className="inline-flex h-[24px] min-w-[73px] items-center justify-center gap-[4px] whitespace-nowrap rounded-[6px] border border-[#d8d3ce] bg-white px-[6px] text-[7.4px] font-[850] text-[#111111] no-underline 2xl:h-[24px] 2xl:min-w-[88px] 2xl:gap-[4px] 2xl:px-[7px] 2xl:text-[8.5px]"
                       href="/my-learning/notes"
                     >
-                      <AppIcon className="h-[12px] w-[12px]" name="list" />
-                      View notes
+                      <AppIcon className="h-[8px] w-[8px] shrink-0 2xl:h-[9px] 2xl:w-[9px]" name="list" />
+                      <span className="truncate">View notes</span>
                     </Link>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-4 content-start gap-0 pt-[5px] 2xl:pt-[7px]">
-                  {(continueLearning?.stats ?? [
-                    ["4", "Modules", "completed"],
-                    ["12", "Lessons", "done"],
-                    ["8", "Notes", "created"],
-                    ["3", "Lessons", "remaining"],
-                  ]).map(([value, label, suffix]) => (
-                    <div className="flex h-[66px] flex-col items-center justify-start border-l border-[#eeeae5] px-[4px] text-center first:border-l-0 2xl:h-[70px] 2xl:px-[6px]" key={`${label}-${suffix}`}>
-                      <p className="text-[16px] font-[850] leading-none 2xl:text-[18px]">{value}</p>
-                      <p className="mt-[9px] text-[8.5px] font-[700] leading-[1.35] text-[#625a52] 2xl:mt-[10px] 2xl:text-[9px]">
-                        {label}
-                        <br />
-                        {suffix}
-                      </p>
+                <div className="min-w-0">
+                  <div className="min-w-0">
+                    <p className="text-[8.4px] font-[850] leading-none text-[#625a52] 2xl:text-[9.5px]">Course progress</p>
+                    <div className="mt-[6px] grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-[5px] 2xl:mt-[6px] 2xl:gap-[7px]">
+                      <div className="h-[6px] min-w-0 rounded-full bg-[#e8e5e1]">
+                        <div className="h-full rounded-full bg-[#9c7443]" style={{ width: `${continueLearning?.progress ?? 0}%` }} />
+                      </div>
+                      <span className="text-[9.5px] font-[850] leading-none 2xl:text-[11px]">{continueLearning?.progress ?? 0}%</span>
+                      <span
+                        className={`inline-flex h-[19px] items-center gap-[4px] whitespace-nowrap rounded-full px-[6px] text-[7.6px] font-[850] 2xl:h-[21px] 2xl:gap-[5px] 2xl:px-[7px] 2xl:text-[9px] ${
+                          continueLearning?.statusTone === "green"
+                            ? "bg-[#eaf3e4] text-[#5f7d4d]"
+                            : continueLearning?.statusTone === "amber"
+                              ? "bg-[#f6efe4] text-[#8f6132]"
+                              : "bg-[#f0eeeb] text-[#77716b]"
+                        }`}
+                      >
+                        <span
+                          className={`h-[6px] w-[6px] rounded-full ${
+                            continueLearning?.statusTone === "green"
+                              ? "bg-[#6f8b5b]"
+                              : continueLearning?.statusTone === "amber"
+                                ? "bg-[#b6844e]"
+                                : "bg-[#a9a29b]"
+                          }`}
+                        />
+                        {continueLearning?.statusLabel ?? "—"}
+                      </span>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="mt-[6px] border-t border-[#eeeae5] pt-[5px] 2xl:mt-[5px] 2xl:pt-[5px]">
+                    <p className="text-[8.4px] font-[850] leading-none text-[#625a52] 2xl:text-[9.5px]">Learning momentum</p>
+                    <div className="mt-[4px] grid grid-cols-[20px_minmax(0,1fr)_80px] items-center gap-[6px] 2xl:mt-[4px] 2xl:grid-cols-[22px_minmax(0,1fr)_104px] 2xl:gap-[7px]">
+                      <span className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-[#f6efe4] text-[#8f6132] 2xl:h-[22px] 2xl:w-[22px]">
+                        <AppIcon className="h-[10px] w-[10px] 2xl:h-[11px] 2xl:w-[11px]" name="target" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[8.2px] font-[850] leading-tight text-[#17120d] 2xl:text-[9.5px]">
+                          {continueLearningMomentum.title}
+                        </p>
+                        <p className="mt-[2px] truncate text-[7.2px] font-[600] leading-none text-[#625a52] 2xl:mt-[2px] 2xl:text-[8.2px]">
+                          {continueLearningMomentum.body}
+                        </p>
+                      </div>
+                      <div className="flex min-w-0 items-center justify-end gap-[5px] 2xl:gap-[6px]">
+                        <span className="flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full bg-[#f6efe4] text-[#8f6132] 2xl:h-[22px] 2xl:w-[22px]">
+                          <AppIcon className="h-[10px] w-[10px] 2xl:h-[11px] 2xl:w-[11px]" name="calendar" />
+                        </span>
+                        <div className="min-w-0 text-right">
+                          <p className="truncate text-[6.8px] font-[650] leading-none text-[#8a837c] 2xl:text-[8px]">Last lesson:</p>
+                          <p className="mt-[3px] truncate text-[7.2px] font-[750] leading-none text-[#625a52] 2xl:mt-[4px] 2xl:text-[8.4px]">{continueLearningMomentum.lastLesson}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-[8px] grid grid-cols-[104px_minmax(0,1fr)_40px_74px] items-center gap-x-[8px]">
-                <span className="text-[10.5px] font-[850] leading-none text-[#625a52]">Course progress</span>
-                <div className="h-[6px] flex-1 rounded-full bg-[#e8e5e1]">
-                  <div className="h-full rounded-full bg-[#9c7443]" style={{ width: `${continueLearning?.progress ?? 68}%` }} />
-                </div>
-                <span className="text-right text-[11px] font-[850]">{continueLearning?.progress ?? 68}%</span>
-                <span className="flex items-center justify-end gap-[6px] text-[11px] font-[850] text-[#5f7d4d]">
-                  <span className="h-[7px] w-[7px] rounded-full bg-[#6f8b5b]" />
-                  On pace
-                </span>
+              <div className="mt-[7px] grid h-[34px] grid-cols-4 overflow-hidden rounded-[8px] border border-[#eeeae5] bg-white">
+                {(continueLearning?.stats ?? [
+                  ["0", "Modules", "completed"],
+                  ["0", "Lessons", "done"],
+                  ["0", "Notes", "created"],
+                  ["0", "Earned badges", "earned"],
+                ]).map(([value, label, suffix], index) => {
+                  const statIcons = ["book-open", "play", "file", "trophy"] as const;
+                  const statText =
+                    suffix === "remaining" || suffix === "coming soon"
+                      ? `${value} ${suffix}`
+                      : `${value} ${label.toLowerCase()}`;
+
+                  return (
+                    <div className="flex min-w-0 items-center justify-center gap-[6px] border-r border-[#eeeae5] px-[7px] last:border-r-0" key={`${label}-${suffix}`}>
+                      <span className="flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-full bg-[#f5f1eb] text-[#756d65]">
+                        <AppIcon className="h-[10px] w-[10px]" name={statIcons[index]} />
+                      </span>
+                      <span className="truncate text-[9.5px] font-[850] leading-none text-[#17120d] 2xl:text-[10px]">{statText}</span>
+                    </div>
+                  );
+                })}
               </div>
             </Card>
 

@@ -23,25 +23,31 @@ const realActivity = () => ({ id: "a1", user_id: "u1", project_id: "p1", event_t
 
 test("real project with real tasks/activity -> nothing is demo (real wins)", () => {
   const res = applyDemoDashboardFallback(blank({ pdfs: [{}], tasks: [completedTask()], activityEvents: [realActivity()] }), params);
-  assert.deepEqual(res.demo, { usingDemo: false, research: false, schedule: false, activity: false });
+  assert.deepEqual(res.demo, { usingDemo: false, research: false, schedule: false, activity: false, learning: false });
   assert.equal(res.data.tasks.length, 1); // real task kept, not replaced
 });
 
 test("real project, no tasks/activity -> only schedule + activity are demo; research stays real", () => {
   const res = applyDemoDashboardFallback(blank({ pdfs: [{}], literatureEntries: [{}] }), params);
-  assert.deepEqual(res.demo, { usingDemo: true, research: false, schedule: true, activity: true });
+  assert.deepEqual(res.demo, { usingDemo: true, research: false, schedule: true, activity: true, learning: false });
   assert.ok(res.data.tasks.length > 0); // filled with demo tasks
 });
 
 test("real project with activity signal but no tasks -> NOT demo (preserves prior behavior)", () => {
   const res = applyDemoDashboardFallback(blank({ pdfs: [{}], activityEvents: [realActivity()] }), params);
   assert.equal(res.usingDemo, false);
-  assert.deepEqual(res.demo, { usingDemo: false, research: false, schedule: false, activity: false });
+  assert.deepEqual(res.demo, { usingDemo: false, research: false, schedule: false, activity: false, learning: false });
 });
 
-test("empty project -> full demo (research + schedule + activity)", () => {
+test("empty project -> full demo (research + schedule + activity + learning)", () => {
   const res = applyDemoDashboardFallback(blank(), params);
-  assert.deepEqual(res.demo, { usingDemo: true, research: true, schedule: true, activity: true });
+  assert.deepEqual(res.demo, { usingDemo: true, research: true, schedule: true, activity: true, learning: true });
+});
+
+test("empty project but a real course catalog -> learning is NOT demo (real catalog wins)", () => {
+  const res = applyDemoDashboardFallback(blank({ courseModules: [{ id: "m1", is_published: true }] }), params);
+  assert.equal(res.demo.learning, false); // real catalog, even with 0 watched -> untagged
+  assert.equal(res.demo.research, true); // no research data -> still demo overall
 });
 
 test("empty project but user has a real task -> research+activity demo, schedule real (real wins)", () => {

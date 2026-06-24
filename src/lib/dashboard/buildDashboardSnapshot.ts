@@ -150,7 +150,7 @@ export function buildDashboardSnapshot(input: BuildDashboardSnapshotInput): Dash
         modulesCompleted: toInt(derived.continueLearning.stats[0]?.[0]),
         lessonsDone: toInt(derived.continueLearning.stats[1]?.[0]),
         notesCreated: toInt(derived.continueLearning.stats[2]?.[0]),
-        lessonsRemaining: toInt(derived.continueLearning.stats[3]?.[0]),
+        earnedBadges: toInt(derived.continueLearning.stats[3]?.[0]),
         progressPercent: derived.continueLearning.progress,
         pace: "no_deadline",
       }),
