@@ -675,11 +675,12 @@ function ResearchFocusCard({
   data?: DashboardDerivedState["researchFocus"];
   onStartNextMove?: () => void;
 }) {
+  // Honest neutral rows only while data is still loading; real data always replaces these.
   const healthRows = (data?.health ?? [
-    { label: "Evidence balance", value: "Good", tone: "green" as const },
-    { label: "Citation coverage", value: "Needs work", tone: "amber" as const },
-    { label: "Theme clarity", value: "Strong", tone: "green" as const },
-    { label: "Draft readiness", value: "In progress", tone: "purple" as const },
+    { label: "Evidence balance", value: "—", tone: "purple" as const },
+    { label: "Citation coverage", value: "—", tone: "purple" as const },
+    { label: "Theme clarity", value: "—", tone: "purple" as const },
+    { label: "Draft readiness", value: "—", tone: "purple" as const },
   ]).map((row, index) => {
     const icon = (["shield", "file", "lightbulb", "edit"] as const)[index];
     const tone =
@@ -708,7 +709,7 @@ function ResearchFocusCard({
       <div className={`${compact ? "mt-[9px] px-[9px] py-[7px]" : "mt-[12px] px-[10px] py-[8px]"} rounded-[9px] border border-[#e8d8c6] bg-[#fbf6ef]`}>
         <p className={`${compact ? "text-[9px]" : "text-[9.5px]"} font-[850] leading-none text-[#8f6132]`}>Recommended</p>
         <p className={`${compact ? "mt-[4px] text-[9.5px] leading-[1.3]" : "mt-[5px] text-[10.5px] leading-[1.35]"} font-[650] text-[#17120d]`}>
-          {data?.recommended ?? "Review model assumptions before adding another analytics chart."}
+          {data?.recommended ?? "Add your first sources to see your next move."}
         </p>
       </div>
 
@@ -735,7 +736,7 @@ function ResearchFocusCard({
           </span>
           <div className="min-w-0">
             <p className={`${compact ? "text-[9px]" : "text-[10px]"} truncate font-[850] leading-tight`}>Watch point</p>
-            <p className="mt-[2px] text-[8.5px] font-[550] leading-tight text-[#17120d]">{data?.watchPoint ?? "Notes in 3 papers."}</p>
+            <p className="mt-[2px] text-[8.5px] font-[550] leading-tight text-[#17120d]">{data?.watchPoint ?? "Nothing urgent yet."}</p>
           </div>
         </div>
         <div className={`${compact ? "h-[36px] gap-[6px] px-[7px]" : "h-[39px] gap-[7px] px-[8px]"} flex items-center rounded-[9px] bg-[#f6f2eb]`}>
@@ -743,7 +744,7 @@ function ResearchFocusCard({
             <AppIcon className="h-[13px] w-[13px] text-[#8f6132]" name="clock" />
           </span>
           <div className="min-w-0">
-            <p className={`${compact ? "text-[10px]" : "text-[11px]"} truncate font-[850] leading-tight`}>{data?.estimatedTime ?? "25-35 min"}</p>
+            <p className={`${compact ? "text-[10px]" : "text-[11px]"} truncate font-[850] leading-tight`}>{data?.estimatedTime ?? "—"}</p>
             <p className="mt-[2px] text-[8.5px] font-[550] leading-tight text-[#17120d]">Estimated time</p>
           </div>
         </div>
@@ -1185,12 +1186,12 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
               sections={dashboardData?.researchSections}
             />
             <div className="hidden 2xl:block">
-              <ResearchFocusCard data={dashboardData?.researchFocus} onStartNextMove={() => onOpenResearchSection?.(dashboardData?.activeSectionId ?? "meta-analysis")} />
+              <ResearchFocusCard data={dashboardData?.researchFocus} onStartNextMove={() => onOpenResearchSection?.(dashboardData?.researchFocus.bottleneckSection ?? "literature-review")} />
             </div>
           </section>
 
           <section className="mt-[14px] grid grid-cols-3 gap-[10px] 2xl:hidden">
-            <ResearchFocusCard compact data={dashboardData?.researchFocus} onStartNextMove={() => onOpenResearchSection?.(dashboardData?.activeSectionId ?? "meta-analysis")} />
+            <ResearchFocusCard compact data={dashboardData?.researchFocus} onStartNextMove={() => onOpenResearchSection?.(dashboardData?.researchFocus.bottleneckSection ?? "literature-review")} />
             <TodayPlanCard compact onAddTask={onAddScheduleTask} />
             <TodayScheduleCard compact onCompleteTask={onCompleteTask} sample={demoCards?.schedule} tasks={dashboardData?.scheduleTasks} />
           </section>

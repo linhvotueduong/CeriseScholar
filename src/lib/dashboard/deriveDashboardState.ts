@@ -11,6 +11,7 @@ import {
   type ProjectScope,
   type ProjectType,
   type ResearchCounts,
+  type SectionScores,
   type TodayTargetModel,
 } from "@/lib/dashboard/todayTargetModel";
 import {
@@ -157,6 +158,8 @@ export type DashboardDerivedState = {
   }>;
   researchSections: DashboardSectionData[];
   researchFocus: {
+    /** The real next move's target section — "Start next move" routes here. */
+    bottleneckSection: DashboardSectionId;
     recommended: string;
     health: Array<{ label: string; value: string; tone: "green" | "amber" | "purple" }>;
     watchPoint: string;
@@ -319,6 +322,134 @@ export function buildGreeting(now: Date, focusLine: string): { timeOfDay: Greeti
   const hour = now.getHours();
   const timeOfDay: GreetingTimeOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
   return { timeOfDay, focusLine };
+}
+
+export type ResearchFocusInput = {
+  scores: SectionScores;
+  /** Literature rows that carry a code or theme — drives "Theme clarity". */
+  codedRows: number;
+  /** Literature rows that carry the user's own notes — drives a watch point. */
+  noteRows: number;
+  paceMode: DashboardPaceMode;
+};
+
+export type ResearchFocusResult = {
+  bottleneckSection: DashboardSectionId;
+  recommended: string;
+  health: Array<{ label: string; value: string; tone: "green" | "amber" | "purple" }>;
+  watchPoint: string;
+  estimatedTime: string;
+};
+
+// A stage must reach GATE before the next stage in the pipeline is even considered
+// (you can't sensibly "polish citations" before there's a draft); below GOOD a stage
+// still counts as a bottleneck candidate.
+const RESEARCH_GATE = 0.4;
+const RESEARCH_GOOD = 0.7;
+
+/**
+ * Deterministic, local Research Focus — the real bottleneck + next move, health, a watch
+ * point, and a time estimate, all from the formula section scores. Takes NO schedule/task
+ * input by design: the "schedule back-edge" stays removed (the card never reads the plan).
+ */
+export function computeResearchFocus(input: ResearchFocusInput): ResearchFocusResult {
+  const { scores, codedRows, noteRows, paceMode } = input;
+  const lit = scores.literatureReviewScore;
+  const meta = scores.metaAnalysisScore;
+  const synth = scores.workspaceSynthesisScore;
+  const draft = scores.paperDraftScore;
+  const cite = scores.citationScore;
+
+  // How big a chunk to suggest, by pace. At pace "low" (qty "1") nouns read as singular.
+  const qty = paceMode === "high" ? "3–4" : paceMode === "low" ? "1" : "2–3";
+  const unit = (singular: string, plural: string) => (qty === "1" ? singular : plural);
+
+  // Research pipeline in deliverable order, each gated by its prerequisite. The bottleneck
+  // is the weakest UNLOCKED stage (earliest on ties); gating keeps draft/citations from
+  // being recommended before there is evidence/synthesis to support them.
+  const stages: Array<{ id: DashboardSectionId; score: number; unlocked: boolean; move: string }> = [
+    {
+      id: "literature-review",
+      score: lit,
+      unlocked: true,
+      move: `Add ${qty} literature ${unit("row", "rows")} with codes to build your evidence base.`,
+    },
+    {
+      id: "meta-analysis",
+      score: meta,
+      unlocked: lit >= RESEARCH_GATE,
+      move: `Add ${qty} effect ${unit("size", "sizes")} with sample sizes to firm up the meta-analysis.`,
+    },
+    {
+      id: "workspace",
+      score: synth,
+      unlocked: lit >= RESEARCH_GATE,
+      move: `Turn your strongest evidence into ${qty} synthesis ${unit("paragraph", "paragraphs")} in the workspace.`,
+    },
+    {
+      id: "draft",
+      score: draft,
+      unlocked: lit >= RESEARCH_GATE && synth >= RESEARCH_GATE,
+      move: `Draft ${qty} ${unit("paragraph", "paragraphs")} from your synthesis — write it up, don't gather more.`,
+    },
+    {
+      id: "citations",
+      score: cite,
+      unlocked: draft >= RESEARCH_GATE,
+      move: `Link ${qty} ${unit("citation", "citations")} to claims in your draft to close coverage gaps.`,
+    },
+  ];
+
+  const unlocked = stages.filter((stage) => stage.unlocked);
+  let bottleneck = unlocked[0];
+  for (const stage of unlocked) {
+    if (stage.score < bottleneck.score) bottleneck = stage;
+  }
+  const allStrong = unlocked.every((stage) => stage.score >= RESEARCH_GOOD);
+
+  const recommended = allStrong
+    ? "Every section is in good shape — tighten your weakest claims and keep the draft moving."
+    : bottleneck.move;
+
+  // Watch point: the most pressing real risk, else a calm note. Never an invented count.
+  let watchPoint: string;
+  if (lit < RESEARCH_GATE) {
+    watchPoint = "Your evidence base is thin — add a few literature rows first.";
+  } else if (cite < lit - 0.25) {
+    watchPoint = "Citations are lagging your evidence — link sources to your claims.";
+  } else if (noteRows > codedRows + 2) {
+    watchPoint = "You have notes that aren't coded into themes yet.";
+  } else if (draft < synth - 0.25) {
+    watchPoint = "Synthesis is ahead of your draft — start writing it up.";
+  } else {
+    watchPoint = "Nothing urgent — keep building your strongest section.";
+  }
+
+  // Time estimate from how far the bottleneck sits below "good", nudged by pace. Tied to
+  // research work — NOT to local-agent setup readiness.
+  const gap = Math.max(0, RESEARCH_GOOD - bottleneck.score);
+  let lo = gap >= 0.5 ? 30 : gap >= 0.25 ? 20 : 10;
+  let hi = gap >= 0.5 ? 45 : gap >= 0.25 ? 30 : 20;
+  if (paceMode === "high") {
+    lo += 5;
+    hi += 10;
+  } else if (paceMode === "low") {
+    lo = Math.max(5, lo - 5);
+    hi = Math.max(lo + 5, hi - 10);
+  }
+
+  return {
+    bottleneckSection: bottleneck.id,
+    recommended,
+    health: [
+      { label: "Evidence balance", value: lit >= 0.45 ? "Good" : "Needs work", tone: lit >= 0.45 ? "green" : "amber" },
+      { label: "Citation coverage", value: cite >= 0.7 ? "Good" : "Needs work", tone: cite >= 0.7 ? "green" : "amber" },
+      { label: "Theme clarity", value: codedRows >= 3 ? "Strong" : "Build up", tone: codedRows >= 3 ? "green" : "amber" },
+      { label: "Draft readiness", value: draft >= 0.6 ? "Ready" : "In progress", tone: draft >= 0.6 ? "green" : "purple" },
+    ],
+    watchPoint,
+    estimatedTime: `${lo}-${hi} min`,
+  };
 }
 
 function recentChangeTitle(event: DashboardActivityEvent) {
@@ -711,11 +842,14 @@ export function deriveDashboardState(
   const plannedHighlights = Math.max(1, Math.min(3, Math.max(0, pdfCount * 2 - highlightCount) || 3));
   const now = targetContext?.today ?? new Date();
   const lastActivity = data.activityEvents[0]?.created_at ?? project.updated_at;
-  // The real "useful move today" line — shared by Research Focus and the greeting.
-  const researchRecommended =
-    metaProgress >= literatureProgress
-      ? "Review model assumptions before adding another analytics chart."
-      : "Complete literature rows before moving into another synthesis step.";
+  // Research Focus from the formula section scores (deterministic, local, no schedule).
+  // Its "recommended" is the real useful move today — shared with the greeting.
+  const researchFocus = computeResearchFocus({
+    scores: sectionScores,
+    codedRows,
+    noteRows,
+    paceMode: targetSettings.paceMode,
+  });
   // Activity Log from the dedicated meaningful feed when it has rows; otherwise fall
   // back to activityEvents (filtered in-code by buildRecentChanges). Using a length
   // check (not ??) so an empty/failed feed query still falls through. Empty result =>
@@ -723,7 +857,7 @@ export function deriveDashboardState(
   const activityForLog =
     data.activityFeed && data.activityFeed.length > 0 ? data.activityFeed : data.activityEvents;
   const recentChanges = buildRecentChanges(activityForLog, now.getTime());
-  const greeting = buildGreeting(now, researchRecommended);
+  const greeting = buildGreeting(now, researchFocus.recommended);
 
   return {
     activeSectionId,
@@ -883,17 +1017,7 @@ export function deriveDashboardState(
         button: "Open Cerise Scholar",
       },
     ],
-    researchFocus: {
-      recommended: researchRecommended,
-      health: [
-        { label: "Evidence balance", value: sectionScores.literatureReviewScore >= 0.45 ? "Good" : "Needs work", tone: sectionScores.literatureReviewScore >= 0.45 ? "green" : "amber" },
-        { label: "Citation coverage", value: sectionScores.citationScore >= 0.7 ? "Good" : "Needs work", tone: sectionScores.citationScore >= 0.7 ? "green" : "amber" },
-        { label: "Theme clarity", value: codedRows >= 3 ? "Strong" : "Build up", tone: codedRows >= 3 ? "green" : "amber" },
-        { label: "Draft readiness", value: sectionScores.paperDraftScore >= 0.6 ? "Ready" : "In progress", tone: sectionScores.paperDraftScore >= 0.6 ? "green" : "purple" },
-      ],
-      watchPoint: noteRows > 2 ? `Notes in ${Math.min(noteRows, 9)} rows.` : "Notes in 3 papers.",
-      estimatedTime: `${readyCount === readyChecks.length ? "25-35" : "10-15"} min`,
-    },
+    researchFocus,
     continueLearning: {
       lesson: "Evidence synthesis",
       body: "Learn how to code and connect evidence across studies, identify patterns, and build a strong synthesis table.",
