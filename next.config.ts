@@ -4,9 +4,16 @@ const nextConfig: NextConfig = {
   output: "standalone",
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   turbopack: {},
-  webpack: (config) => {
-    // PDF.js needs canvas to be treated as an external module on the server
-    config.resolve.alias.canvas = false;
+  // The server must load these natively at runtime: `canvas` ships a compiled binary
+  // and tesseract.js spawns workers — bundling them breaks server-side OCR.
+  serverExternalPackages: ["canvas", "tesseract.js", "pdfjs-dist"],
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Browser bundles must stub PDF.js's optional `canvas` require — the browser
+      // draws with its own canvas. Server bundles need the REAL module (see
+      // serverExternalPackages above); stubbing it there broke OCR entirely.
+      config.resolve.alias.canvas = false;
+    }
     return config;
   },
   async headers() {

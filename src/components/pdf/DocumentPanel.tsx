@@ -110,6 +110,18 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
     [pdfs, currentPdfId, router]
   );
 
+  async function handleRetryOcr(e: React.MouseEvent, pdfId: string) {
+    e.stopPropagation();
+    setPdfs((prev) => prev.map((p) => (p.id === pdfId ? { ...p, ocr_status: "processing" } : p)));
+    await runOcr(pdfId);
+    // The OCR route waits for the queued job, so the final status is ready to read now.
+    const supabase = createClient();
+    const { data } = await supabase.from("pdfs").select("ocr_status").eq("id", pdfId).single();
+    if (data?.ocr_status) {
+      setPdfs((prev) => prev.map((p) => (p.id === pdfId ? { ...p, ocr_status: data.ocr_status } : p)));
+    }
+  }
+
   function handleDragStart(index: number) { setDraggedIndex(index); }
   function handleDragOver(e: React.DragEvent, index: number) { e.preventDefault(); setDragOverIndex(index); }
   function handleDrop(index: number) {
@@ -187,6 +199,17 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
                   )}
                 </p>
               </button>
+
+              {pdf.ocr_status === "failed" && (
+                <button
+                  className="absolute right-5 top-1/2 -translate-y-1/2 rounded border border-[#e0cdb8] bg-white px-1.5 py-0.5 text-[9px] font-semibold text-[#8f6132] hover:bg-[#f6efe4]"
+                  onClick={(e) => handleRetryOcr(e, pdf.id)}
+                  title="Retry text extraction"
+                  type="button"
+                >
+                  retry
+                </button>
+              )}
 
               <button
                 onClick={(e) => handleDelete(e, pdf.id)}
