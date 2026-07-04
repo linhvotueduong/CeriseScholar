@@ -400,6 +400,7 @@ export function useDashboardState({
           settings: uiToPersistedSettings(targetSettings, persistedSettingsRef.current),
           projectStartDate: new Date(project.created_at),
           today: new Date(),
+          hasPersistedTarget: persistedSettingsRef.current !== null,
         }
       ),
     [agentReady, ollamaReady, project, safetyReady, sourceData, targetSettings, taskDate]

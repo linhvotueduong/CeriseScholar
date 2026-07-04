@@ -20,11 +20,15 @@ import {
   type DashboardTargetPaceSummary,
   type DashboardTargetSettings,
 } from "@/lib/dashboard/targetPace";
+import { computeResearchReadiness, isGenuineApa } from "@/lib/dashboard/researchReadiness";
+import { DEFAULT_CODES } from "@/types/code";
 
 export type DashboardSectionId =
   | "meta-analysis"
   | "literature-review"
   | "workspace"
+  | "upload"
+  | "scholarask"
   | "draft"
   | "citations"
   | "notes";
@@ -161,9 +165,12 @@ export type DashboardDerivedState = {
     /** The real next move's target section — "Start next move" routes here. */
     bottleneckSection: DashboardSectionId;
     recommended: string;
-    health: Array<{ label: string; value: string; tone: "green" | "amber" | "purple" }>;
+    readinessSummary: string;
+    health: Array<{ label: string; value: string; tone: "green" | "amber" | "purple" | "red" }>;
     watchPoint: string;
     estimatedTime: string;
+    currentStatus: string;
+    nextBestMove: string;
   };
   continueLearning: ContinueLearningResult;
   scheduleTasks: DashboardTask[];
@@ -331,9 +338,12 @@ export type ResearchFocusInput = {
 export type ResearchFocusResult = {
   bottleneckSection: DashboardSectionId;
   recommended: string;
-  health: Array<{ label: string; value: string; tone: "green" | "amber" | "purple" }>;
+  readinessSummary: string;
+  health: Array<{ label: string; value: string; tone: "green" | "amber" | "purple" | "red" }>;
   watchPoint: string;
   estimatedTime: string;
+  currentStatus: string;
+  nextBestMove: string;
 };
 
 // A stage must reach GATE before the next stage in the pipeline is even considered
@@ -343,8 +353,8 @@ const RESEARCH_GATE = 0.4;
 const RESEARCH_GOOD = 0.7;
 
 /**
- * Deterministic, local Research Focus — the real bottleneck + next move, health, a watch
- * point, and a time estimate, all from the formula section scores. Takes NO schedule/task
+ * Deterministic, local Research Readiness — the real bottleneck + next move, health,
+ * current status, and readiness summary, all from the formula section scores. Takes NO schedule/task
  * input by design: the "schedule back-edge" stays removed (the card never reads the plan).
  */
 export function computeResearchFocus(input: ResearchFocusInput): ResearchFocusResult {
@@ -406,6 +416,78 @@ export function computeResearchFocus(input: ResearchFocusInput): ResearchFocusRe
     ? "Every section is in good shape — tighten your weakest claims and keep the draft moving."
     : bottleneck.move;
 
+  const anyResearchStarted = lit > 0 || meta > 0 || synth > 0 || draft > 0 || cite > 0 || codedRows > 0 || noteRows > 0;
+  const readiness = (() => {
+    if (!anyResearchStarted) {
+      return {
+        summary: "You haven’t started building your research yet. Let’s take the first step.",
+        currentStatus: "No research started",
+        nextBestMove: "Define topic and goal",
+      };
+    }
+    if (lit === 0 && meta === 0 && synth === 0 && draft === 0 && cite === 0) {
+      return {
+        summary: "You have a topic, but no evidence base yet. Start gathering initial sources.",
+        currentStatus: "Topic defined",
+        nextBestMove: "Add first sources",
+      };
+    }
+    if (lit > 0 && codedRows === 0 && synth === 0) {
+      return {
+        summary: "Sources are collected, but they have not been reviewed or annotated yet.",
+        currentStatus: "Sources collected",
+        nextBestMove: "Review and annotate sources",
+      };
+    }
+    if (allStrong) {
+      return {
+        summary: "Your research is organized, supported, and ready to be packaged into a final output.",
+        currentStatus: "Ready to export",
+        nextBestMove: "Generate final report",
+      };
+    }
+    if (lit >= RESEARCH_GOOD && cite >= RESEARCH_GOOD && codedRows >= 3 && synth >= RESEARCH_GOOD) {
+      return {
+        summary: "Your research base is strong enough to begin connecting findings into a clear synthesis.",
+        currentStatus: "Ready for synthesis",
+        nextBestMove: "Start synthesizing findings",
+      };
+    }
+    if (draft > 0) {
+      return {
+        summary: "A draft is taking shape, but some sections still need stronger research support.",
+        currentStatus: "Draft in progress",
+        nextBestMove: "Fill evidence gaps",
+      };
+    }
+    if (codedRows < 3 && noteRows > codedRows) {
+      return {
+        summary: "You have sources and notes, but your central direction is still too scattered.",
+        currentStatus: "Direction unclear",
+        nextBestMove: "Group notes into themes",
+      };
+    }
+    if (cite < lit - 0.25) {
+      return {
+        summary: "Your ideas are developing well, but too many claims still lack direct support.",
+        currentStatus: "Claims need support",
+        nextBestMove: "Link claims to evidence",
+      };
+    }
+    if (lit >= RESEARCH_GATE && (meta < RESEARCH_GATE || synth < RESEARCH_GATE)) {
+      return {
+        summary: "You have useful material, but your evidence is uneven across perspectives or source types.",
+        currentStatus: "Evidence is uneven",
+        nextBestMove: "Add missing perspectives",
+      };
+    }
+    return {
+      summary: "Your theme is forming, but evidence and citations still need more support.",
+      currentStatus: "Building foundation",
+      nextBestMove: "Strengthen weak claims",
+    };
+  })();
+
   // Watch point: the most pressing real risk, else a calm note. Never an invented count.
   let watchPoint: string;
   if (lit < RESEARCH_GATE) {
@@ -436,14 +518,21 @@ export function computeResearchFocus(input: ResearchFocusInput): ResearchFocusRe
   return {
     bottleneckSection: bottleneck.id,
     recommended,
+    readinessSummary: readiness.summary,
     health: [
-      { label: "Evidence balance", value: lit >= 0.45 ? "Good" : "Needs work", tone: lit >= 0.45 ? "green" : "amber" },
-      { label: "Citation coverage", value: cite >= 0.7 ? "Good" : "Needs work", tone: cite >= 0.7 ? "green" : "amber" },
-      { label: "Theme clarity", value: codedRows >= 3 ? "Strong" : "Build up", tone: codedRows >= 3 ? "green" : "amber" },
-      { label: "Draft readiness", value: draft >= 0.6 ? "Ready" : "In progress", tone: draft >= 0.6 ? "green" : "purple" },
+      { label: "Source balance", value: lit >= 0.7 ? "Strong" : lit > 0 ? "In progress" : "Not started", tone: lit >= 0.7 ? "green" : lit > 0 ? "purple" : "purple" },
+      { label: "Claim support", value: cite >= 0.7 ? "Strong" : cite > 0 ? "In progress" : "Not started", tone: cite >= 0.7 ? "green" : cite > 0 ? "purple" : "purple" },
+      { label: "Theme clarity", value: codedRows >= 3 ? "Strong" : codedRows > 0 || noteRows > 0 ? "In progress" : "Not started", tone: codedRows >= 3 ? "green" : codedRows > 0 || noteRows > 0 ? "purple" : "purple" },
+      {
+        label: "Synthesis readiness",
+        value: synth >= 0.7 ? "Ready" : synth > 0 ? "Needs work" : anyResearchStarted ? "Not ready" : "Not started",
+        tone: synth >= 0.7 ? "green" : synth > 0 ? "amber" : anyResearchStarted ? "red" : "purple",
+      },
     ],
     watchPoint,
     estimatedTime: `${lo}-${hi} min`,
+    currentStatus: readiness.currentStatus,
+    nextBestMove: readiness.nextBestMove,
   };
 }
 
@@ -727,6 +816,8 @@ export type TodayTargetContext = {
   settings: TodayTargetSettingsInput;
   projectStartDate: Date;
   today: Date;
+  /** True when the user has a persisted Today's Target row (drives the "target set" check). */
+  hasPersistedTarget?: boolean;
 };
 
 const DEFAULT_TARGET_SETTINGS: TodayTargetSettingsInput = {
@@ -1025,14 +1116,95 @@ export function deriveDashboardState(
   const plannedHighlights = Math.max(1, Math.min(3, Math.max(0, pdfCount * 2 - highlightCount) || 3));
   const now = targetContext?.today ?? new Date();
   const lastActivity = data.activityEvents[0]?.created_at ?? project.updated_at;
-  // Research Focus from the formula section scores (deterministic, local, no schedule).
-  // Its "recommended" is the real useful move today — shared with the greeting.
-  const researchFocus = computeResearchFocus({
+  // Research Readiness — the connected micro-check model of the whole research journey.
+  // The card (summary, health, status, next move) and its "Start next move" routing are all
+  // driven by this single model. computeResearchFocus is retained only for the legacy
+  // watchPoint/estimatedTime fields still read by the dashboard snapshot.
+  // Readiness signals v2.4 (docs/research-readiness-checklist-model.md). Auto-behavior
+  // gates are applied HERE so the pure helper only ever sees honest counts: default codes
+  // excluded, stub apa_reference filtered by shape, ripeness proxied by insight work until
+  // the per-source Finish button ships (then sources.finished carries the real signal).
+  const genuineApaRows = data.literatureEntries.filter((entry) => isGenuineApa(String(entry.apa_reference ?? ""))).length;
+  const ripeSynthesizedRows = meaningfulNoteRows.filter((entry) => isMeaningfulText(entry.synthesis_paragraph)).length;
+  const defaultCodeNames = new Set(DEFAULT_CODES.map((code) => code.name.toLowerCase()));
+  const userCodes = data.codes.filter((code) => {
+    const name = String(code.name ?? "").trim();
+    return name.length > 0 && !defaultCodeNames.has(name.toLowerCase());
+  }).length;
+  const themedRows = data.literatureEntries.filter((entry) => isMeaningfulLabel(entry.code_name)).length;
+  const codedHighlights = data.highlights.filter((highlight) => nonEmpty(highlight.code_id)).length;
+  const ocrFailed = data.pdfs.filter((pdf) => String(pdf.ocr_status ?? "") === "failed").length;
+  const sectionByKey = (key: string) => data.paperSections.find((section) => String(section.section_key ?? "") === key);
+  const meaningfulSection = (key: string) => isMeaningfulText(sectionByKey(key)?.content);
+  const readiness = computeResearchReadiness({
+    now: now.getTime(),
+    titleText: project.name ?? "",
+    topicText: project.description ?? "",
+    pathwayText: null, // Research Pathway home not shipped yet (checklist model §6.3)
+    settings: {
+      hasTargetDate: !!targetSettings.deadlineDate,
+      hasPace: targetContext?.hasPersistedTarget ?? false,
+      hasProjectModel: targetContext?.hasPersistedTarget ?? false,
+      expectedSources: targetSettings.scope?.expectedSources ?? null,
+    },
+    sources: {
+      total: pdfCount,
+      ocrFailed,
+      finished: null, // Finish button not shipped yet (§7)
+      insightSources: new Set(meaningfulNoteRows.map((entry) => entry.pdf_id).filter(Boolean)).size,
+    },
+    highlights: highlightCount,
+    meaningfulNotes,
+    userCodes,
+    themedRows,
+    codedHighlightFraction: data.highlights.length > 0 ? codedHighlights / data.highlights.length : 0,
+    rows: {
+      total: litCount,
+      insightful: meaningfulNoteRows.length,
+      genuineApa: genuineApaRows,
+      synthesized: meaningfulSynthesisRows.length,
+      ripe: meaningfulNoteRows.length,
+      ripeSynthesized: ripeSynthesizedRows,
+    },
+    draft: {
+      litSection: meaningfulSection("literature_review"),
+      coreSections: ["introduction", "methodology", "results", "discussion"].filter(meaningfulSection).length,
+      referencesSynced: nonEmpty(sectionByKey("references")?.content),
+      abstract: meaningfulSection("abstract"),
+      conclusion: meaningfulSection("conclusion"),
+    },
+    meta: {
+      exists: !!meta,
+      question: nonEmpty(meta?.research_question),
+      hypothesis: nonEmpty(meta?.hypothesis),
+      typeSet: nonEmpty(meta?.hypothesis_type),
+      mapped: !!meta?.column_mapping && Object.keys(meta.column_mapping).length > 0,
+      results: Array.isArray(meta?.canvas_blocks) && meta.canvas_blocks.length > 0,
+      requiredByScope: targetSettings.scope?.metaAnalysisRequired ?? false,
+    },
+    journeyEvents: null, // research_query_submitted event not logged yet (pivot Phase 1)
+    synthQuality: aiSignals.synthesisReadiness ?? 0,
+    recentEvents: data.activityEvents.slice(0, 50).map((event) => ({
+      type: event.event_type,
+      at: Date.parse(event.created_at),
+    })),
+  });
+  const legacyFocus = computeResearchFocus({
     scores: sectionScores,
     codedRows,
     noteRows,
     paceMode: targetSettings.paceMode,
   });
+  const researchFocus = {
+    bottleneckSection: readiness.nextMoveSectionId,
+    recommended: readiness.nextBestMove,
+    readinessSummary: readiness.readinessSummary,
+    health: readiness.healthRows,
+    watchPoint: legacyFocus.watchPoint,
+    estimatedTime: legacyFocus.estimatedTime,
+    currentStatus: readiness.currentStatus,
+    nextBestMove: readiness.nextBestMove,
+  };
   // Activity Log from the dedicated meaningful feed when it has rows; otherwise fall
   // back to activityEvents (filtered in-code by buildRecentChanges). Using a length
   // check (not ??) so an empty/failed feed query still falls through. Empty result =>
