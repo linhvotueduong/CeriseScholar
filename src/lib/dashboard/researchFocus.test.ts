@@ -28,6 +28,9 @@ test("empty project -> literature-review is the bottleneck, honest thin-evidence
   const r = focus(S());
   assert.equal(r.bottleneckSection, "literature-review");
   assert.match(r.recommended, /literature rows/i);
+  assert.match(r.readinessSummary, /haven’t started building your research/i);
+  assert.equal(r.currentStatus, "No research started");
+  assert.equal(r.nextBestMove, "Define topic and goal");
   assert.match(r.watchPoint, /evidence base is thin/i);
 });
 
@@ -52,10 +55,26 @@ test("all-strong project -> 'good shape' message and a light time estimate", () 
     5
   );
   assert.match(r.recommended, /good shape/i);
+  assert.equal(r.currentStatus, "Ready to export");
+  assert.equal(r.nextBestMove, "Generate final report");
   assert.equal(r.estimatedTime, "10-20 min");
   assert.deepEqual(
     r.health.map((h) => h.value),
-    ["Good", "Good", "Strong", "Ready"]
+    ["Strong", "Strong", "Strong", "Ready"]
+  );
+});
+
+test("readiness model describes sparse source work without repeating the old watch/time tiles", () => {
+  const r = focus(S({ literatureReviewScore: 0.2 }), 0, 0);
+  assert.equal(r.currentStatus, "Sources collected");
+  assert.equal(r.nextBestMove, "Review and annotate sources");
+  assert.deepEqual(
+    r.health.map((h) => h.label),
+    ["Source balance", "Claim support", "Theme clarity", "Synthesis readiness"]
+  );
+  assert.deepEqual(
+    r.health.map((h) => h.value),
+    ["In progress", "Not started", "Not started", "Not ready"]
   );
 });
 

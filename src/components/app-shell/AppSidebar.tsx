@@ -85,7 +85,7 @@ export default function AppSidebar() {
   }, [nightMode]);
 
   return (
-    <aside className="hidden h-screen self-start bg-white lg:sticky lg:top-0 lg:flex lg:flex-col">
+    <aside className="hidden h-full min-h-0 overflow-hidden bg-white lg:flex lg:flex-col">
       <div className="px-5 py-5">
         <label className="relative block">
           <span className="sr-only">Search</span>

@@ -139,9 +139,12 @@ export function buildDashboardSnapshot(input: BuildDashboardSnapshotInput): Dash
       }),
       researchFocus: card({
         recommendation: derived.researchFocus.recommended,
+        readinessSummary: derived.researchFocus.readinessSummary,
         healthRows: derived.researchFocus.health,
         watchPoint: derived.researchFocus.watchPoint,
         estimatedMinutesRange: parseMinutesRange(derived.researchFocus.estimatedTime),
+        currentStatus: derived.researchFocus.currentStatus,
+        nextBestMove: derived.researchFocus.nextBestMove,
         startNextMoveRoute: ROUTE_PLACEHOLDER,
       }),
       continueLearning: card({

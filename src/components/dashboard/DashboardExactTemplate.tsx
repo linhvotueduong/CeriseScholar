@@ -679,10 +679,10 @@ function ResearchFocusCard({
 }) {
   // Honest neutral rows only while data is still loading; real data always replaces these.
   const healthRows = (data?.health ?? [
-    { label: "Evidence balance", value: "—", tone: "purple" as const },
-    { label: "Citation coverage", value: "—", tone: "purple" as const },
+    { label: "Source balance", value: "—", tone: "purple" as const },
+    { label: "Claim support", value: "—", tone: "purple" as const },
     { label: "Theme clarity", value: "—", tone: "purple" as const },
-    { label: "Draft readiness", value: "—", tone: "purple" as const },
+    { label: "Synthesis readiness", value: "—", tone: "purple" as const },
   ]).map((row, index) => {
     const icon = (["shield", "file", "lightbulb", "edit"] as const)[index];
     const tone =
@@ -690,28 +690,30 @@ function ResearchFocusCard({
         ? ["bg-[#edf4e8] text-[#4f6f3d]", "bg-[#6f8b5b]", "bg-[#f3f0eb] text-[#6f6a64]"]
         : row.tone === "amber"
           ? ["bg-[#f6ead8] text-[#8f6132]", "bg-[#b6844e]", "bg-[#f3f0eb] text-[#6f6a64]"]
-          : ["bg-[#f3f0eb] text-[#6f6a64]", "bg-[#8f8275]", "bg-[#f3f0eb] text-[#6f6a64]"];
+          : row.tone === "red"
+            ? ["bg-[#fbebea] text-[#9a3f3a]", "bg-[#c85f56]", "bg-[#f3f0eb] text-[#6f6a64]"]
+            : ["bg-[#f3f0eb] text-[#6f6a64]", "bg-[#8f8275]", "bg-[#f3f0eb] text-[#6f6a64]"];
     return [icon, row.label, row.value, tone[0], tone[1], tone[2]] as const;
   }) satisfies ReadonlyArray<readonly [AppIconName, string, string, string, string, string]>;
 
   return (
     <Card className={`${compact ? "h-[306px] px-[10px] pb-[9px] pt-[13px]" : "h-[318px] px-[12px] pb-[10px] pt-[17px]"} min-w-0`}>
       <div className="flex items-start justify-between gap-3">
-        <h2 className={`${compact ? "text-[13px]" : "mt-[2px] text-[14px]"} whitespace-nowrap font-[850] leading-none`}>Research Focus</h2>
+        <h2 className={`${compact ? "text-[13px]" : "mt-[2px] text-[14px]"} whitespace-nowrap font-[850] leading-none`}>Research Readiness</h2>
         <button
-          className={`${compact ? "h-[21px] px-[4px] text-[8px]" : "-mt-[8px] h-[23px] px-[5px] text-[9px]"} inline-flex shrink-0 items-center justify-center gap-[4px] rounded-[6px] border border-[#e0cdb8] bg-white font-[850] text-[#17120d]`}
+          className={`${compact ? "h-[28px] px-[8px] text-[8.5px]" : "-mt-[5px] h-[30px] px-[9px] text-[9px]"} inline-flex shrink-0 items-center justify-center gap-[4px] rounded-[6px] border border-[#e0cdb8] bg-white font-[850] text-[#17120d]`}
           onClick={onStartNextMove}
           type="button"
         >
-          <AppIcon className={`${compact ? "h-[8px] w-[8px]" : "h-[9px] w-[9px]"} text-[#6b3f16]`} name="play" />
+          <AppIcon className={`${compact ? "h-[9px] w-[9px]" : "h-[10px] w-[10px]"} text-[#6b3f16]`} name="play" />
           Start next move
         </button>
       </div>
 
       <div className={`${compact ? "mt-[9px] px-[9px] py-[7px]" : "mt-[12px] px-[10px] py-[8px]"} rounded-[9px] border border-[#e8d8c6] bg-[#fbf6ef]`}>
-        <p className={`${compact ? "text-[9px]" : "text-[9.5px]"} font-[850] leading-none text-[#8f6132]`}>Recommended</p>
+        <p className={`${compact ? "text-[9px]" : "text-[9.5px]"} font-[850] leading-none text-[#8f6132]`}>Readiness summary</p>
         <p className={`${compact ? "mt-[4px] text-[9.5px] leading-[1.3]" : "mt-[5px] text-[10.5px] leading-[1.35]"} font-[650] text-[#17120d]`}>
-          {data?.recommended ?? "Add your first sources to see your next move."}
+          {data?.readinessSummary ?? "Your research readiness will appear as your work takes shape."}
         </p>
       </div>
 
@@ -731,23 +733,23 @@ function ResearchFocusCard({
         ))}
       </div>
 
-      <div className={`${compact ? "mt-[9px] gap-[6px]" : "mt-[11px] gap-[8px]"} grid grid-cols-2`}>
-        <div className={`${compact ? "h-[36px] gap-[6px] px-[7px]" : "h-[39px] gap-[7px] px-[8px]"} flex items-center rounded-[9px] bg-[#fff8ef]`}>
-          <span className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-[#fff0dd]">
-            <AppIcon className="h-[13px] w-[13px] text-[#8f5d24]" name="search" />
+      <div className={`${compact ? "mt-[8px] gap-[7px]" : "mt-[10px] gap-[8px]"} grid grid-cols-2`}>
+        <div className={`${compact ? "h-[42px] gap-[7px] px-[8px]" : "h-[46px] gap-[9px] px-[9px]"} flex items-center rounded-[10px] border border-[#f1dfca] bg-[#fff7ec]`}>
+          <span className={`${compact ? "h-[27px] w-[27px]" : "h-[31px] w-[31px]"} flex shrink-0 items-center justify-center rounded-full bg-[#fff0d9]`}>
+            <AppIcon className={`${compact ? "h-[15px] w-[15px]" : "h-[17px] w-[17px]"} text-[#9b641d]`} name="target" />
           </span>
           <div className="min-w-0">
-            <p className={`${compact ? "text-[9px]" : "text-[10px]"} truncate font-[850] leading-tight`}>Watch point</p>
-            <p className="mt-[2px] text-[8.5px] font-[550] leading-tight text-[#17120d]">{data?.watchPoint ?? "Nothing urgent yet."}</p>
+            <p className={`${compact ? "text-[7.5px]" : "text-[8px]"} truncate font-[850] leading-tight text-[#9b641d]`}>Current status</p>
+            <p className={`${compact ? "mt-[2px] text-[9px]" : "mt-[3px] text-[10px]"} font-[850] leading-tight text-[#17120d]`}>{data?.currentStatus ?? "Not started"}</p>
           </div>
         </div>
-        <div className={`${compact ? "h-[36px] gap-[6px] px-[7px]" : "h-[39px] gap-[7px] px-[8px]"} flex items-center rounded-[9px] bg-[#f6f2eb]`}>
-          <span className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full bg-[#eee6da]">
-            <AppIcon className="h-[13px] w-[13px] text-[#8f6132]" name="clock" />
+        <div className={`${compact ? "h-[42px] gap-[7px] px-[8px]" : "h-[46px] gap-[9px] px-[9px]"} flex items-center rounded-[10px] border border-[#e3ead9] bg-[#f3f7ee]`}>
+          <span className={`${compact ? "h-[27px] w-[27px]" : "h-[31px] w-[31px]"} flex shrink-0 items-center justify-center rounded-full bg-[#e5eedc]`}>
+            <AppIcon className={`${compact ? "h-[15px] w-[15px]" : "h-[17px] w-[17px]"} text-[#4f6f3d]`} name="arrow-up-right" />
           </span>
           <div className="min-w-0">
-            <p className={`${compact ? "text-[10px]" : "text-[11px]"} truncate font-[850] leading-tight`}>{data?.estimatedTime ?? "—"}</p>
-            <p className="mt-[2px] text-[8.5px] font-[550] leading-tight text-[#17120d]">Estimated time</p>
+            <p className={`${compact ? "text-[7.5px]" : "text-[8px]"} truncate font-[850] leading-tight text-[#4f6f3d]`}>Next best move</p>
+            <p className={`${compact ? "mt-[2px] text-[9px]" : "mt-[3px] text-[10px]"} font-[850] leading-tight text-[#17120d]`}>{data?.nextBestMove ?? "Define topic and goal"}</p>
           </div>
         </div>
       </div>

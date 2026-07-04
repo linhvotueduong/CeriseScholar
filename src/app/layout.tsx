@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { DM_Sans, DM_Serif_Display, PT_Mono, Playfair_Display, Noto_Sans } from "next/font/google";
 import "./globals.css";
 import FlowGuide from "../components/FlowGuide";
@@ -57,7 +58,9 @@ export default function RootLayout({
       className={`${dmSans.variable} ${dmSerif.variable} ${ptMono.variable} ${playfair.variable} ${notoSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-paper text-ink" suppressHydrationWarning>
-        <script
+        <Script
+          id="cerise-night-mode-bootstrap"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html:
               "try{if(localStorage.getItem('cerise-night-mode')==='true'){document.documentElement.classList.add('cerise-night-mode');document.body.classList.add('cerise-night-mode')}}catch(e){}",

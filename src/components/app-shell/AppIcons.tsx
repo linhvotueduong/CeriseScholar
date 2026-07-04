@@ -5,6 +5,7 @@ export type AppIconName =
   | "alert"
   | "arrow-left"
   | "arrow-right"
+  | "arrow-up-right"
   | "book"
   | "book-open"
   | "bug"
@@ -55,6 +56,7 @@ const iconPaths: Record<AppIconName, ReactNode> = {
   ),
   "arrow-left": <path d="M19 12H5M11 6l-6 6 6 6" />,
   "arrow-right": <path d="M5 12h14M13 6l6 6-6 6" />,
+  "arrow-up-right": <path d="M7 17 17 7M9 7h8v8" />,
   bell: (
     <>
       <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" />

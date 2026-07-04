@@ -129,7 +129,7 @@ export type ScheduleState = {
   deviceLaneTasks: DashboardTask[];
 };
 
-export type HealthTone = "green" | "amber" | "purple";
+export type HealthTone = "green" | "amber" | "purple" | "red";
 
 export type SectionsState = {
   selectedSection: DashboardSectionId;
@@ -141,9 +141,12 @@ export type SectionsState = {
 
 export type ResearchFocusState = {
   recommendation: string;
+  readinessSummary: string;
   healthRows: Array<{ label: string; value: string; tone: HealthTone }>;
   watchPoint: string;
   estimatedMinutesRange: [number, number];
+  currentStatus: string;
+  nextBestMove: string;
   startNextMoveRoute: string;
 };
 

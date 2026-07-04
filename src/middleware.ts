@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
@@ -36,9 +37,17 @@ export async function middleware(request: NextRequest) {
   // Use getUser to validate the JWT against Supabase on every request.
   // Slightly slower than getSession, but ensures revoked/expired tokens
   // are caught immediately - important for a public-facing app.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user: User | null = null;
+  try {
+    const {
+      data: { user: nextUser },
+    } = await supabase.auth.getUser();
+    user = nextUser;
+  } catch (error) {
+    // Network/auth refresh failures should not crash the app shell. Treat the
+    // request as unauthenticated and let the route rules below decide.
+    console.warn("[auth middleware] Supabase user validation failed.", error);
+  }
 
   const path = request.nextUrl.pathname;
 
