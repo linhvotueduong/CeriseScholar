@@ -140,6 +140,8 @@ export default function DashboardPage() {
       "meta-analysis": `/dashboard/project/${activeProject.id}/meta-analysis`,
       "literature-review": `/dashboard/project/${activeProject.id}/literature-review`,
       workspace: `/dashboard/project/${activeProject.id}`,
+      upload: `/dashboard/upload?project=${activeProject.id}`,
+      scholarask: `/dashboard/project/${activeProject.id}/scholar-ask`,
       draft: `/dashboard/project/${activeProject.id}/paper-writer`,
       citations: `/dashboard/project/${activeProject.id}/literature-review`,
       notes: "/research-guidance",

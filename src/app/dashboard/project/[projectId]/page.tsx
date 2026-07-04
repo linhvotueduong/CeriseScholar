@@ -15,6 +15,30 @@ export default function ProjectWorkspacePage() {
   const [firstPdfId, setFirstPdfId] = useState<string | null>(null);
   const [firstPdfName, setFirstPdfName] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [descDraft, setDescDraft] = useState("");
+  const [savingIdentity, setSavingIdentity] = useState(false);
+
+  function openIdentityEditor() {
+    if (!project) return;
+    setNameDraft(project.name ?? "");
+    setDescDraft(project.description ?? "");
+    setEditOpen(true);
+  }
+
+  async function saveIdentity() {
+    if (!project || !nameDraft.trim()) return;
+    setSavingIdentity(true);
+    const supabase = createClient();
+    const updates = { name: nameDraft.trim(), description: descDraft.trim() };
+    const { error } = await supabase.from("projects").update(updates).eq("id", project.id);
+    if (!error) {
+      setProject({ ...project, ...updates });
+      setEditOpen(false);
+    }
+    setSavingIdentity(false);
+  }
 
   useEffect(() => {
     async function load() {
@@ -64,9 +88,67 @@ export default function ProjectWorkspacePage() {
         <div style={{ height: "40px", flexShrink: 0, display: "flex", alignItems: "center", padding: "0 24px", gap: "24px", borderBottom: "1px solid #e0d8d0", background: "#fff", fontFamily: "var(--font-noto), 'Noto Sans', sans-serif", fontSize: "11px" }}>
           <Link href="/dashboard" style={{ color: "#7a6a5a", textDecoration: "none", fontSize: "11px" }}>← Projects</Link>
           {project && (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "8px" }}>
               <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: project.color }} />
-              <span style={{ fontWeight: 600, color: "#1a1208", fontSize: "12px" }}>{project.name}</span>
+              <button
+                aria-label="Edit project name and topic description"
+                className="hover:underline"
+                onClick={openIdentityEditor}
+                style={{ fontWeight: 600, color: "#1a1208", fontSize: "12px", background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: "5px" }}
+                title="Edit project name & topic"
+                type="button"
+              >
+                {project.name}
+                <span aria-hidden style={{ color: "#8f6132", fontSize: "10px" }}>✎</span>
+              </button>
+              {editOpen && (
+                <div
+                  className="absolute left-0 top-[30px] z-50 w-80 rounded-xl border border-[#e8d8c6] bg-[#fbf6ef] p-4 shadow-lg"
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setEditOpen(false);
+                  }}
+                >
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8f6132]">Project identity</p>
+                  <label className="mt-2 block text-[11px] font-semibold text-[#4a4238]" htmlFor="project-name-input">
+                    Project name
+                  </label>
+                  <input
+                    autoFocus
+                    className="mt-1 w-full rounded-md border border-[#e0cdb8] bg-white px-2 py-1.5 text-[12px] text-[#17120d] focus:outline-none focus:ring-2 focus:ring-[#b6844e]"
+                    id="project-name-input"
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    value={nameDraft}
+                  />
+                  <label className="mt-3 block text-[11px] font-semibold text-[#4a4238]" htmlFor="project-topic-input">
+                    Topic description
+                  </label>
+                  <textarea
+                    className="mt-1 w-full rounded-md border border-[#e0cdb8] bg-white px-2 py-1.5 text-[12px] leading-relaxed text-[#17120d] focus:outline-none focus:ring-2 focus:ring-[#b6844e]"
+                    id="project-topic-input"
+                    onChange={(e) => setDescDraft(e.target.value)}
+                    placeholder="What is this research about? A sentence or two gives your work direction."
+                    rows={3}
+                    value={descDraft}
+                  />
+                  <div className="mt-3 flex justify-end gap-2">
+                    <button
+                      className="rounded-md border border-[#e0cdb8] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#4a4238] hover:bg-[#f6efe4]"
+                      onClick={() => setEditOpen(false)}
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="rounded-md bg-[#111111] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={savingIdentity || !nameDraft.trim()}
+                      onClick={saveIdentity}
+                      type="button"
+                    >
+                      {savingIdentity ? "Saving…" : "Save"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <div style={{ flex: 1 }} />

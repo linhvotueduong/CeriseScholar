@@ -97,6 +97,22 @@ const SECTION_TEMPLATES: Record<DashboardSectionId, SectionTemplate> = {
     weight: 2,
     difficulty: "easy",
   },
+  upload: {
+    title: "Source intake",
+    subtitle: (n) => `Upload ${n} new ${n === 1 ? "source" : "sources"}`,
+    baseAmount: 1,
+    baseMinutes: 15,
+    weight: 2,
+    difficulty: "easy",
+  },
+  scholarask: {
+    title: "Research pathway session",
+    subtitle: (n) => `Explore ${n} research ${n === 1 ? "pathway" : "pathways"}`,
+    baseAmount: 1,
+    baseMinutes: 15,
+    weight: 1,
+    difficulty: "easy",
+  },
   draft: {
     title: "Draft a guided section",
     subtitle: (n) => `Turn ${n} synthesis ${n === 1 ? "paragraph" : "paragraphs"} into writing`,
