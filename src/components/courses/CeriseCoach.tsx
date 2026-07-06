@@ -1,13 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import LaptopRequiredMobileSheet from "@/components/mobile/LaptopRequiredMobileSheet";
-import { useLocalAgentStatus } from "@/hooks/useLocalAgentStatus";
-import {
-  callLocalAgentChat,
-  LOCAL_AGENT_REQUIRED_MESSAGE,
-  LOCAL_AI_UNAVAILABLE_MESSAGE,
-} from "@/lib/local-agent/client";
 
 const p = {
   ink: "#1a1208",
@@ -71,8 +64,6 @@ export default function CeriseCoach({ notes }: { notes: NoteForContext[] }) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [laptopRequiredOpen, setLaptopRequiredOpen] = useState(false);
-  const localAgent = useLocalAgentStatus();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -115,11 +106,6 @@ export default function CeriseCoach({ notes }: { notes: NoteForContext[] }) {
     const trimmed = content.trim();
     if (!trimmed || sending) return;
 
-    if (!localAgent.canUseLocalAi && localAgent.mobile) {
-      setLaptopRequiredOpen(true);
-      return;
-    }
-
     setError(null);
     const nextMessages: ChatMessage[] = [
       ...messages,
@@ -130,53 +116,21 @@ export default function CeriseCoach({ notes }: { notes: NoteForContext[] }) {
     setSending(true);
 
     try {
-      if (!localAgent.canUseLocalAi) {
-        setError(
-          localAgent.mobile
-            ? LOCAL_AGENT_REQUIRED_MESSAGE
-            : localAgent.ui.status === "needs-ollama"
-              ? LOCAL_AI_UNAVAILABLE_MESSAGE
-              : localAgent.ui.detail || LOCAL_AGENT_REQUIRED_MESSAGE
-        );
-        return;
-      }
-
-      let reply = "";
-      if (localAgent.hostedAiBypass) {
-        const response = await fetch("/api/ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            task: "learning_coach",
-            messages: nextMessages,
-            notesContext,
-          }),
-        });
-        const data = (await response.json().catch(() => ({}))) as {
-          content?: string;
-          error?: string;
-        };
-        if (!response.ok) throw new Error(data.error || "Cerise could not reply yet.");
-        reply = (data.content || "").trim();
-      } else {
-        reply = (
-          await callLocalAgentChat({
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are Cerise, the user's research learning coach. Help them organize and connect their lesson notes. Be warm, concise, concrete, and always end with one reflective follow-up question.\n\n" +
-                  (notesContext
-                    ? `The student's current notes are below. Ground the answer in these notes and do not invent course content.\n\n${notesContext}`
-                    : "The student has not written notes yet. Encourage them to start with one short note per lesson."),
-              },
-              ...nextMessages,
-            ],
-            query: trimmed,
-            timeoutMs: 30000,
-          })
-        ).trim();
-      }
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: "learning_coach",
+          messages: nextMessages,
+          notesContext,
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        content?: string;
+        error?: string;
+      };
+      if (!response.ok) throw new Error(data.error || "Cerise could not reply yet.");
+      const reply = (data.content || "").trim();
       if (!reply) {
         setError("Cerise returned an empty reply. Try rephrasing your question.");
         setSending(false);
@@ -535,13 +489,6 @@ export default function CeriseCoach({ notes }: { notes: NoteForContext[] }) {
           </aside>
         </>
       )}
-      <LaptopRequiredMobileSheet
-        open={laptopRequiredOpen}
-        onClose={() => setLaptopRequiredOpen(false)}
-        title="Use your laptop for Cerise Coach"
-        body="Mobile is available for reviewing lessons and notes. AI coaching reads your study context, so during this beta it runs through the Local Agent on a personal or trusted laptop."
-        primaryLabel="I’ll use my laptop"
-      />
     </>
   );
 }

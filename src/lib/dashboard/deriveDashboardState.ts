@@ -1182,7 +1182,7 @@ export function deriveDashboardState(
       results: Array.isArray(meta?.canvas_blocks) && meta.canvas_blocks.length > 0,
       requiredByScope: targetSettings.scope?.metaAnalysisRequired ?? false,
     },
-    journeyEvents: null, // research_query_submitted event not logged yet (pivot Phase 1)
+    journeyEvents: data.activityEvents.filter((event) => event.event_type === "research_query_submitted").length,
     synthQuality: aiSignals.synthesisReadiness ?? 0,
     recentEvents: data.activityEvents.slice(0, 50).map((event) => ({
       type: event.event_type,

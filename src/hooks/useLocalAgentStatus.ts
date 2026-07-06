@@ -7,26 +7,16 @@ import {
   isProbablyMobileDevice,
   type LocalAgentHealth,
 } from "@/lib/local-agent/client";
-import { canUseHostedAiBypass, HOSTED_AI_BYPASS_DETAIL } from "@/lib/ai/hostedBypass";
 import { useUser } from "@/hooks/useUser";
 
 export function useLocalAgentStatus() {
-  const { user, loading: userLoading } = useUser();
+  const { loading: userLoading } = useUser();
   const [health, setHealth] = useState<LocalAgentHealth | null>(null);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
   const [mobile, setMobile] = useState(false);
-  const hostedAiBypass = canUseHostedAiBypass(user?.email);
 
   const checkNow = useCallback(async () => {
-    if (hostedAiBypass) {
-      setHealth(null);
-      setError("");
-      setMobile(false);
-      setChecking(false);
-      return;
-    }
-
     setChecking(true);
     setError("");
     setMobile(isProbablyMobileDevice());
@@ -44,25 +34,17 @@ export function useLocalAgentStatus() {
     } finally {
       setChecking(false);
     }
-  }, [hostedAiBypass]);
+  }, []);
 
   useEffect(() => {
     if (userLoading) return;
     void checkNow();
   }, [checkNow, userLoading]);
 
-  const ui = useMemo(() => {
-    if (hostedAiBypass) {
-      return {
-        status: "connected" as const,
-        label: "Hosted AI enabled",
-        detail: HOSTED_AI_BYPASS_DETAIL,
-        canUseLocalAi: true,
-      };
-    }
-
-    return getLocalAgentUiState(health, checking, mobile, error);
-  }, [health, checking, mobile, error, hostedAiBypass]);
+  const ui = useMemo(
+    () => getLocalAgentUiState(health, checking, mobile, error),
+    [health, checking, mobile, error]
+  );
 
   return {
     health,
@@ -71,7 +53,7 @@ export function useLocalAgentStatus() {
     mobile,
     ui,
     canUseLocalAi: ui.canUseLocalAi,
-    hostedAiBypass,
+    hostedAiBypass: false,
     checkNow,
   };
 }

@@ -5,15 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import LaptopRequiredMobileSheet from "@/components/mobile/LaptopRequiredMobileSheet";
 import { readApiResponse } from "@/lib/utils/readApiResponse";
-import { useLocalAgentStatus } from "@/hooks/useLocalAgentStatus";
-import {
-  callLocalAgentChat,
-  LOCAL_AGENT_REQUIRED_MESSAGE,
-  LOCAL_AI_UNAVAILABLE_MESSAGE,
-  type LocalAgentChatMessage,
-} from "@/lib/local-agent/client";
 
 // ============================================================
 // Error Boundary
@@ -69,20 +61,6 @@ interface Conversation {
   title: string;
   messages: Message[];
 }
-
-type ResearchLocalAgentPayload = {
-  localAgent?: {
-    route: "research";
-    messages: LocalAgentChatMessage[];
-    query: string;
-    answerMode: AnswerMode;
-    journeyIntent: JourneyIntent;
-  };
-  references?: PaperRef[];
-  paperCount?: number;
-  totalFound?: number;
-  error?: string;
-};
 
 type AnswerMode = "research_answer" | "research_journey";
 type JourneyIntent = "general_journey" | "find_bridge" | "narrow_question" | "map_evidence";
@@ -257,7 +235,6 @@ const ResponseContent = React.memo(function ResponseContent({
 export default function ScholarAskPage() {
   const params = useParams();
   const projectId = params.projectId as string;
-  const localAgent = useLocalAgentStatus();
 
   const storageKey = `cerise_ask_${projectId}`;
   const legacyStorageKey = `${["scholar", "ask"].join("")}_${projectId}`;
@@ -269,13 +246,13 @@ export default function ScholarAskPage() {
   const [showRefs, setShowRefs] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hydrated, setHydrated] = useState(false);
-  const [laptopRequiredOpen, setLaptopRequiredOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Right panel — completely separate state
   const [selectedPaper, setSelectedPaper] = useState<PaperRef | null>(null);
   const [paperAnalysis, setPaperAnalysis] = useState<Record<number, string>>({});
+  const [paperAnalysisError, setPaperAnalysisError] = useState<Record<number, string>>({});
   const [analyzingPaper, setAnalyzingPaper] = useState<number | null>(null);
 
   // Load from localStorage AFTER hydration (avoids mismatch)
@@ -324,63 +301,42 @@ export default function ScholarAskPage() {
     setSelectedPaper(paper);
 
     if (!paperAnalysisRef.current[paper.num] && lastAssistantMsgRef.current) {
-      if (!localAgent.canUseLocalAi) {
-        if (localAgent.mobile) {
-          setLaptopRequiredOpen(true);
-        }
-        setPaperAnalysis((prev) => ({
-          ...prev,
-          [paper.num]: localAgent.ui.detail || LOCAL_AGENT_REQUIRED_MESSAGE,
-        }));
-        return;
-      }
-
       setAnalyzingPaper(paper.num);
+      setPaperAnalysisError((prev) => {
+        if (!prev[paper.num]) return prev;
+        const next = { ...prev };
+        delete next[paper.num];
+        return next;
+      });
       try {
-        let analysis = "";
-        if (localAgent.hostedAiBypass) {
-          const response = await fetch("/api/ai", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              task: "paper_analysis",
-              paper,
-              mainAnswer: lastAssistantMsgRef.current.content,
-            }),
-          });
-          const data = await readApiResponse<{ content?: string; error?: string }>(response);
-          if (!response.ok) throw new Error(data.error || "Could not generate analysis.");
-          analysis = data.content || "";
-        } else {
-          analysis = await callLocalAgentChat({
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are an academic research assistant. Explain in one paragraph how the selected paper connects to the research answer. Be specific, cautious, and do not overclaim support.",
-              },
-              {
-                role: "user",
-                content: `Main research answer excerpt:\n${lastAssistantMsgRef.current.content.slice(0, 600)}\n\nPaper to analyze:\nTitle: ${paper.title}\nAuthors: ${paper.authors?.join(", ")}\nYear: ${paper.year}\nJournal: ${paper.journal}\nAbstract: ${paper.abstract}\n\nExplain how this paper connects to the points in the answer above.`,
-              },
-            ],
-            query: paper.title,
-            timeoutMs: 25000,
-          });
-        }
+        const response = await fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task: "paper_analysis",
+            paper,
+            mainAnswer: lastAssistantMsgRef.current.content,
+          }),
+        });
+        const data = await readApiResponse<{ content?: string; error?: string }>(response);
+        if (!response.ok) throw new Error(data.error || "Could not generate analysis.");
+        const analysis = data.content || "";
         if (analysis) {
           setPaperAnalysis((prev) => ({ ...prev, [paper.num]: analysis }));
         }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
-        setPaperAnalysis((prev) => ({
+        // Errors go in a SEPARATE map, never the analysis cache — a transient
+        // failure (busy free pool) must not block retries: reopening the
+        // citation runs the analysis again because the cache stays empty.
+        setPaperAnalysisError((prev) => ({
           ...prev,
           [paper.num]: err instanceof Error ? err.message : "Could not generate analysis.",
         }));
       }
       setAnalyzingPaper(null);
     }
-  }, [localAgent.canUseLocalAi, localAgent.hostedAiBypass, localAgent.mobile, localAgent.ui.detail]);
+  }, []);
 
   // Stable callback for citation clicks
   const handleCiteClick = useCallback((num: number) => {
@@ -407,17 +363,6 @@ export default function ScholarAskPage() {
     const q = (text || query).trim();
     if (!q || isLoading) return;
 
-    if (!localAgent.canUseLocalAi && localAgent.mobile) {
-      setLaptopRequiredOpen(true);
-      return;
-    }
-
-    const unavailableMessage = localAgent.mobile
-      ? LOCAL_AGENT_REQUIRED_MESSAGE
-      : localAgent.ui.status === "needs-ollama"
-        ? LOCAL_AI_UNAVAILABLE_MESSAGE
-        : localAgent.ui.detail || LOCAL_AGENT_REQUIRED_MESSAGE;
-
     const isFollowUp = !!activeConvId && messages.length > 0;
     let convId = activeConvId;
 
@@ -438,23 +383,12 @@ export default function ScholarAskPage() {
     setShowRefs(false);
     setSelectedPaper(null);
 
-    if (!localAgent.canUseLocalAi) {
-      updateConv(convId!, (c) => ({
-        ...c,
-        messages: c.messages.map((m) =>
-          m.loading ? { role: "assistant", content: unavailableMessage, error: true } : m
-        ),
-      }));
-      return;
-    }
-
     try {
-      const body: Record<string, unknown> = { query: q, answerMode, journeyIntent };
+      const body: Record<string, unknown> = { query: q, answerMode, journeyIntent, projectId };
       if (isFollowUp && lastAssistantMsg) {
         body.followUp = q;
         body.previousAnswer = lastAssistantMsg.content;
       }
-      body.localAgent = !localAgent.hostedAiBypass;
 
       const res = await fetch("/api/research", {
         method: "POST",
@@ -467,44 +401,24 @@ export default function ScholarAskPage() {
         paperCount?: number;
         totalFound?: number;
         error?: string;
-      } & ResearchLocalAgentPayload>(res);
+      }>(res);
       if (!res.ok) throw new Error(data.error || "Research failed");
-      if (localAgent.hostedAiBypass) {
-        if (!data.answer) {
-          throw new Error("Cerise Scholar could not generate a hosted AI answer. Try again.");
-        }
-
-        updateConv(convId!, (c) => ({
-          ...c,
-          messages: c.messages.map((m) =>
-            m.loading
-              ? {
-                  role: "assistant",
-                  content: data.answer!,
-                  references: data.references,
-                  paperCount: data.paperCount,
-                  totalFound: data.totalFound,
-                }
-              : m
-          ),
-        }));
-        return;
+      if (!data.answer) {
+        throw new Error("Cerise Scholar could not generate an answer. Try again.");
       }
-
-      if (!data.localAgent?.messages?.length) {
-        throw new Error("Cerise Scholar could not prepare the local AI request. Try again.");
-      }
-
-      const answer = await callLocalAgentChat({
-        messages: data.localAgent.messages,
-        query: data.localAgent.query || q,
-        timeoutMs: answerMode === "research_journey" ? 45000 : 60000,
-      });
 
       updateConv(convId!, (c) => ({
         ...c,
         messages: c.messages.map((m) =>
-          m.loading ? { role: "assistant", content: answer, references: data.references, paperCount: data.paperCount, totalFound: data.totalFound } : m
+          m.loading
+            ? {
+                role: "assistant",
+                content: data.answer!,
+                references: data.references,
+                paperCount: data.paperCount,
+                totalFound: data.totalFound,
+              }
+            : m
         ),
       }));
     } catch (err) {
@@ -611,15 +525,8 @@ export default function ScholarAskPage() {
             </button>
             {activeConv && <span className="text-sm text-[#5a4a3a] font-medium truncate">{activeConv.title}</span>}
             <div className="ml-auto" />
-            <span
-              className={`hidden sm:inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
-                localAgent.canUseLocalAi
-                  ? "border-green-200 bg-green-50 text-green-700"
-                  : "border-amber-200 bg-amber-50 text-amber-700"
-              }`}
-              title={localAgent.ui.detail}
-            >
-              {localAgent.hostedAiBypass ? "Hosted AI ready" : localAgent.canUseLocalAi ? "Laptop AI ready" : "Laptop AI required"}
+            <span className="hidden sm:inline-flex rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-[10px] font-semibold text-green-700">
+              AI ready
             </span>
           </div>
 
@@ -670,7 +577,7 @@ export default function ScholarAskPage() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-[#1a1208] rounded-full animate-pulse" />
-                          <span className="text-sm text-[#5a4a3a] font-medium">Searching papers and asking your laptop AI...</span>
+                          <span className="text-sm text-[#5a4a3a] font-medium">Searching papers and thinking...</span>
                         </div>
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#d4cdc5] border-t-[#1a1208]" />
@@ -758,7 +665,7 @@ export default function ScholarAskPage() {
                     <AnswerModeControl answerMode={answerMode} onChange={handleAnswerModeChange} />
                   </div>
                 </div>
-                <p className="text-[10px] text-[#9a8a7a] text-center mt-1.5">ScholarAsk uses OpenAlex for sources and your laptop Local Agent for AI synthesis.</p>
+                <p className="text-[10px] text-[#9a8a7a] text-center mt-1.5">ScholarAsk searches real papers via OpenAlex and answers with AI.</p>
               </div>
             </div>
           )}
@@ -799,6 +706,17 @@ export default function ScholarAskPage() {
                   </div>
                 ) : paperAnalysis[selectedPaper.num] ? (
                   <p className="text-xs text-[#7a6a5a] leading-relaxed bg-[#faf7f0] border border-[#e0d8d0] rounded-lg p-3">{paperAnalysis[selectedPaper.num]}</p>
+                ) : paperAnalysisError[selectedPaper.num] ? (
+                  <div className="text-xs leading-relaxed bg-[#fdf3f2] border border-[#eed5d2] rounded-lg p-3">
+                    <p className="text-[#9a3f3a]">{paperAnalysisError[selectedPaper.num]}</p>
+                    <button
+                      className="mt-2 rounded border border-[#e0cdb8] bg-white px-2 py-1 text-[11px] font-semibold text-[#8f6132] hover:bg-[#f6efe4]"
+                      onClick={() => openPaperPanel(selectedPaper)}
+                      type="button"
+                    >
+                      Retry analysis
+                    </button>
+                  </div>
                 ) : (
                   <p className="text-xs text-[#9a8a7a] italic">Analysis will generate automatically...</p>
                 )}
@@ -808,13 +726,6 @@ export default function ScholarAskPage() {
         )}
         </div>
       </div>
-      <LaptopRequiredMobileSheet
-        open={laptopRequiredOpen}
-        onClose={() => setLaptopRequiredOpen(false)}
-        title="Use your laptop for ScholarAsk"
-        body="You can keep reviewing your workspace on mobile. ScholarAsk’s AI-heavy synthesis uses your local research context, so during this beta it runs from the Local Agent on your trusted laptop."
-        primaryLabel="I’ll use my laptop"
-      />
     </ErrorBoundary>
   );
 }

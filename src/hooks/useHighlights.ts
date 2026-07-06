@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { logDashboardActivity } from "@/lib/dashboard/activity";
-import { callLocalAgentChat } from "@/lib/local-agent/client";
 import type { Highlight } from "@/types/annotation";
 
 interface CreateHighlightParams {
@@ -82,7 +81,7 @@ export function useHighlights(pdfId: string) {
       }
 
       // 3. Create a literature review entry
-      const { data: litEntry } = await supabase.from("literature_review_entries").insert({
+      await supabase.from("literature_review_entries").insert({
         user_id: user.id,
         pdf_id: params.pdfId,
         highlight_id: highlight.id,
@@ -94,43 +93,9 @@ export function useHighlights(pdfId: string) {
         user_notes: params.noteContent || "",
         apa_reference: apaRef,
         project_id: params.projectId || null,
-      }).select("id").single();
+      });
 
-      // 4. Fire-and-forget: ask the laptop Local Agent to generate proper APA citation from PDF text
-      if (litEntry && params.pdfFirstPagesText) {
-        callLocalAgentChat({
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are an academic citation expert. Return only one APA 7th edition reference string. Do not add explanation, labels, bullets, or quotes.",
-            },
-            {
-              role: "user",
-              content: `Extract bibliographic information from the text below and generate a single APA 7th edition reference.\n\nFilename: ${params.pdfDisplayName || ""}\n\nPDF text from first pages:\n${params.pdfFirstPagesText.slice(0, 3000)}`,
-            },
-          ],
-          query: params.pdfDisplayName,
-          timeoutMs: 20000,
-        })
-          .then((apa) => {
-            const cleanApa = apa.trim().replace(/^["']|["']$/g, "");
-            if (cleanApa) {
-              // Update the lit review entry with AI-generated APA
-              supabase
-                .from("literature_review_entries")
-                .update({
-                  apa_reference: cleanApa,
-                  authors: cleanApa.split("(")[0]?.trim() || params.pdfAuthor || "",
-                })
-                .eq("id", litEntry.id)
-                .then(() => {});
-            }
-          })
-          .catch(() => {}); // silently fail — the basic ref is already saved
-      }
-
-      // 5. Update local state
+      // 4. Update local state
       setHighlights((prev) => [...prev, highlight as Highlight]);
       await logDashboardActivity({
         projectId: params.projectId,

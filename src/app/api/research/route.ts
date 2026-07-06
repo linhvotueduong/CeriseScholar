@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
-import { callOllamaChat, OllamaError } from "@/lib/server/ollama";
-import { canUseHostedAiBypass } from "@/lib/ai/hostedBypass";
+import { callOpenRouterChat, OpenRouterError } from "@/lib/server/openrouter";
+import { resolveAiCredentials } from "@/lib/server/aiCredentials";
+import type { AiLane } from "@/lib/server/aiCredentials";
+import { BYOK_DECLINED_MESSAGE, isByokDeclinedStatus } from "@/lib/server/aiErrors";
 
 const OPENALEX_TIMEOUT_MS = 8000;
 const AI_TIMEOUT_MS = 25000;
@@ -153,7 +155,23 @@ function reconstructAbstract(index: Record<string, number[]> | null): string {
   return words.map((w) => w[0]).join(" ");
 }
 
+// BYOK request-time failure semantics (docs/byok-intake-design.md §2d): a
+// declined key (revoked/out of credits) gets one clear, actionable message —
+// never a silent fallback to the default lane. Otherwise keep the existing
+// friendlier timeout copy, then fall back to whatever OpenRouter said.
+function researchAiErrorResponse(err: OpenRouterError, lane: AiLane) {
+  if (lane === "byok" && isByokDeclinedStatus(err.status)) {
+    return NextResponse.json({ error: BYOK_DECLINED_MESSAGE }, { status: err.status });
+  }
+  const message =
+    err.status === 504 ? "AI took too long. Try a shorter question or use Research Answer." : err.message;
+  return NextResponse.json({ error: message }, { status: err.status });
+}
+
 export async function POST(req: NextRequest) {
+  // Declared outside the try block so the outer catch can still tell whether
+  // this request was on the BYOK lane (docs/byok-intake-design.md §2d).
+  let lane: AiLane = "default";
   try {
     // Verify user is authenticated
     const supabase = await getSupabase();
@@ -168,7 +186,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { query, followUp, previousAnswer } = body;
+    const { query, followUp, previousAnswer, projectId } = body;
     const answerMode = normalizeAnswerMode(body.answerMode);
     const journeyIntent = normalizeJourneyIntent(body.journeyIntent);
     const isResearchJourney = answerMode === "research_journey";
@@ -308,36 +326,40 @@ CITATION RULES:
       messages.push({ role: "user", content: query });
     }
 
-    if (body.localAgent === true) {
-      return NextResponse.json({
-        localAgent: {
-          route: "research",
-          messages,
-          query: String(query || ""),
-          answerMode,
-          journeyIntent,
-        },
-        references: papers,
-        paperCount: aiPapers.length,
-        totalFound: papers.length,
-      });
-    }
-
-    if (!canUseHostedAiBypass(user.email)) {
-      return NextResponse.json(
-        { error: "Hosted AI is enabled only for approved beta accounts. Use the Local Agent for AI-heavy workflows." },
-        { status: 403 }
-      );
-    }
+    // Every signed-in user gets AI now — OpenRouter replaces the old hosted-email bypass.
+    const credentials = await resolveAiCredentials(user.id, supabase);
+    const { apiKey, models } = credentials;
+    lane = credentials.lane;
 
     try {
-      const answer = await callOllamaChat({
+      const answer = await callOpenRouterChat({
         route: "research",
         messages,
+        models,
+        apiKey,
         timeoutMs: AI_TIMEOUT_MS,
-        numPredict: answerMode === "research_journey" ? 1700 : 2200,
+        maxTokens: answerMode === "research_journey" ? 1700 : 2200,
       });
       const cleanedAnswer = isResearchJourney ? cleanResearchJourneyAnswer(answer) : answer;
+
+      // Fire-and-forget activity trace for the readiness "Theme clarity" check —
+      // ScholarAsk previously left zero DB trace. Never let logging break the answer.
+      if (projectId) {
+        void supabase
+          .from("dashboard_activity_events")
+          .insert({
+            user_id: user.id,
+            project_id: projectId,
+            event_type: "research_query_submitted",
+            section_id: "scholarask",
+            label: isResearchJourney ? `Journey: ${journeyIntent}` : "Research answer",
+          })
+          .then(({ error }) => {
+            if (error) {
+              console.error("Failed to log research_query_submitted activity", error.message);
+            }
+          });
+      }
 
       return NextResponse.json({
         answer: cleanedAnswer,
@@ -346,18 +368,14 @@ CITATION RULES:
         totalFound: papers.length,
       });
     } catch (err) {
-      if (err instanceof OllamaError) {
-        const message =
-          err.status === 504
-            ? "AI took too long. Try a shorter question or use Research Answer."
-            : err.message;
-        return NextResponse.json({ error: message }, { status: err.status });
+      if (err instanceof OpenRouterError) {
+        return researchAiErrorResponse(err, lane);
       }
       throw err;
     }
   } catch (err) {
-    if (err instanceof OllamaError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
+    if (err instanceof OpenRouterError) {
+      return researchAiErrorResponse(err, lane);
     }
     console.error("Research route error:", err);
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });

@@ -7,20 +7,12 @@ import { useAnnotations } from "@/hooks/useAnnotations";
 import { useCodes } from "@/hooks/useCodes";
 import { useTts } from "@/hooks/useTts";
 import { extractPageText } from "@/lib/pdf/extractText";
-import { useLocalAgentStatus } from "@/hooks/useLocalAgentStatus";
-import {
-  callLocalAgentChat,
-  LOCAL_AGENT_REQUIRED_MESSAGE,
-  LOCAL_AI_UNAVAILABLE_MESSAGE,
-  type LocalAgentChatMessage,
-} from "@/lib/local-agent/client";
 import PdfPage from "./PdfPage";
 import PdfToolbar from "./PdfToolbar";
 import TtsWidget from "@/components/tts/TtsWidget";
 import Markdown from "react-markdown";
 import AnnotationSidebar from "@/components/annotations/AnnotationSidebar";
 import CodeSystemPanel from "@/components/codes/CodeSystemPanel";
-import LaptopRequiredMobileSheet from "@/components/mobile/LaptopRequiredMobileSheet";
 import DocumentPanel from "@/components/pdf/DocumentPanel";
 import NoteModal from "@/components/annotations/NoteModal";
 import Spinner from "@/components/ui/Spinner";
@@ -243,7 +235,6 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   const { annotations, createAnnotation, updateAnnotation } = useAnnotations(pdfId);
   const { codes, createCode, updateCode, deleteCode } = useCodes(projectId);
   const tts = useTts();
-  const localAgent = useLocalAgentStatus();
 
   const [highlightMode, setHighlightMode] = useState(false);
   const [reHighlightId, setReHighlightId] = useState<string | null>(null);
@@ -265,7 +256,6 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   const [chatLoading, setChatLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [chatSize, setChatSize] = useState({ w: 380, h: 480 });
-  const [laptopRequiredOpen, setLaptopRequiredOpen] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -450,62 +440,28 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
     const text = overrideText || chatInput.trim();
     if (!text || chatLoading || !document) return;
 
-    if (!localAgent.canUseLocalAi && localAgent.mobile) {
-      setLaptopRequiredOpen(true);
-      return;
-    }
-
     setChatInput("");
     setChatMessages((prev) => [...prev, { role: "user", content: text }]);
     setChatLoading(true);
 
     try {
-      if (!localAgent.canUseLocalAi) {
-        throw new Error(
-          localAgent.mobile
-            ? LOCAL_AGENT_REQUIRED_MESSAGE
-            : localAgent.ui.status === "needs-ollama"
-              ? LOCAL_AI_UNAVAILABLE_MESSAGE
-              : localAgent.ui.detail || LOCAL_AGENT_REQUIRED_MESSAGE
-        );
-      }
+      const excerpt = await getDocumentContext();
 
-      const docContext = await getDocumentContext();
-      const context = docContext ? `\n\nDocument content:\n${docContext}` : "";
-
-      let reply = "";
-      const messages: LocalAgentChatMessage[] = [
-        {
-          role: "system",
-          content:
-            "You are Cerise Scholar's PDF research assistant. Answer using the provided document context when available. Be concise, specific, and honest when the document does not contain enough evidence.",
-        },
-        ...chatMessages.slice(-6),
-        { role: "user", content: text + context },
-      ];
-
-      if (localAgent.hostedAiBypass) {
-        const response = await fetch("/api/ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            task: "pdf_chat",
-            messages,
-          }),
-        });
-        const data = (await response.json().catch(() => ({}))) as {
-          content?: string;
-          error?: string;
-        };
-        if (!response.ok) throw new Error(data.error || "Cerise could not answer this PDF question yet.");
-        reply = data.content || "";
-      } else {
-        reply = await callLocalAgentChat({
-          messages,
-          query: text,
-          timeoutMs: 45000,
-        });
-      }
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: "pdf_chat",
+          question: text,
+          excerpt,
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        result?: string;
+        error?: string;
+      };
+      if (!response.ok) throw new Error(data.error || "Cerise could not answer this PDF question yet.");
+      const reply = data.result || "";
       setChatMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (err) {
       setChatMessages((prev) => [
@@ -517,7 +473,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
       ]);
     }
     setChatLoading(false);
-  }, [chatInput, chatLoading, document, chatMessages, getDocumentContext, localAgent.canUseLocalAi, localAgent.hostedAiBypass, localAgent.mobile, localAgent.ui.detail, localAgent.ui.status]);
+  }, [chatInput, chatLoading, document, getDocumentContext]);
 
   // Voice input — speech-to-text using browser API
   const toggleVoiceInput = useCallback(() => {
@@ -905,13 +861,6 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
           highlightText={existingNoteModal.highlightText}
         />
       )}
-      <LaptopRequiredMobileSheet
-        open={laptopRequiredOpen}
-        onClose={() => setLaptopRequiredOpen(false)}
-        title="Use your laptop for PDF AI"
-        body="You can keep reading and highlighting on mobile. Asking AI about the document uses local file text, so for this beta it runs from the Cerise Scholar Local Agent on your trusted laptop."
-        primaryLabel="I’ll use my laptop"
-      />
     </div>
   );
 }

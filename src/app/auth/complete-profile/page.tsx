@@ -3,8 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { canUseHostedAiBypass } from "@/lib/ai/hostedBypass";
-import { requestLocalSetupPrompt } from "@/lib/local-agent/client";
 import { upsertProfile } from "@/lib/profile/profile";
 
 const PENDING_GOOGLE_PROFILE_KEY = "cerise_pending_google_signup_profile";
@@ -49,9 +47,6 @@ export default function CompleteProfilePage() {
             };
             await supabase.auth.updateUser({ data: mergedMetadata });
             await syncProfileFromMetadata(supabase, data.user.id, mergedMetadata);
-            if (!canUseHostedAiBypass(data.user.email)) {
-              requestLocalSetupPrompt("auth-callback-profile");
-            }
           }
         } finally {
           window.localStorage.removeItem(PENDING_GOOGLE_PROFILE_KEY);
@@ -64,9 +59,6 @@ export default function CompleteProfilePage() {
             data.user.id,
             data.user.user_metadata || {}
           );
-          if (!canUseHostedAiBypass(data.user.email)) {
-            requestLocalSetupPrompt("auth-callback");
-          }
         }
       }
 
