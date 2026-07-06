@@ -20,7 +20,7 @@ export default function SettingsHeader() {
         </>
       }
       title="Settings"
-      subtitle="Manage your account identity, local setup, privacy, and preferences."
+      subtitle="Manage your account identity, AI, privacy, and preferences."
     />
   );
 }

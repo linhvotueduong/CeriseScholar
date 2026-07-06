@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import WelcomeAiPopup from "@/components/ai/WelcomeAiPopup";
 import DashboardExactTemplate from "@/components/dashboard/DashboardExactTemplate";
 import Spinner from "@/components/ui/Spinner";
 import { logDashboardActivity } from "@/lib/dashboard/activity";
@@ -167,36 +168,41 @@ export default function DashboardPage() {
   }
 
   return (
-    <DashboardExactTemplate
-      activeProject={activeProject}
-      agentReady={agentReady}
-      creating={creating}
-      dashboardData={dashboardState.data}
-      dashboardError={dashboardState.error}
-      dashboardLoading={dashboardState.loading}
-      localAgentChecking={localAgent.checking}
-      newDesc={newDesc}
-      newName={newName}
-      ollamaReady={ollamaReady}
-      onAddScheduleTask={dashboardState.addTask}
-      onCompleteTask={dashboardState.completeTask}
-      onCreateProject={handleCreate}
-      onNewDescChange={setNewDesc}
-      onNewNameChange={setNewName}
-      onOpenResearchSection={handleOpenResearchSection}
-      onSectionFeedback={dashboardState.submitSectionFeedback}
-      usingDemo={dashboardState.usingDemo}
-      demoCards={dashboardState.demoCards}
-      userName={greetingName}
-      onProjectChange={setActiveProjectId}
-      onSaveTargetSettings={dashboardState.saveTargetSettings}
-      onToggleCreate={() => setShowCreate((current) => !current)}
-      onToggleSection={toggleSection}
-      projectOptions={projectOptions}
-      safetyReady={safetyReady}
-      showCreate={showCreate}
-      targetSettings={dashboardState.targetSettings}
-      visibleSections={visibleSections}
-    />
+    <>
+      {/* One-time AI welcome (replaces the old local-agent setup wizard) —
+          only for real signed-in accounts, never over the demo dashboard. */}
+      {user && !dashboardState.usingDemo && <WelcomeAiPopup />}
+      <DashboardExactTemplate
+        activeProject={activeProject}
+        agentReady={agentReady}
+        creating={creating}
+        dashboardData={dashboardState.data}
+        dashboardError={dashboardState.error}
+        dashboardLoading={dashboardState.loading}
+        localAgentChecking={localAgent.checking}
+        newDesc={newDesc}
+        newName={newName}
+        ollamaReady={ollamaReady}
+        onAddScheduleTask={dashboardState.addTask}
+        onCompleteTask={dashboardState.completeTask}
+        onCreateProject={handleCreate}
+        onNewDescChange={setNewDesc}
+        onNewNameChange={setNewName}
+        onOpenResearchSection={handleOpenResearchSection}
+        onSectionFeedback={dashboardState.submitSectionFeedback}
+        usingDemo={dashboardState.usingDemo}
+        demoCards={dashboardState.demoCards}
+        userName={greetingName}
+        onProjectChange={setActiveProjectId}
+        onSaveTargetSettings={dashboardState.saveTargetSettings}
+        onToggleCreate={() => setShowCreate((current) => !current)}
+        onToggleSection={toggleSection}
+        projectOptions={projectOptions}
+        safetyReady={safetyReady}
+        showCreate={showCreate}
+        targetSettings={dashboardState.targetSettings}
+        visibleSections={visibleSections}
+      />
+    </>
   );
 }

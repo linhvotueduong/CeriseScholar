@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { requestLocalSetupPrompt } from "@/lib/local-agent/client";
 import { agreementDocuments, type AgreementKey } from "@/lib/legal/agreements";
 import Link from "next/link";
 import GoogleButton from "./GoogleButton";
@@ -134,7 +133,6 @@ export default function SignupForm() {
     }
 
     if (data.session) {
-      requestLocalSetupPrompt("email-signup");
       router.push("/dashboard");
       router.refresh();
       return;
@@ -179,7 +177,6 @@ export default function SignupForm() {
     setPendingAction(null);
     setPendingGoogleStart(null);
     if (startGoogle) {
-      requestLocalSetupPrompt("google-signup");
       window.localStorage.setItem(PENDING_GOOGLE_PROFILE_KEY, JSON.stringify(getProfileMetadata()));
       await startGoogle();
     }

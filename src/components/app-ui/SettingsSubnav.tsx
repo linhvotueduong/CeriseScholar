@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils/cn";
 
 export const settingsLinks = [
   { href: "/settings/account", label: "Account" },
-  { href: "/settings/local-setup", label: "Local Setup" },
+  // "Local Setup" used to live here — replaced by the AI plan page (BYOK pivot,
+  // docs/byok-intake-design.md §1b). The old page file remains until Phase 4.
+  { href: "/settings/ai", label: "AI" },
   { href: "/settings/preferences", label: "Preferences" },
   { href: "/settings/notifications", label: "Notifications" },
   { href: "/settings/privacy-security", label: "Privacy & Security" },
