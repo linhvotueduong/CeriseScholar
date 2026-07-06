@@ -36,12 +36,15 @@ Lesson recorded: this architecture breaks silently and differently on every user
 - **Done when:** `git status` is clean and the pivot branch exists.
 
 ### Phase 1 — New AI engine (server side)
-- Create `src/lib/server/openrouter.ts` modeled on `src/lib/server/ollama.ts` (OpenAI-compatible chat call, Bearer `OPENROUTER_API_KEY`, default model = DeepSeek).
+- **Engine selected 2026-07-05** (research: `docs/ai-engine-selection.md`): free-first via OpenRouter — free model primary (Gemma 4 31B / Nemotron 120B, config-driven) with paid Qwen3 32B fallback via OpenRouter's native `models` array; one-time $10 credit unlocks 1,000 free req/day; ZDR enabled on the account. Founder cost ≈ $10 once + ~$1/month. Subscription-token routes verified dead (Claude OAuth banned in third-party apps since 2026-04; ChatGPT Plus has no API path). Gemini free tier rejected (trains on user content).
+- Create `src/lib/server/openrouter.ts` modeled on `src/lib/server/ollama.ts` (OpenAI-compatible chat call, Bearer `OPENROUTER_API_KEY`, model list from env).
 - Point `/api/ai` and `/api/research` at it. Delete the hardcoded-email bypass (`src/lib/ai/hostedBypass.ts`) — all signed-in users get AI.
 - Hidden AI call site found 2026-07-02: `src/hooks/useHighlights.ts:99-131` fire-and-forget auto-generates an APA citation via the local agent on EVERY highlight creation (silently failing today). Per the founder's readiness decision: REMOVE the auto-fire; replace with a per-row "Generate APA" button in Lit Review calling `/api/ai` (task `generate_apa`) — never mass-generate the whole table.
 - While touching `/api/research`: add ONE line logging a `research_query_submitted` activity event (existing `dashboard_activity_events` table — no schema change) with mode + journey intent in details. This unblocks the readiness "Theme clarity" check (`docs/research-readiness-checklist-model.md` §3.1) — today ScholarAsk leaves zero DB trace.
 - Remove the mobile AI block in `src/hooks/useLocalAgentStatus.ts` usage paths (cloud AI works on phones).
 - **Done when:** ScholarAsk, paper analysis, APA generator, and Cerise Coach all answer via OpenRouter on the dev server — from a laptop AND a phone.
+
+**ORDER CHANGE (founder, 2026-07-05): Phase 3 (BYOK intake) is being built BEFORE Phase 2** — the old local-agent popup was still appearing and actively advertising the dead architecture, and the founder wants the paste-key door open now. Safe to flip: BYOK reduces default-lane load, and metering must still land before outside beta users get Included-lane access. Also: the $10 OpenRouter deposit is DEFERRED — solo testing fits the 50 req/day free tier; deposit only when real users join the Included lane.
 
 ### Phase 2 — Usage meter + caps (before anyone else gets access)
 - New table `ai_usage_events` (user_id, route, model, input_tokens, output_tokens, estimated_cost, created_at) + RLS. *(The "no new tables" guardrail belonged to the readiness effort, not this one.)*
@@ -49,10 +52,13 @@ Lesson recorded: this architecture breaks silently and differently on every user
 - Manual step: set a hard monthly spending cap on the OpenRouter dashboard key.
 - **Done when:** usage rows appear per call; a test allowance blocks correctly; total cost is queryable.
 
-### Phase 3 — BYOK lane
-- Replace the "Local Setup" settings page with an "AI Provider" page: paste your own OpenRouter key → validated with a test call → stored server-side encrypted (never exposed to the browser).
+### Phase 3 — BYOK lane + onboarding replacement
+**Full UI + key-processing design: `docs/byok-intake-design.md` (2026-07-05)** — two-path welcome popup (replaces the local-agent wizard), Settings → AI page, `/api/ai/key` validate-encrypt-store route, `user_ai_settings` table (AES-256-GCM, server-held secret), and the `resolveAiCredentials` lane resolver whose socket is built in Phase 1.
+- Replace the "Local Setup" settings page with an "AI Provider" page: paste your own OpenRouter key → validated with a test call → stored server-side encrypted (never exposed to the browser). Shows current plan ("Included — free, fair-use allowance" with usage meter) vs "Your own key — unlimited".
+- **Replace the post-signup local-agent setup popup (LocalSetupOnboarding) with near-nothing** (founder-confirmed 2026-07-05): new users need ZERO AI setup — AI works immediately on the default lane. Only a small dismissible welcome card: "AI is included free (fair-use allowance). Connect your own key anytime in Settings → AI." No blocking wizard.
+- User-facing choice is TWO lanes only (Included vs Own key). Subscription-connect (ChatGPT/Claude) must NEVER be offered — legally banned/gray for third-party apps (see docs/ai-engine-selection.md Option 3).
 - Routing rule: user has own key → use it (their models, no allowance); otherwise → default lane with allowance.
-- **Done when:** an account with its own key and one without both work; removing the key falls back cleanly.
+- **Done when:** a fresh signup reaches a working ScholarAsk with zero setup steps; an account with its own key and one without both work; removing the key falls back cleanly.
 
 ### Phase 4 — Demolition
 - Remove: `scripts/local-agent*.mjs`, `scripts/mock-local-agent.mjs`, `scripts/local-ollama-security.mjs`, `scripts/local-permission-contract.mjs`, `scripts/local-vault-contract.mjs`, `scripts/check-ollama-security-gate.mjs`; `src/lib/local-agent/`, `src/hooks/useLocalAgentStatus.ts`, `src/components/local-agent/*`, `src/app/settings/local-setup/`; related package.json scripts and `LOCAL_AGENT_*` / `OLLAMA_*` env vars.
@@ -66,6 +72,7 @@ Lesson recorded: this architecture breaks silently and differently on every user
 - **Done when:** ScholarAsk works on app.cerisescholar.com — including from a phone.
 
 ## 4. Later / explicitly not now
+- Per-feature model routing (founder question, 2026-07-06): today one auto-selected chain serves all AI features (uniform task shape; free models handle all well). The engine already labels each request by feature (`route` param), so per-feature model choices (e.g. faster model for coach, strongest for synthesis) can be tuned server-side later with ZERO user-facing change — model selection is always the system's job, never the user's, on both lanes.
 - Client-side OCR in the browser (WebAssembly Tesseract): each user's own device does its OCR — no server load, no queues, no limits, infinite scale. Interim shipped 2026-07-04: server-side OCR fixed (the `canvas` stub in next.config was silently breaking it), one-at-a-time queue replaces the 5/hour quota, 100/day abuse brake, graceful embedded-text fallback, per-document Retry button. NOTE: verify OCR live on Azure after next deploy — native canvas there is unproven; the fallback keeps documents honest if it fails.
 - Paid plans / billing (use a merchant-of-record like Polar or Lemon Squeezy when the time comes — handles global sales tax for a solo founder). Revisit once real usage statistics from Phase 2 exist.
 - Data-access layer cleanup (148 scattered queries) — hygiene, not urgent.
