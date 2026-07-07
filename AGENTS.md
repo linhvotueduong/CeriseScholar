@@ -10,8 +10,8 @@ Before changing deployment, domain, Azure, Cloudflare, Supabase, auth, billing, 
 
 - `docs/azure-static-webapps-safety-protocol.md`
 - `docs/legacy-vite-quarantine.md`
-- `docs/local-first-agent-migration.md`
-- `docs/local-agent-installer-plan.md`
+- `docs/architecture-pivot-roadmap.md`
+- `docs/byok-intake-design.md`
 
 Current production-safe target:
 
@@ -32,7 +32,7 @@ Deployment rules:
 - When multiple sessions are active, each session must use a unique preview port and must not stop or overwrite another session's preview server.
 - After finishing feature/function work, offer safe generated-cache cleanup to save Mac storage; never delete source code, assets, user data, `.env*`, Supabase data, or project documents as "cache."
 - Run `npm run check:legacy` before deployment to prevent wrong-app material from re-entering active production paths.
-- Run `npm run check:storage-strategy` before deployment-sensitive source-file work. New research source files should go through the Local Agent/local vault path, not new Supabase Storage upload/download paths.
+- Run `npm run check:storage-strategy` before deployment-sensitive source-file work. Research source-file workflows are cloud-only through the hosted app and Supabase-backed storage; do not reintroduce retired desktop-helper, desktop-model, or desktop-vault paths.
 
 # Terminology (naming convention — use consistently in code, comments, docs, commits, and chat)
 

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils/cn";
 import AppSidebar from "@/components/app-shell/AppSidebar";
 import AppTopNav from "@/components/app-shell/AppTopNav";
+import { ToastViewport } from "@/components/app-ui/Toast";
 
 export default function AppShell({
   children,
@@ -23,6 +24,10 @@ export default function AppShell({
           </main>
         </div>
       </div>
+      {/* Mounted once for the whole User Dashboard shell so any surface (ScholarAsk's
+          "Save as my pathway", the PDF viewer's Finish button, etc.) can call
+          showToast() from src/components/app-ui/Toast.tsx without prop-drilling. */}
+      <ToastViewport />
     </div>
   );
 }

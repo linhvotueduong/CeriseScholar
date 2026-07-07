@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
+import { analyzePdfForEvidence } from "@/lib/server/evidenceAnalysis";
 
 export const maxDuration = 300;
 export const runtime = "nodejs";
@@ -81,7 +82,18 @@ async function getSupabase() {
 
 type SupabaseServer = Awaited<ReturnType<typeof getSupabase>>;
 
-async function processPdf(supabase: SupabaseServer, storagePath: string, pdfId: string) {
+type PdfEvidenceContext = {
+  userId: string;
+  projectId: string | null;
+  title: string;
+};
+
+async function processPdf(
+  supabase: SupabaseServer,
+  storagePath: string,
+  pdfId: string,
+  evidenceContext: PdfEvidenceContext
+) {
   await supabase.from("pdfs").update({ ocr_status: "processing" }).eq("id", pdfId);
 
   const { data: fileData, error: downloadError } = await supabase.storage
@@ -209,6 +221,39 @@ async function processPdf(supabase: SupabaseServer, storagePath: string, pdfId: 
     })
     .eq("id", pdfId);
 
+  // Evidence Library (supabase/migrations/027_evidence_library.sql): once text
+  // extraction genuinely succeeds, seed a "pending" row immediately (so the
+  // card/subpage shows "Analyzing…" right away) and kick off the AI analysis
+  // in the background. This must NEVER affect the OCR response above — both
+  // steps are wrapped so any failure here is only ever logged.
+  if (status === "completed") {
+    try {
+      await supabase.from("evidence_library").upsert(
+        {
+          user_id: evidenceContext.userId,
+          project_id: evidenceContext.projectId,
+          pdf_id: pdfId,
+          source: "upload",
+          title: evidenceContext.title,
+          status: "pending",
+        },
+        { onConflict: "user_id,pdf_id" }
+      );
+    } catch (err) {
+      console.warn("Failed to seed pending evidence library row:", err);
+    }
+
+    void analyzePdfForEvidence(supabase, {
+      userId: evidenceContext.userId,
+      projectId: evidenceContext.projectId,
+      pdfId,
+      title: evidenceContext.title,
+      text: fullText,
+    }).catch((err) => {
+      console.warn("Evidence analysis failed to start:", err);
+    });
+  }
+
   return {
     success: status === "completed",
     pageCount,
@@ -245,7 +290,7 @@ export async function POST(request: Request) {
 
     const { data: pdf, error: fetchError } = await supabase
       .from("pdfs")
-      .select("id, storage_path")
+      .select("id, storage_path, project_id, display_name, pdf_title")
       .eq("id", pdfId)
       .single();
 
@@ -253,7 +298,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "PDF not found" }, { status: 404 });
     }
 
-    const result = await enqueueOcr(() => processPdf(supabase, pdf.storage_path, pdfId!));
+    const evidenceContext = {
+      userId: user.id,
+      projectId: pdf.project_id ?? null,
+      title: (pdf.pdf_title && pdf.pdf_title.trim()) || pdf.display_name,
+    };
+
+    const result = await enqueueOcr(() => processPdf(supabase, pdf.storage_path, pdfId!, evidenceContext));
     return NextResponse.json(result);
   } catch (error) {
     console.error("OCR route error:", error);

@@ -23,6 +23,7 @@ import {
 import { computeResearchReadiness, isGenuineApa } from "@/lib/dashboard/researchReadiness";
 import { DEFAULT_CODES } from "@/types/code";
 import { INCLUDED_MONTHLY_ALLOWANCE } from "@/lib/ai/allowance";
+import { computeBehaviorProfile, type BehaviorProfile } from "@/lib/dashboard/behaviorProfile";
 
 export type DashboardSectionId =
   | "meta-analysis"
@@ -110,6 +111,38 @@ export type DashboardSourceData = {
    * same demo/fixture reason as `aiKeyLast4`.
    */
   aiUsageCountThisMonth?: number;
+  /**
+   * Count of this user's `ai_usage_events` rows since the start of today (UTC,
+   * any lane) — drives `aiUsage.usedToday` and the BYOK-lane daily quota's
+   * "used" figure. Optional/absent falls back to 0 (docs/ai-usage-card-states.md).
+   */
+  aiUsageCountToday?: number;
+  /**
+   * Average of this user's daily `ai_usage_events` count over the 7 UTC days
+   * immediately before today (today excluded) — the spike-detection baseline
+   * for `aiUsage.priorDailyAverage`. Optional/absent falls back to 0.
+   */
+  aiUsagePriorDailyAverage?: number;
+  /**
+   * Whether unusual-spike alerts are enabled for this user (guardrails
+   * `unusual_spike_alert`) — drives `aiUsage.spikeAlertEnabled`. Optional/absent
+   * falls back to true (the guardrails default).
+   */
+  aiSpikeAlertEnabled?: boolean;
+  /**
+   * Stage 1 personalization (behaviorProfile.ts): the caller (useDashboardState)
+   * computes this from ~30 days of real activity/task history and passes it through.
+   * Optional so existing callers/tests/demo data that never set it still get a safe,
+   * lowConfidence default (see deriveDashboardState's fallback below) instead of undefined.
+   */
+  behaviorProfile?: BehaviorProfile;
+  /**
+   * Today's cached Stage 2 AI guidance row (`ai_behavior_insights`), read by
+   * useDashboardState (maybeSingle, fail-open null). Null when the daily job
+   * hasn't run yet (or errored) — never blocks the dashboard. Not rendered by
+   * any component yet; Stage 2 wires the UI.
+   */
+  aiInsight?: { guidance: string | null; focusSection: string | null } | null;
 };
 
 export type DashboardSectionData = {
@@ -156,23 +189,24 @@ export type DashboardDerivedState = {
   /** Weighted completion fraction of today's counting tasks (0..1). */
   todayTaskCompletion: number;
   todayTaskLabels: string[];
-  localSetup: {
-    readyCount: number;
-    totalCount: number;
-    percent: number;
-    summary: string;
-    checks: Array<[string, boolean]>;
-  };
   /**
    * AI usage-meter data for the dashboard card (docs/ai-usage-card-spec.md
-   * §Data contract) — Codex repaints the card that currently reads `localSetup`
-   * to use this instead. `localSetup` stays populated during the transition.
+   * §Data contract). A connected key moves the user to the own-key lane;
+   * otherwise the default lane shows the shared fair-use allowance.
    */
   aiUsage: {
     lane: "default" | "byok";
     usedThisMonth: number;
     allowance: number | null;
     keyLast4: string | null;
+    /** Usage-speed-health fields (docs/ai-usage-card-states.md) — see AiUsageState. */
+    usedToday: number;
+    quota: number;
+    cycle: "month" | "day";
+    cycleElapsedFraction: number;
+    cycleRemainingMs: number;
+    priorDailyAverage: number;
+    spikeAlertEnabled: boolean;
   };
   analytics: {
     weeklyActivity: number;
@@ -200,14 +234,42 @@ export type DashboardDerivedState = {
   };
   continueLearning: ContinueLearningResult;
   scheduleTasks: DashboardTask[];
+  /**
+   * Stage 1 personalization profile — pass-through of `data.behaviorProfile` when the
+   * caller supplied one, else a safe lowConfidence default (never undefined). Not
+   * rendered by any component yet; recommendSchedule.ts is the current consumer.
+   */
+  behaviorProfile: BehaviorProfile;
+  /** Pass-through of `data.aiInsight`; null when Stage 2's daily job hasn't produced one. */
+  aiInsight: { guidance: string | null; focusSection: string | null } | null;
 };
 
-type LocalSetupInput = {
-  agentReady: boolean;
-  ollamaReady: boolean;
-  folderReady?: boolean;
-  safetyReady: boolean;
-};
+// Usage-speed-health cycle bounds (docs/ai-usage-card-states.md §Lane/quota
+// semantics). Pure UTC-boundary math shared by the aiUsage assembly below —
+// Included (default lane) resets monthly; BYOK's free daily allowance resets
+// at UTC midnight. Kept local (not in src/lib/ai/usagePace.ts, which must stay
+// free of any notion of "which lane/quota" — it only reasons about used/quota).
+const DEFAULT_BYOK_DAILY_FREE_LIMIT = 1000;
+
+function dayStartUtc(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+function nextDayStartUtc(date: Date): Date {
+  return new Date(dayStartUtc(date).getTime() + 24 * 60 * 60 * 1000);
+}
+function monthStartUtc(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+function nextMonthStartUtc(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+}
+/** Fraction elapsed (0..1) and ms remaining for a [cycleStart, cycleEnd) window. */
+function cycleProgress(now: Date, cycleStart: Date, cycleEnd: Date): { elapsedFraction: number; remainingMs: number } {
+  const totalMs = cycleEnd.getTime() - cycleStart.getTime();
+  const remainingMs = Math.max(0, cycleEnd.getTime() - now.getTime());
+  const elapsedFraction = totalMs > 0 ? Math.min(1, Math.max(0, 1 - remainingMs / totalMs)) : 0;
+  return { elapsedFraction, remainingMs };
+}
 
 const DEFAULT_TASKS = [
   {
@@ -350,6 +412,47 @@ export function buildGreeting(now: Date, focusLine: string): { timeOfDay: Greeti
   const hour = now.getHours();
   const timeOfDay: GreetingTimeOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
   return { timeOfDay, focusLine };
+}
+
+export type CurrentSectionInfo = { id: DashboardSectionId; label: string };
+
+/**
+ * Maps a MEANINGFUL activity event type to the section it actually happened in. Only
+ * events that unambiguously belong to one section are listed; page-load noise
+ * (project_opened/research_focus_opened) and generic schedule/task events are
+ * intentionally absent so they fall through to the caller's fallback instead of
+ * misreporting the current section.
+ */
+const CURRENT_SECTION_BY_EVENT_TYPE: Partial<Record<string, CurrentSectionInfo>> = {
+  source_uploaded: { id: "workspace", label: "Workspace" },
+  highlight_created: { id: "workspace", label: "Workspace" },
+  note_created: { id: "workspace", label: "Workspace" },
+  literature_row_saved: { id: "literature-review", label: "Literature Review Table" },
+  research_query_submitted: { id: "scholarask", label: "ScholarAsk" },
+  paper_draft_saved: { id: "draft", label: "Paper Draft" },
+  meta_analysis_updated: { id: "meta-analysis", label: "Meta-analysis" },
+};
+
+/**
+ * The "Current section" shown on the Current Project card: derived from the user's
+ * most recent MEANINGFUL activity event (mapped event type -> section), so a user who
+ * was just working in ScholarAsk or the Paper Draft sees that reflected instead of the
+ * card only ever being able to say "Meta-analysis" or "Literature Review Table". Falls
+ * back to the caller-supplied score-comparison result when no mapped event exists yet
+ * (e.g. a brand-new project with no activity).
+ */
+export function deriveCurrentSection(
+  events: DashboardActivityEvent[],
+  fallback: CurrentSectionInfo
+): CurrentSectionInfo {
+  const mostRecentFirst = events
+    .slice()
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  for (const event of mostRecentFirst) {
+    const mapped = CURRENT_SECTION_BY_EVENT_TYPE[event.event_type];
+    if (mapped) return mapped;
+  }
+  return fallback;
 }
 
 export type ResearchFocusInput = {
@@ -528,8 +631,7 @@ export function computeResearchFocus(input: ResearchFocusInput): ResearchFocusRe
     watchPoint = "Nothing urgent — keep building your strongest section.";
   }
 
-  // Time estimate from how far the bottleneck sits below "good", nudged by pace. Tied to
-  // research work — NOT to local-agent setup readiness.
+  // Time estimate from how far the bottleneck sits below "good", nudged by pace.
   const gap = Math.max(0, RESEARCH_GOOD - bottleneck.score);
   let lo = gap >= 0.5 ? 30 : gap >= 0.25 ? 20 : 10;
   let hi = gap >= 0.5 ? 45 : gap >= 0.25 ? 30 : 20;
@@ -934,7 +1036,6 @@ export function computeTodayTargetFromUiSettings(
 export function deriveDashboardState(
   project: Project,
   data: DashboardSourceData,
-  localSetup: LocalSetupInput,
   taskDate = getLocalDay(),
   targetContext?: TodayTargetContext
 ): DashboardDerivedState {
@@ -985,15 +1086,8 @@ export function deriveDashboardState(
     (project ? 25 : 0) +
       (workspaceProgress > 0 ? 25 : 0) +
       (literatureProgress > 0 ? 25 : 0) +
-      (localSetup.agentReady || localSetup.ollamaReady ? 25 : 0)
+      25
   );
-  const readyChecks = [
-    ["Agent", localSetup.agentReady],
-    ["Ollama", localSetup.ollamaReady],
-    ["Folder", localSetup.folderReady ?? localSetup.agentReady],
-    ["Safety", localSetup.safetyReady],
-  ] as Array<[string, boolean]>;
-  const readyCount = readyChecks.filter(([, ready]) => ready).length;
   const thisWeek = activityUnits(data.activityEvents, 7);
   const previousWeek = activityUnits(data.activityEvents, 7, 7);
   const weeklySeries = activityUnitSeries(data.activityEvents);
@@ -1134,8 +1228,16 @@ export function deriveDashboardState(
     paperDraft: pct(sectionScores.paperDraftScore * 100),
     citations: pct(sectionScores.citationScore * 100),
   };
-  const activeSectionId: DashboardSectionId =
+  const scoreBasedSectionId: DashboardSectionId =
     sectionScores.metaAnalysisScore >= sectionScores.literatureReviewScore ? "meta-analysis" : "literature-review";
+  // Broaden "current section" beyond the meta-analysis/literature-review score
+  // comparison: prefer the section implied by the user's most recent meaningful
+  // activity event, falling back to the score comparison when nothing maps.
+  const currentSectionInfo = deriveCurrentSection(data.activityEvents, {
+    id: scoreBasedSectionId,
+    label: scoreBasedSectionId === "meta-analysis" ? "Meta-analysis" : "Literature Review Table",
+  });
+  const activeSectionId: DashboardSectionId = currentSectionInfo.id;
 
   const litRowsLeft = Math.max(0, literatureTargetRows - litCount);
   const plannedLiteratureRows = Math.max(1, Math.min(4, litRowsLeft || 2));
@@ -1151,6 +1253,18 @@ export function deriveDashboardState(
   // excluded, stub apa_reference filtered by shape, ripeness proxied by insight work until
   // the per-source Finish button ships (then sources.finished carries the real signal).
   const genuineApaRows = data.literatureEntries.filter((entry) => isGenuineApa(String(entry.apa_reference ?? ""))).length;
+  // Research Pathway home (§6.3, migration 025): the main field is research_question;
+  // approach/hypothesis are optional supplements. Any of the three being meaningful text
+  // recognizes the pathway, so a user who only fills in the optional angle/hypothesis
+  // fields is still recognized. "" (not null) once any entry route has been used, so the
+  // engine's null/"" distinction (home not shipped vs shipped-but-empty) resolves correctly.
+  const pathwayParts = [project.research_question, project.research_approach, project.research_hypothesis]
+    .map((value) => (value ?? "").trim())
+    .filter((value) => value.length > 0);
+  const pathwayText = pathwayParts.join(" — ");
+  // Sources finished (§7.2, migration 026): count of pdfs with finished_at set — the
+  // primary "Sources finished" signal once the Finish button has shipped.
+  const finishedSourceCount = data.pdfs.filter((pdf) => !!pdf.finished_at).length;
   const ripeSynthesizedRows = meaningfulNoteRows.filter((entry) => isMeaningfulText(entry.synthesis_paragraph)).length;
   const defaultCodeNames = new Set(DEFAULT_CODES.map((code) => code.name.toLowerCase()));
   const userCodes = data.codes.filter((code) => {
@@ -1166,7 +1280,7 @@ export function deriveDashboardState(
     now: now.getTime(),
     titleText: project.name ?? "",
     topicText: project.description ?? "",
-    pathwayText: null, // Research Pathway home not shipped yet (checklist model §6.3)
+    pathwayText, // Research Pathway home (checklist model §6.3, migration 025)
     settings: {
       hasTargetDate: !!targetSettings.deadlineDate,
       hasPace: targetContext?.hasPersistedTarget ?? false,
@@ -1176,7 +1290,7 @@ export function deriveDashboardState(
     sources: {
       total: pdfCount,
       ocrFailed,
-      finished: null, // Finish button not shipped yet (§7)
+      finished: finishedSourceCount, // Per-source Finish button (§7, migration 026)
       insightSources: new Set(meaningfulNoteRows.map((entry) => entry.pdf_id).filter(Boolean)).size,
     },
     highlights: highlightCount,
@@ -1216,16 +1330,32 @@ export function deriveDashboardState(
     })),
   });
   // AI usage-meter data (docs/ai-usage-card-spec.md §Data contract). A connected key
-  // (aiKeyLast4 truthy) puts the user on the unlimited BYOK lane; otherwise they're on
-  // the Included/default lane with the shared monthly allowance. Both source fields are
+  // (aiKeyLast4 truthy) puts the user on the BYOK lane; otherwise they're on
+  // the default lane with the shared monthly allowance. Both source fields are
   // optional and absent on demo/fixture data, so this naturally falls back to
   // { lane: "default", usedThisMonth: 0, allowance: INCLUDED_MONTHLY_ALLOWANCE, keyLast4: null }.
   const aiUsageLane: "default" | "byok" = data.aiKeyLast4 ? "byok" : "default";
+  const aiUsageIsByok = aiUsageLane === "byok";
+  const aiUsageQuota = aiUsageIsByok
+    ? Number(process.env.NEXT_PUBLIC_BYOK_DAILY_FREE_LIMIT ?? DEFAULT_BYOK_DAILY_FREE_LIMIT)
+    : INCLUDED_MONTHLY_ALLOWANCE;
+  const aiUsageCycle: "month" | "day" = aiUsageIsByok ? "day" : "month";
+  const aiUsageCycleBounds = aiUsageIsByok
+    ? { start: dayStartUtc(now), end: nextDayStartUtc(now) }
+    : { start: monthStartUtc(now), end: nextMonthStartUtc(now) };
+  const aiUsageCycleProgress = cycleProgress(now, aiUsageCycleBounds.start, aiUsageCycleBounds.end);
   const aiUsage = {
     lane: aiUsageLane,
     usedThisMonth: data.aiUsageCountThisMonth ?? 0,
     allowance: aiUsageLane === "default" ? INCLUDED_MONTHLY_ALLOWANCE : null,
     keyLast4: data.aiKeyLast4 ?? null,
+    usedToday: data.aiUsageCountToday ?? 0,
+    quota: aiUsageQuota,
+    cycle: aiUsageCycle,
+    cycleElapsedFraction: aiUsageCycleProgress.elapsedFraction,
+    cycleRemainingMs: aiUsageCycleProgress.remainingMs,
+    priorDailyAverage: data.aiUsagePriorDailyAverage ?? 0,
+    spikeAlertEnabled: data.aiSpikeAlertEnabled ?? true,
   };
 
   const legacyFocus = computeResearchFocus({
@@ -1253,13 +1383,21 @@ export function deriveDashboardState(
   const recentChanges = buildRecentChanges(activityForLog, now.getTime());
   const greeting = buildGreeting(now, researchFocus.recommended);
 
+  // Stage 1 personalization pass-through (behaviorProfile.ts). useDashboardState computes
+  // the real profile from ~30 days of history and sets data.behaviorProfile; callers that
+  // never set it (tests, demo/fixture data) get the canonical empty/lowConfidence shape
+  // instead of undefined.
+  const behaviorProfile =
+    data.behaviorProfile ?? computeBehaviorProfile({ activityEvents: data.activityEvents, taskHistory: data.tasks, now });
+  const aiInsight = data.aiInsight ?? null;
+
   return {
     activeSectionId,
     greeting,
     currentProject: {
       title: project.name,
       tag: litCount > 0 ? "Literature sprint" : "Project setup",
-      currentSection: activeSectionId === "meta-analysis" ? "Meta-analysis" : "Literature Review Table",
+      currentSection: currentSectionInfo.label,
       lastOpened: relativeTime(lastActivity),
     },
     todayTarget: {
@@ -1278,13 +1416,6 @@ export function deriveDashboardState(
       `${plannedHighlights} ${plannedHighlights === 1 ? "highlight" : "highlights"}`,
       "1 synthesis paragraph",
     ],
-    localSetup: {
-      readyCount,
-      totalCount: readyChecks.length,
-      percent: pct((readyCount / readyChecks.length) * 100),
-      summary: readyCount === readyChecks.length ? "Local agent and folder access are connected." : "Finish local setup before private source-file workflows.",
-      checks: readyChecks,
-    },
     aiUsage,
     analytics: {
       weeklyActivity,
@@ -1346,7 +1477,7 @@ export function deriveDashboardState(
         bottleneckLabel: "What's next",
         bottleneck:
           pdfCount === 0
-            ? ["Add sources for the current project before deeper work.", "Keep source files in the approved local-first workflow when possible."]
+            ? ["Add sources for the current project before deeper work.", "Keep source files tied to the current project workspace."]
             : ["A few highlights still need notes and section codes.", "Tag evidence before moving it into review and draft work."],
         nextLabel: "Recent activity",
         next: [],
@@ -1420,5 +1551,7 @@ export function deriveDashboardState(
       notes: data.courseNotes,
     }),
     scheduleTasks: todayTasks,
+    behaviorProfile,
+    aiInsight,
   };
 }

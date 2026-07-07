@@ -30,16 +30,15 @@ import {
   type ProjectQuality,
   type ResearchCounts,
 } from "@/lib/dashboard/todayTargetModel";
+import { deriveAiUsagePace, type AiPaceTone } from "@/lib/ai/usagePace";
+import { getLocalDay } from "@/lib/dashboard/localDay";
 import type { Project } from "@/types/project";
 
 type DashboardExactTemplateProps = {
   activeProject: Project;
-  agentReady: boolean;
   creating: boolean;
-  localAgentChecking: boolean;
   newDesc: string;
   newName: string;
-  ollamaReady: boolean;
   onCreateProject: (event: FormEvent) => void;
   onNewDescChange: (value: string) => void;
   onNewNameChange: (value: string) => void;
@@ -68,55 +67,35 @@ type DashboardExactTemplateProps = {
   /** Persist Today's Target settings. When omitted, saves stay in local component state. */
   onSaveTargetSettings?: (settings: DashboardTargetSettings) => void;
   projectOptions: Project[];
-  safetyReady: boolean;
   showCreate: boolean;
   visibleSections: Set<string>;
 };
 
-const calendarDays = [
-  "MO",
-  "TU",
-  "WE",
-  "TH",
-  "FR",
-  "SA",
-  "SU",
-  "29",
-  "30",
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-  "8",
-  "9",
-  "10",
-  "11",
-  "12",
-  "13",
-  "14",
-  "15",
-  "16",
-  "17",
-  "18",
-  "19",
-  "20",
-  "21",
-  "22",
-  "23",
-  "24",
-  "25",
-  "26",
-  "27",
-  "28",
-  "29",
-  "30",
-  "31",
-  "1",
-  "2",
-];
+const WEEKDAY_LETTERS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
+
+/** Monday-anchored start (local midnight) of the calendar week containing `date`. */
+function startOfWeekMonday(date: Date): Date {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const mondayOffset = (start.getDay() + 6) % 7; // getDay(): 0=Sun..6=Sat -> 0=Mon..6=Sun
+  start.setDate(start.getDate() - mondayOffset);
+  return start;
+}
+
+/** The 14 consecutive days (2 calendar weeks) starting on the Monday of `anchor`'s week. */
+function buildTwoWeekStrip(anchor: Date): Date[] {
+  const start = startOfWeekMonday(anchor);
+  return Array.from({ length: 14 }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + index);
+    return day;
+  });
+}
+
+function addMonths(date: Date, delta: number): Date {
+  const next = new Date(date);
+  next.setMonth(next.getMonth() + delta);
+  return next;
+}
 
 const scheduleItems = [
   ["09:00", "Literature review sprint", "Rows 13-26", "edit"],
@@ -144,6 +123,54 @@ function Card({
 
 // SVG ring arc circumference (r=36), used to bind the arc fill to ring progress.
 const TARGET_RING_CIRCUMFERENCE = 2 * Math.PI * 36;
+
+// AI usage-speed-health card color mapping (docs/ai-usage-card-states.md).
+// The chip/notice-title text color and the notice background intentionally use
+// slightly different greens (#5f7d4d vs #eef2e8/#f2f4ec) per the founder's palette.
+function aiPaceToneChipColors(tone: AiPaceTone): { bg: string; text: string } {
+  switch (tone) {
+    case "green":
+      return { bg: "#eef2e8", text: "#5f7d4d" };
+    case "amber":
+      return { bg: "#f6efe4", text: "#8f6132" };
+    case "red":
+      return { bg: "#f9ebe9", text: "#c85f56" };
+    default:
+      return { bg: "#f4f0eb", text: "#625a52" };
+  }
+}
+
+function aiPaceToneNoticeBg(tone: AiPaceTone): string {
+  switch (tone) {
+    case "green":
+      return "#f2f4ec";
+    case "amber":
+      return "#f6efe4";
+    case "red":
+      return "#f9ebe9";
+    default:
+      return "#f4f0eb";
+  }
+}
+
+function aiPaceToneBarColor(tone: AiPaceTone): string {
+  switch (tone) {
+    case "green":
+      return "#5f7d4d";
+    case "amber":
+      return "#b6844e";
+    case "red":
+      return "#c85f56";
+    default:
+      return "#9a938c";
+  }
+}
+
+/** ms until the next UTC month start — the fallback card's "safe default" cycleRemainingMs. */
+function msUntilNextUtcMonthStart(now: Date): number {
+  const nextMonthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
+  return Math.max(0, nextMonthStart - now.getTime());
+}
 
 function TodayTargetCard({
   data,
@@ -614,13 +641,6 @@ function TodayTargetSettingsModal({
   );
 }
 
-const localSetupLabels: Record<string, string> = {
-  Agent: "Agent ready",
-  Ollama: "Ollama ready",
-  Folder: "Folder connected",
-  Safety: "Safety checked",
-};
-
 /** Tiny "Sample" chip for a card whose data is currently demo/fallback. */
 function SampleTag() {
   return (
@@ -669,10 +689,12 @@ function RecentChangesCard({ changes, sample }: { changes?: DashboardDerivedStat
 }
 
 function ResearchFocusCard({
+  aiInsight,
   compact = false,
   data,
   onStartNextMove,
 }: {
+  aiInsight?: DashboardDerivedState["aiInsight"];
   compact?: boolean;
   data?: DashboardDerivedState["researchFocus"];
   onStartNextMove?: () => void;
@@ -697,7 +719,7 @@ function ResearchFocusCard({
   }) satisfies ReadonlyArray<readonly [AppIconName, string, string, string, string, string]>;
 
   return (
-    <Card className={`${compact ? "h-[306px] px-[10px] pb-[9px] pt-[13px]" : "h-[318px] px-[12px] pb-[10px] pt-[17px]"} min-w-0`}>
+    <Card className={`${compact ? "min-h-[306px] px-[10px] pb-[9px] pt-[13px]" : "min-h-[318px] px-[12px] pb-[10px] pt-[17px]"} min-w-0`}>
       <div className="flex items-start justify-between gap-3">
         <h2 className={`${compact ? "text-[13px]" : "mt-[2px] text-[14px]"} whitespace-nowrap font-[850] leading-none`}>Research Readiness</h2>
         <button
@@ -753,42 +775,152 @@ function ResearchFocusCard({
           </div>
         </div>
       </div>
+
+      {aiInsight?.guidance ? (
+        <div className={`${compact ? "mt-[7px] px-[9px] py-[6px]" : "mt-[8px] px-[10px] py-[7px]"} rounded-[9px] border border-[#e6e1da] bg-[#faf8f5]`}>
+          <p className={`${compact ? "text-[6.5px]" : "text-[7px]"} truncate font-[800] uppercase tracking-wide leading-none text-[#8f8275]`}>
+            Personalized — from your recent activity
+          </p>
+          <p className={`${compact ? "mt-[3px] text-[9px]" : "mt-[4px] text-[9.5px]"} line-clamp-2 font-[650] leading-[1.3] text-[#17120d]`}>
+            {aiInsight.guidance}
+          </p>
+        </div>
+      ) : null}
     </Card>
   );
 }
 
-function TodayPlanCard({ compact = false, onAddTask }: { compact?: boolean; onAddTask?: () => void }) {
+/** Tiny sparkline + honest summary for the analytics the model already computes. */
+function WeeklyActivityMini({
+  analytics,
+  compact,
+}: {
+  analytics?: DashboardDerivedState["analytics"];
+  compact?: boolean;
+}) {
+  const series = analytics?.weeklySeries ?? [0, 0, 0, 0, 0, 0, 0];
+  const total = series.reduce((sum, value) => sum + value, 0);
+  const isEmpty = total <= 0;
+  const max = Math.max(1, ...series);
+  const delta = analytics?.weeklyDelta ?? 0;
+
   return (
-    <Card className={`${compact ? "h-[306px] p-[12px]" : "h-[362px] p-[16px]"} min-w-0`}>
+    <div className={`${compact ? "mt-[10px] px-[9px] py-[7px]" : "mt-[13px] px-[10px] py-[8px]"} rounded-[8px] border border-[#eeeae5] bg-[#faf9f7]`}>
+      <div className="flex items-center justify-between">
+        <span className={`${compact ? "text-[9px]" : "text-[10px]"} font-[850] text-[#625a52]`}>Weekly activity</span>
+        {isEmpty ? null : (
+          <span className={`${compact ? "text-[8.5px]" : "text-[9.5px]"} font-[750] ${delta >= 0 ? "text-[#5f7d4d]" : "text-[#c85f56]"}`}>
+            {delta >= 0 ? "+" : ""}
+            {delta}%
+          </span>
+        )}
+      </div>
+      {isEmpty ? (
+        <p className={`${compact ? "mt-[6px] text-[9px]" : "mt-[7px] text-[10px]"} font-[600] leading-[1.3] text-[#8a837c]`}>
+          No tracked activity yet this week.
+        </p>
+      ) : (
+        <>
+          <div className={`${compact ? "mt-[7px] h-[18px] gap-[3px]" : "mt-[8px] h-[22px] gap-[4px]"} flex items-end`}>
+            {series.map((value, index) => (
+              <span
+                className="min-h-[2px] flex-1 rounded-[2px] bg-[#b6844e]"
+                key={index}
+                style={{ height: `${Math.max(10, (value / max) * 100)}%`, opacity: index === series.length - 1 ? 1 : 0.5 }}
+              />
+            ))}
+          </div>
+          <p className={`${compact ? "mt-[5px] text-[8.5px]" : "mt-[6px] text-[9.5px]"} font-[650] text-[#625a52]`}>
+            {total} {total === 1 ? "unit" : "units"} this week
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function TodayPlanCard({
+  analytics,
+  compact = false,
+  onAddTask,
+  tasks,
+}: {
+  analytics?: DashboardDerivedState["analytics"];
+  compact?: boolean;
+  onAddTask?: () => void;
+  tasks?: DashboardTask[];
+}) {
+  const [anchorDate, setAnchorDate] = useState(() => new Date());
+  const todayKey = getLocalDay(new Date());
+  const strip = buildTwoWeekStrip(anchorDate);
+  const anchorMonth = anchorDate.getMonth();
+  const monthLabel = anchorDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  // scheduleTasks always carries task_date (never optional on DashboardTask), so a task
+  // dot is honest: it only ever marks a day this data actually says has a task.
+  const taskDays = new Set((tasks ?? []).map((task) => task.task_date).filter(Boolean));
+
+  return (
+    <Card className={`${compact ? "h-[306px] p-[12px]" : "h-[362px] p-[16px]"} flex min-w-0 flex-col`}>
       <div className="flex items-center justify-between">
         <h2 className={`${compact ? "text-[13px]" : "text-[14px]"} font-[850]`}>Today&apos;s Plan</h2>
-        <button className="text-[14px] font-[850]" type="button">
-          ...
-        </button>
+        <Link
+          aria-label="Open full schedule"
+          className="inline-flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[#4d4944] transition hover:bg-[#f4f2ef]"
+          href="/dashboard/schedule"
+        >
+          <AppIcon className="h-[13px] w-[13px]" name="arrow-up-right" />
+        </Link>
       </div>
       <div className={`${compact ? "mt-[14px] text-[12px]" : "mt-[17px] text-[13px]"} flex items-center justify-between font-[850]`}>
-        <span>←</span>
-        <span>May 2024</span>
-        <span>→</span>
+        <button
+          aria-label="Previous month"
+          className="px-[4px]"
+          onClick={() => setAnchorDate((current) => addMonths(current, -1))}
+          type="button"
+        >
+          ←
+        </button>
+        <span>{monthLabel}</span>
+        <button
+          aria-label="Next month"
+          className="px-[4px]"
+          onClick={() => setAnchorDate((current) => addMonths(current, 1))}
+          type="button"
+        >
+          →
+        </button>
       </div>
-      <div className={`${compact ? "mt-[13px] gap-x-[5px] gap-y-[10px] text-[10px]" : "mt-[16px] gap-x-[11px] gap-y-[13px] text-[11px]"} grid grid-cols-7 text-center font-[650] text-[#625a52]`}>
-        {calendarDays.map((day, index) => (
-          <span
-            className={
-              day === "15"
-                ? `${compact ? "h-[21px] w-[21px]" : "h-[24px] w-[24px]"} flex items-center justify-center rounded-full bg-[#111111] text-white`
-                : index > 6 && (day === "29" || day === "30" || day === "1" || day === "2")
-                  ? "text-[#c2bbb5]"
-                  : ""
-            }
-            key={`${day}-${index}`}
-          >
-            {day}
-          </span>
+      <div className={`${compact ? "mt-[13px] gap-x-[5px] gap-y-[6px] text-[10px]" : "mt-[16px] gap-x-[11px] gap-y-[8px] text-[11px]"} grid grid-cols-7 text-center font-[650] text-[#625a52]`}>
+        {WEEKDAY_LETTERS.map((label) => (
+          <span key={label}>{label}</span>
         ))}
+        {strip.map((day, index) => {
+          const dayKey = getLocalDay(day);
+          const isToday = dayKey === todayKey;
+          const inAnchorMonth = day.getMonth() === anchorMonth;
+          const hasTask = taskDays.has(dayKey);
+
+          return (
+            <div className="flex flex-col items-center justify-center gap-[2px]" key={`${dayKey}-${index}`}>
+              <span
+                className={
+                  isToday
+                    ? `${compact ? "h-[21px] w-[21px]" : "h-[24px] w-[24px]"} flex items-center justify-center rounded-full bg-[#111111] text-white`
+                    : inAnchorMonth
+                      ? ""
+                      : "text-[#c2bbb5]"
+                }
+              >
+                {day.getDate()}
+              </span>
+              <span className={`h-[3px] w-[3px] rounded-full ${hasTask ? "bg-[#b6844e]" : "bg-transparent"}`} />
+            </div>
+          );
+        })}
       </div>
+      <WeeklyActivityMini analytics={analytics} compact={compact} />
       <button
-        className={`${compact ? "mt-[16px] h-[31px] text-[10px]" : "mt-[22px] h-[36px] text-[12px]"} w-full rounded-[8px] border border-[#d8d3ce] font-[850]`}
+        className={`${compact ? "h-[31px] text-[10px]" : "h-[36px] text-[12px]"} mt-auto w-full rounded-[8px] border border-[#d8d3ce] font-[850]`}
         onClick={onAddTask}
         type="button"
       >
@@ -816,14 +948,16 @@ function TodayScheduleCard({
   onCompleteTask?: (taskId: string) => void;
   sample?: boolean;
 }) {
-  const items = (tasks?.length ? tasks : scheduleItems.map(([time, title, body, icon], index) => ({
+  const [showCompleted, setShowCompleted] = useState(true);
+  const allItems = tasks?.length ? tasks : scheduleItems.map(([time, title, body, icon], index) => ({
     id: `fixture-${index}`,
     scheduled_time: time,
     title,
     subtitle: body,
     section_id: icon,
     status: "pending",
-  } as DashboardTask))).slice(0, 4);
+  } as DashboardTask));
+  const items = (showCompleted ? allItems : allItems.filter((task) => task.status !== "completed")).slice(0, 4);
 
   return (
     <Card className={`${compact ? "h-[306px] p-[12px]" : "h-[358px] p-[16px]"} min-w-0`}>
@@ -832,8 +966,14 @@ function TodayScheduleCard({
           <h2 className={`${compact ? "text-[13px]" : "text-[14px]"} font-[850]`}>Today&apos;s Schedule</h2>
           {sample ? <SampleTag /> : null}
         </div>
-        <button className={`${compact ? "px-2 py-1 text-[10px]" : "px-3 py-1 text-[11px]"} rounded-[8px] border border-[#d8d3ce] font-[850]`} type="button">
-          All
+        <button
+          aria-pressed={!showCompleted}
+          className={`${compact ? "px-2 py-1 text-[10px]" : "px-3 py-1 text-[11px]"} rounded-[8px] border border-[#d8d3ce] font-[850]`}
+          onClick={() => setShowCompleted((current) => !current)}
+          title={showCompleted ? "Showing all tasks — click to hide completed" : "Showing active tasks — click to show all"}
+          type="button"
+        >
+          {showCompleted ? "All" : "Active"}
         </button>
       </div>
       <div className={`${compact ? "mt-[12px] gap-[8px]" : "mt-[17px] gap-[10px]"} grid`}>
@@ -869,12 +1009,9 @@ function TodayScheduleCard({
 export default function DashboardExactTemplate(props: DashboardExactTemplateProps) {
   const {
     activeProject,
-    agentReady,
     creating,
-    localAgentChecking,
     newDesc,
     newName,
-    ollamaReady,
     onCreateProject,
     onNewDescChange,
     onNewNameChange,
@@ -893,11 +1030,42 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
     targetSettings: targetSettingsProp,
     onSaveTargetSettings,
     projectOptions,
-    safetyReady,
     showCreate,
   } = props;
   const currentProject = dashboardData?.currentProject;
-  const localSetup = dashboardData?.localSetup;
+  const aiUsage = dashboardData?.aiUsage ?? {
+    lane: "default" as const,
+    usedThisMonth: 0,
+    allowance: 150,
+    keyLast4: null,
+    usedToday: 0,
+    quota: 150,
+    cycle: "month" as const,
+    cycleElapsedFraction: 0,
+    cycleRemainingMs: msUntilNextUtcMonthStart(new Date()),
+    priorDailyAverage: 0,
+    spikeAlertEnabled: true,
+  };
+  const aiUsageIsByok = aiUsage.lane === "byok";
+  // Default lane: pace is computed off this month's usage. BYOK lane: pace is
+  // computed off today's usage (the free daily quota resets at UTC midnight).
+  const aiPaceStatus = deriveAiUsagePace({
+    used: aiUsageIsByok ? aiUsage.usedToday : aiUsage.usedThisMonth,
+    quota: aiUsage.quota,
+    cycleElapsedFraction: aiUsage.cycleElapsedFraction,
+    cycleRemainingMs: aiUsage.cycleRemainingMs,
+    usedToday: aiUsage.usedToday,
+    priorDailyAverage: aiUsage.priorDailyAverage,
+    spikeAlertEnabled: aiUsage.spikeAlertEnabled,
+  });
+  const aiIsSetupPending = aiUsage.lane === "default" && aiUsage.usedThisMonth === 0;
+  const aiCardTitle = aiUsageIsByok ? "AI — OpenRouter key" : aiIsSetupPending ? "AI — Setup pending" : "AI — Included";
+  const aiChipColors = aiPaceToneChipColors(aiPaceStatus.tone);
+  const aiNoticeBg = aiPaceToneNoticeBg(aiPaceStatus.tone);
+  const aiBarColor = aiPaceToneBarColor(aiPaceStatus.tone);
+  const aiPercentColor = aiPaceStatus.tone === "red" ? "#c85f56" : "#111111";
+  const aiBarWidthPercent = aiPaceStatus.percent > 0 ? Math.max(aiPaceStatus.percent, 2) : 0;
+  const aiUsedForDisplay = aiUsageIsByok ? aiUsage.usedToday : aiUsage.usedThisMonth;
   const continueLearning = dashboardData?.continueLearning;
   const continueLearningLessonLine = continueLearning?.lessonNumber
     ? `${continueLearning.lessonNumber} ${continueLearning.lessonTitle}`
@@ -1019,9 +1187,8 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
   return (
     <div className="dashboard-exact-template w-full max-w-[1428px] font-sans text-[#111111]">
       <span className="sr-only">
-        Current live project: {activeProject.name}. Project count: {projectOptions.length}. Agent status:
-        {agentReady ? "ready" : localAgentChecking ? "checking" : "not ready"}. Ollama:
-        {ollamaReady ? "ready" : "not ready"}. Safety: {safetyReady ? "ready" : "review"}.
+        Current live project: {activeProject.name}. Project count: {projectOptions.length}. AI lane:
+        {aiUsage.lane === "byok" ? "your own key" : "included"}.
         Dashboard data: {dashboardLoading ? "loading" : "loaded"}.
       </span>
       <div className="dashboard-exact-hero mb-[20px] flex items-end justify-between gap-6">
@@ -1184,32 +1351,60 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
               paceSummary={dashboardData?.todayTargetSummary ?? targetPaceSummary}
             />
 
-            <Card className="h-[186px] p-[14px]">
-              <p className="text-[13px] font-[850] text-[#111111]">Local Setup</p>
-              <div className="mt-[15px] flex items-end justify-between gap-3">
-                <p className="text-[15px] font-[850] leading-none text-[#111111]">
-                  {localSetup?.readyCount ?? 4}/{localSetup?.totalCount ?? 4}{" "}
-                  <span className="text-[10.5px] font-[750] text-[#625a52]">checks ready</span>
-                </p>
-                <span className="pb-[2px] text-[10.5px] font-[850] leading-none text-[#8e6837]">{localSetup?.percent ?? 100}% ready</span>
+            <Card className="h-[186px] overflow-hidden p-[14px]">
+              <div className="flex items-center justify-between gap-2">
+                <p className="min-w-0 flex-1 truncate text-[12.5px] font-[850] text-[#111111]">{aiCardTitle}</p>
+                <span
+                  className="shrink-0 rounded-full px-[8px] py-[3px] text-[9.5px] font-[850] leading-none"
+                  style={{ backgroundColor: aiChipColors.bg, color: aiChipColors.text }}
+                >
+                  {aiPaceStatus.chipLabel}
+                </span>
               </div>
-              <div className="mt-[10px] h-[6px] overflow-hidden rounded-full bg-[#eee7de]">
-                <div className="h-full rounded-full bg-[#d6ad6f]" style={{ width: `${localSetup?.percent ?? 100}%` }} />
+              <p className="mt-[8px] text-[26px] font-[850] leading-none" style={{ color: aiPercentColor }}>
+                {aiPaceStatus.percent}%
+              </p>
+              <p className="mt-[6px] truncate text-[9.5px] font-[750] leading-none text-[#625a52]">
+                Used {aiUsedForDisplay} &middot; Left {aiPaceStatus.left} &middot; {aiPaceStatus.resetsLabel}
+              </p>
+              <div className="mt-[8px] h-[6px] overflow-hidden rounded-full bg-[#eee7de]">
+                <div
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: aiBarColor, width: `${aiBarWidthPercent}%` }}
+                />
               </div>
-              <div className="mt-[13px] grid gap-[8px] text-[10.5px] leading-none">
-                {(localSetup?.checks ?? [["Agent", agentReady], ["Ollama", ollamaReady], ["Folder", agentReady], ["Safety", safetyReady]]).map(([label, ready], index) => (
-                  <div className="flex items-center justify-between gap-4" key={label}>
-                    <span className="flex min-w-0 items-center gap-[8px] font-[750] text-[#625a52]">
-                      <span
-                        className="h-[6px] w-[6px] shrink-0 rounded-full bg-[#d6ad6f]"
-                        style={{ opacity: 1 - index * 0.12 }}
-                      />
-                      <span className="truncate">{localSetupLabels[label] ?? label}</span>
-                    </span>
-                    <span className={`font-[850] ${ready ? "text-[#5f7d4d]" : "text-[#a87f4f]"}`}>{ready ? "Yes" : "Soon"}</span>
-                  </div>
-                ))}
-              </div>
+              {aiPaceStatus.state === "alert" ? (
+                <Link
+                  className="mt-[8px] block rounded-[8px] px-[9px] py-[7px] no-underline"
+                  href="/settings/ai"
+                  style={{ backgroundColor: aiNoticeBg }}
+                >
+                  <p className="truncate text-[10px] font-[850] leading-none" style={{ color: aiChipColors.text }}>
+                    {aiPaceStatus.noticeTitle}
+                  </p>
+                  <p className="mt-[3px] line-clamp-2 text-[9.5px] font-[600] leading-[1.35] text-[#625a52]">
+                    {aiPaceStatus.noticeBody}
+                  </p>
+                </Link>
+              ) : (
+                <div className="mt-[8px] rounded-[8px] px-[9px] py-[7px]" style={{ backgroundColor: aiNoticeBg }}>
+                  <p className="truncate text-[10px] font-[850] leading-none" style={{ color: aiChipColors.text }}>
+                    {aiPaceStatus.noticeTitle}
+                  </p>
+                  {aiIsSetupPending ? (
+                    <Link
+                      className="mt-[3px] block truncate text-[10px] font-[850] text-[#8e6837] no-underline hover:underline"
+                      href="/settings/ai"
+                    >
+                      Set up OpenRouter key →
+                    </Link>
+                  ) : (
+                    <p className="mt-[3px] line-clamp-2 text-[9.5px] font-[600] leading-[1.35] text-[#625a52]">
+                      {aiPaceStatus.noticeBody}
+                    </p>
+                  )}
+                </div>
+              )}
             </Card>
 
             <RecentChangesCard changes={dashboardData?.recentChanges} sample={demoCards?.activity} />
@@ -1223,13 +1418,13 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
               sections={dashboardData?.researchSections}
             />
             <div className="hidden 2xl:block">
-              <ResearchFocusCard data={dashboardData?.researchFocus} onStartNextMove={() => onOpenResearchSection?.(dashboardData?.researchFocus.bottleneckSection ?? "literature-review")} />
+              <ResearchFocusCard aiInsight={dashboardData?.aiInsight} data={dashboardData?.researchFocus} onStartNextMove={() => onOpenResearchSection?.(dashboardData?.researchFocus?.bottleneckSection ?? "literature-review")} />
             </div>
           </section>
 
           <section className="mt-[14px] grid grid-cols-3 gap-[10px] 2xl:hidden">
-            <ResearchFocusCard compact data={dashboardData?.researchFocus} onStartNextMove={() => onOpenResearchSection?.(dashboardData?.researchFocus.bottleneckSection ?? "literature-review")} />
-            <TodayPlanCard compact onAddTask={onAddScheduleTask} />
+            <ResearchFocusCard aiInsight={dashboardData?.aiInsight} compact data={dashboardData?.researchFocus} onStartNextMove={() => onOpenResearchSection?.(dashboardData?.researchFocus?.bottleneckSection ?? "literature-review")} />
+            <TodayPlanCard analytics={dashboardData?.analytics} compact onAddTask={onAddScheduleTask} tasks={dashboardData?.scheduleTasks} />
             <TodayScheduleCard compact onCompleteTask={onCompleteTask} sample={demoCards?.schedule} tasks={dashboardData?.scheduleTasks} />
           </section>
 
@@ -1390,7 +1585,7 @@ export default function DashboardExactTemplate(props: DashboardExactTemplateProp
         </div>
 
         <aside className="hidden min-w-0 content-start gap-[14px] 2xl:grid">
-          <TodayPlanCard onAddTask={onAddScheduleTask} />
+          <TodayPlanCard analytics={dashboardData?.analytics} onAddTask={onAddScheduleTask} tasks={dashboardData?.scheduleTasks} />
           <TodayScheduleCard onCompleteTask={onCompleteTask} sample={demoCards?.schedule} tasks={dashboardData?.scheduleTasks} />
         </aside>
       </div>

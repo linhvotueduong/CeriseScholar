@@ -7,7 +7,7 @@ import Link from "next/link";
 import GoogleButton from "./GoogleButton";
 
 const DEVICE_NOTICE =
-  "For the full Cerise Scholar research experience, use the laptop where your files, storage, and local AI agent are set up. Mobile sign-in is available for review and lighter workspace access.";
+  "Your account works the same on any device. Research, files, and AI access are stored securely in the cloud, not on a single computer.";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");

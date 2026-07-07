@@ -10,7 +10,21 @@ export type DashboardActivityType =
   | "paper_draft_saved"
   | "dashboard_task_completed"
   | "dashboard_schedule_updated"
-  | "research_focus_opened";
+  | "research_focus_opened"
+  /**
+   * Research Pathway home saved (docs/research-readiness-checklist-model.md §6.3):
+   * fired whenever research_question/approach/hypothesis is written, via any entry
+   * route (typed directly, or "Save as my pathway" from a ScholarAsk Research
+   * Journey answer). Feeds §5.3 status-follows-the-user (see the eventArea map in
+   * src/lib/dashboard/researchReadiness.ts) by pointing status at Theme clarity.
+   */
+  | "research_pathway_saved"
+  /**
+   * Per-source Finish button (docs/research-readiness-checklist-model.md §7.1):
+   * fired when a source is marked finished (pdfs.finished_at set). No schema
+   * change — reuses this same activity events table (§7.4.5).
+   */
+  | "source_review_finished";
 
 type LogDashboardActivityParams = {
   projectId?: string | null;

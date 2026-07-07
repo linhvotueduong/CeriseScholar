@@ -288,6 +288,15 @@ test("early writer: recent draft activity keeps status on Paper draft, not Evide
   assert.match(r.reason, /^active:/);
 });
 
+test("saving the Research Pathway home anchors status on Theme clarity too (§6.3 entry route 1/2)", () => {
+  const s = withPlanAndTopic(blank());
+  s.pathwayText = "Does sleep restriction reduce recall accuracy in teens?";
+  s.recentEvents = [{ type: "research_pathway_saved", at: RECENT }];
+  const r = computeResearchReadiness(s);
+  assert.equal(r.currentStatus, "Theme clarity");
+  assert.match(r.reason, /^(active|bridge):/);
+});
+
 test("jumper: recent journey query anchors status on Theme clarity and bridges forward", () => {
   const s = withPlanAndTopic(blank());
   s.journeyEvents = 2;

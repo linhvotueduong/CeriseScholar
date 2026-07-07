@@ -14,6 +14,17 @@ import {
 } from "@/lib/dashboard/types";
 
 /**
+ * DEPRECATED / UNWIRED — marked 2026-07-07, do not build on this.
+ *
+ * This file is dead code: nothing in the live UI imports or calls
+ * `buildDashboardSnapshot`. The only reference elsewhere in `src/` is a doc
+ * comment in `types.ts`. The live dashboard state path is
+ * `src/lib/dashboard/deriveDashboardState.ts` (via `useDashboardState`) — that
+ * is what actually renders the `/dashboard` page today. Not deleted because
+ * other in-flight work may still touch it; if you're looking for where
+ * dashboard data actually gets derived, go to `deriveDashboardState.ts` instead.
+ *
+ * --- Original Phase A header (historical, kept for context) ---
  * Phase A: build a `DashboardSnapshot` ALONGSIDE the existing `DashboardDerivedState`.
  *
  * This is a pure, deterministic mapping from the already-derived state + raw source
@@ -123,12 +134,18 @@ export function buildDashboardSnapshot(input: BuildDashboardSnapshotInput): Dash
           eventType: "", // populated from real events in Phase F
         })),
       }),
-      localSetup: card({
-        readyCount: derived.localSetup.readyCount,
-        readyPercent: derived.localSetup.percent,
-        checks: derived.localSetup.checks.map(([label, ready]) => ({ label, ready })),
-        deviceScoped: true,
-        lastCheckedAt: null,
+      aiUsage: card({
+        lane: derived.aiUsage.lane,
+        usedThisMonth: derived.aiUsage.usedThisMonth,
+        allowance: derived.aiUsage.allowance,
+        keyLast4: derived.aiUsage.keyLast4,
+        usedToday: derived.aiUsage.usedToday,
+        quota: derived.aiUsage.quota,
+        cycle: derived.aiUsage.cycle,
+        cycleElapsedFraction: derived.aiUsage.cycleElapsedFraction,
+        cycleRemainingMs: derived.aiUsage.cycleRemainingMs,
+        priorDailyAverage: derived.aiUsage.priorDailyAverage,
+        spikeAlertEnabled: derived.aiUsage.spikeAlertEnabled,
       }),
       sections: card({
         selectedSection: derived.activeSectionId,

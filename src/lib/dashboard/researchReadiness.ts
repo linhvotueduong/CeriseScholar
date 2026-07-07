@@ -439,6 +439,7 @@ function eventArea(type: string, checks: Record<MicroCheckId, boolean>): Readine
     case "source_review_finished":
       return "source_review";
     case "research_query_submitted":
+    case "research_pathway_saved":
       return "theme_clarity";
     case "literature_row_saved": {
       // A row save doesn't say WHICH column was edited — the ledger disambiguates:

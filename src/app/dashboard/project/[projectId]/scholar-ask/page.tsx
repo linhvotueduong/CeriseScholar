@@ -5,7 +5,17 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  evidenceDedupeKey,
+  fetchScholarAskDedupeKeys,
+  saveScholarAskEvidence,
+} from "@/lib/research/evidenceLibrary";
 import { readApiResponse } from "@/lib/utils/readApiResponse";
+import { INCLUDED_MONTHLY_ALLOWANCE, allowanceExceeded } from "@/lib/ai/allowance";
+import { createClient } from "@/lib/supabase/client";
+import { logDashboardActivity } from "@/lib/dashboard/activity";
+import { showToast } from "@/components/app-ui/Toast";
+import { useUser } from "@/hooks/useUser";
 
 // ============================================================
 // Error Boundary
@@ -54,6 +64,12 @@ interface Message {
   totalFound?: number;
   loading?: boolean;
   error?: boolean;
+  /**
+   * The answer mode active when this message was generated (docs/research-readiness
+   * -checklist-model.md §6.3 entry route 2: "Save as my pathway" only makes sense on
+   * Research Journey answers, which output "Possible Research Pathways").
+   */
+  mode?: AnswerMode;
 }
 
 interface Conversation {
@@ -235,6 +251,7 @@ const ResponseContent = React.memo(function ResponseContent({
 export default function ScholarAskPage() {
   const params = useParams();
   const projectId = params.projectId as string;
+  const { user } = useUser();
 
   const storageKey = `cerise_ask_${projectId}`;
   const legacyStorageKey = `${["scholar", "ask"].join("")}_${projectId}`;
@@ -254,6 +271,51 @@ export default function ScholarAskPage() {
   const [paperAnalysis, setPaperAnalysis] = useState<Record<number, string>>({});
   const [paperAnalysisError, setPaperAnalysisError] = useState<Record<number, string>>({});
   const [analyzingPaper, setAnalyzingPaper] = useState<number | null>(null);
+  const [savedEvidenceIds, setSavedEvidenceIds] = useState<Set<string>>(new Set());
+
+  // AI-ready badge — reflects the real usage/lane state from /api/ai/usage
+  // instead of a hardcoded "AI ready". Never shows green until we've confirmed it.
+  type AiStatusState =
+    | { kind: "loading" }
+    | { kind: "unknown" }
+    | { kind: "byok" }
+    | { kind: "included"; used: number; allowance: number }
+    | { kind: "exhausted" };
+  const [aiStatus, setAiStatus] = useState<AiStatusState>({ kind: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/ai/usage");
+        const data = await readApiResponse<{
+          lane?: string;
+          used?: number;
+          allowance?: number | null;
+          error?: string;
+        }>(res);
+        if (cancelled) return;
+        if (!res.ok || data.error || !data.lane) {
+          setAiStatus({ kind: "unknown" });
+          return;
+        }
+        if (data.lane === "byok") {
+          setAiStatus({ kind: "byok" });
+          return;
+        }
+        const used = data.used ?? 0;
+        const allowance = data.allowance ?? INCLUDED_MONTHLY_ALLOWANCE;
+        setAiStatus(
+          allowanceExceeded(used, allowance) ? { kind: "exhausted" } : { kind: "included", used, allowance }
+        );
+      } catch {
+        if (!cancelled) setAiStatus({ kind: "unknown" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Load from localStorage AFTER hydration (avoids mismatch)
   useEffect(() => {
@@ -269,6 +331,23 @@ export default function ScholarAskPage() {
     } catch { /* ignore */ }
     setHydrated(true);
   }, [legacyStorageKey, storageKey]);
+
+  // Which papers are already in the Evidence Library (Evidence Library v2,
+  // supabase/migrations/027_evidence_library.sql) — drives the Save/Saved
+  // button state. Keyed by URL (or title) rather than a local id since these
+  // rows now live in Supabase, not localStorage.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const keys = await fetchScholarAskDedupeKeys(supabase, user.id);
+      if (!cancelled) setSavedEvidenceIds(keys);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   // Save to localStorage whenever conversations change (only after hydration)
   useEffect(() => {
@@ -377,7 +456,7 @@ export default function ScholarAskPage() {
 
     updateConv(convId!, (c) => ({
       ...c,
-      messages: [...c.messages, { role: "user", content: q }, { role: "assistant", content: "", loading: true }],
+      messages: [...c.messages, { role: "user", content: q }, { role: "assistant", content: "", loading: true, mode: answerMode }],
     }));
     setQuery("");
     setShowRefs(false);
@@ -417,6 +496,7 @@ export default function ScholarAskPage() {
                 references: data.references,
                 paperCount: data.paperCount,
                 totalFound: data.totalFound,
+                mode: m.mode,
               }
             : m
         ),
@@ -459,6 +539,68 @@ export default function ScholarAskPage() {
     setAnswerMode("research_journey");
     setJourneyIntent(starter.intent);
     requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  async function handleSaveSelectedPaper() {
+    if (!selectedPaper || !user) return;
+    const paper = selectedPaper;
+    const key = evidenceDedupeKey({ title: paper.title, url: paper.url });
+    if (savedEvidenceIds.has(key)) return;
+
+    const supabase = createClient();
+    const saved = await saveScholarAskEvidence(supabase, {
+      userId: user.id,
+      projectId: projectId || null,
+      title: paper.title,
+      docType: paper.journal ? "Journal Article" : "Other",
+      url: paper.url || null,
+    });
+
+    if (!saved) {
+      showToast({ message: "Couldn't save this source — try again." });
+      return;
+    }
+
+    setSavedEvidenceIds((current) => new Set([...current, key]));
+    showToast({ message: "Saved to your Evidence Library" });
+  }
+
+  // Best-effort extraction of the "Possible Research Pathways" section from a
+  // Research Journey answer (docs/user-actions-per-surface.md §4). The answer is
+  // free-form AI markdown, not structured data, so this looks for a heading that
+  // mentions "pathway" and grabs the text until the next heading; falling back to
+  // the whole (truncated) answer keeps the button useful even if the model's
+  // heading wording drifts.
+  function extractPathwaySnippet(content: string): string {
+    const lines = content.split("\n");
+    const isHeading = (line: string) => /^#{1,6}\s/.test(line.trim()) || /^\*\*.+\*\*:?$/.test(line.trim());
+    const startIdx = lines.findIndex((line) => isHeading(line) && /pathway/i.test(line));
+    if (startIdx === -1) return content.trim().slice(0, 1200);
+    const rest = lines.slice(startIdx + 1);
+    const endIdx = rest.findIndex((line) => isHeading(line));
+    const section = (endIdx === -1 ? rest : rest.slice(0, endIdx)).join("\n").trim();
+    return (section || content.trim()).slice(0, 1200);
+  }
+
+  async function handleSaveAsPathway(msg: Message) {
+    const snippet = extractPathwaySnippet(cleanContent(msg.content));
+    if (!snippet) return;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("projects")
+      .update({ research_question: snippet })
+      .eq("id", projectId);
+    if (error) {
+      showToast({ message: "Couldn't save your pathway — try again." });
+      return;
+    }
+    await logDashboardActivity({
+      projectId,
+      eventType: "research_pathway_saved",
+      sectionId: "scholarask",
+      label: "Saved pathway from ScholarAsk",
+    });
+    showToast({ message: "Saved as your research pathway", detail: "Find it any time in the Workspace header." });
   }
 
   // Pre-compute refNums so it's stable for React.memo
@@ -525,9 +667,29 @@ export default function ScholarAskPage() {
             </button>
             {activeConv && <span className="text-sm text-[#5a4a3a] font-medium truncate">{activeConv.title}</span>}
             <div className="ml-auto" />
-            <span className="hidden sm:inline-flex rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-[10px] font-semibold text-green-700">
-              AI ready
-            </span>
+            {aiStatus.kind === "byok" && (
+              <span className="hidden sm:inline-flex rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-[10px] font-semibold text-green-700">
+                AI ready — your key
+              </span>
+            )}
+            {aiStatus.kind === "included" && (
+              <span className="hidden sm:inline-flex rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-[10px] font-semibold text-green-700">
+                AI ready — included ({aiStatus.used} of {aiStatus.allowance} used)
+              </span>
+            )}
+            {aiStatus.kind === "exhausted" && (
+              <Link
+                href="/settings/ai"
+                className="hidden sm:inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700 hover:bg-amber-100"
+              >
+                Allowance used — connect a key in Settings
+              </Link>
+            )}
+            {(aiStatus.kind === "loading" || aiStatus.kind === "unknown") && (
+              <span className="hidden sm:inline-flex rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-semibold text-gray-500">
+                {aiStatus.kind === "loading" ? "Checking AI status…" : "AI status unknown"}
+              </span>
+            )}
           </div>
 
           {/* Messages */}
@@ -640,7 +802,19 @@ export default function ScholarAskPage() {
                           </div>
                         )}
 
-                        <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[10px] text-[#9a8a7a] hover:text-[#7a6a5a]">Copy response</button>
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[10px] text-[#9a8a7a] hover:text-[#7a6a5a]">Copy response</button>
+                          {msg.mode === "research_journey" && (
+                            <button
+                              onClick={() => handleSaveAsPathway(msg)}
+                              className="text-[10px] font-semibold text-[#8f6132] hover:underline"
+                              title="Save this journey's pathway to your project"
+                              type="button"
+                            >
+                              Save as my pathway
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -680,7 +854,21 @@ export default function ScholarAskPage() {
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
-                <h4 className="text-sm font-semibold text-[#1a1208] leading-snug">{selectedPaper.title}</h4>
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="text-sm font-semibold text-[#1a1208] leading-snug">{selectedPaper.title}</h4>
+                  <button
+                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                      savedEvidenceIds.has(evidenceDedupeKey({ title: selectedPaper.title, url: selectedPaper.url }))
+                        ? "border-[#d7eadf] bg-[#edf8f0] text-green-700"
+                        : "border-[#e0d8d0] bg-[#faf7f0] text-[#5a4a3a] hover:bg-[#f4ede4]"
+                    }`}
+                    onClick={handleSaveSelectedPaper}
+                    type="button"
+                    disabled={!user}
+                  >
+                    {savedEvidenceIds.has(evidenceDedupeKey({ title: selectedPaper.title, url: selectedPaper.url })) ? "Saved" : "Save"}
+                  </button>
+                </div>
                 <p className="text-xs text-[#7a6a5a] mt-1">{selectedPaper.authors.join(", ")} ({selectedPaper.year || "n.d."})</p>
                 {selectedPaper.journal && <p className="text-xs text-[#9a8a7a] mt-0.5">{selectedPaper.journal}</p>}
                 <div className="flex items-center gap-2 mt-2">

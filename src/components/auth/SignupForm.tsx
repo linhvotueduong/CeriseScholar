@@ -10,7 +10,7 @@ import GoogleButton from "./GoogleButton";
 const PUBLIC_SIGNUPS_ENABLED = process.env.NEXT_PUBLIC_SIGNUPS_ENABLED !== "false";
 const PENDING_GOOGLE_PROFILE_KEY = "cerise_pending_google_signup_profile";
 const DEVICE_NOTICE =
-  "For the full Cerise Scholar research experience, use the laptop where your files, storage, and local AI agent are set up. Mobile sign-in is available for review and lighter workspace access.";
+  "Your account works the same on any device. Research, files, and AI access are stored securely in the cloud, not on a single computer.";
 
 type PendingSignupAction = "email" | "google" | null;
 
@@ -243,8 +243,8 @@ export default function SignupForm() {
               Continue with Email
             </button>
             <p className="px-3 pt-1.5 text-center text-[8.8px] leading-[1.45] text-[#9a8a7a]">
-              Start your account here. The deeper research tools will meet you on the trusted
-              laptop where your files and local AI live.
+              Your full Cerise Scholar workspace — research, AI, and course library — works the
+              same on any device you sign in from.
             </p>
           </>
         ) : (

@@ -6,6 +6,7 @@ import { callOpenRouterChat, OpenRouterError } from "@/lib/server/openrouter";
 import { resolveAiCredentials } from "@/lib/server/aiCredentials";
 import { BYOK_DECLINED_MESSAGE, isByokDeclinedStatus } from "@/lib/server/aiErrors";
 import type { AiLane } from "@/lib/server/aiCredentials";
+import { checkAiGuardrailsBeforeRequest } from "@/lib/server/aiGuardrails";
 import { getMonthlyDefaultLaneUsage, recordAiUsage } from "@/lib/server/aiUsage";
 import { INCLUDED_MONTHLY_ALLOWANCE, allowanceExceeded } from "@/lib/ai/allowance";
 
@@ -69,6 +70,11 @@ export async function POST(req: NextRequest) {
     const { apiKey, models } = credentials;
     lane = credentials.lane;
 
+    const guardrailCheck = await checkAiGuardrailsBeforeRequest(supabase, user.id, lane, models);
+    if (!guardrailCheck.allowed) {
+      return NextResponse.json({ error: guardrailCheck.reason }, { status: 429 });
+    }
+
     // Default-lane fairness cap (Phase 2). BYOK never enforces this — it's the
     // user's own key and bill, so `enforceAllowance` is false on that lane.
     if (credentials.enforceAllowance) {
@@ -76,7 +82,7 @@ export async function POST(req: NextRequest) {
       if (allowanceExceeded(used, INCLUDED_MONTHLY_ALLOWANCE)) {
         return NextResponse.json(
           {
-            error: `You've used this month's included AI (${INCLUDED_MONTHLY_ALLOWANCE} requests). Connect your own key in Settings → AI for unlimited — it takes about 2 minutes.`,
+            error: `This month's Cerise test allowance has been used (${INCLUDED_MONTHLY_ALLOWANCE} requests). Connect an OpenRouter key in Settings -> AI, then add OpenRouter credit for fuller usage.`,
           },
           { status: 429 }
         );
@@ -201,6 +207,220 @@ ${(pdfText || "").slice(0, 3000)}`;
           usage,
         });
         return NextResponse.json({ result });
+      } catch (err) {
+        if (err instanceof OpenRouterError) {
+          return aiErrorResponse(err, lane);
+        }
+        throw err;
+      }
+    }
+
+    // Research Assistant — the status-copilot chat card on /research-desk.
+    // NOT ScholarAsk (that's for paper content): this is grounded in a
+    // client-built JSON snapshot of the user's REAL portal data (project
+    // phases, section metrics, synthesis funnel, next steps, recent
+    // activity, evidence library counts — see
+    // src/lib/research/assistantContext.ts for exactly what goes into it),
+    // never in outside knowledge about the user.
+    if (task === "research_assistant") {
+      const question = typeof body.question === "string" ? body.question.trim().slice(0, 2000) : "";
+      if (!question) {
+        return NextResponse.json({ error: "Ask a question to get a reply." }, { status: 400 });
+      }
+
+      const context = body.context && typeof body.context === "object" ? body.context : {};
+      let contextJson: string;
+      try {
+        contextJson = JSON.stringify(context);
+      } catch {
+        return NextResponse.json(
+          { error: "Couldn't read your portal data snapshot. Please try again." },
+          { status: 400 }
+        );
+      }
+      // The client-side snapshot builder keeps this well under 8KB by design
+      // (assistantContext.ts) — this is a defensive backstop, not the normal path.
+      if (contextJson.length > 8000) {
+        return NextResponse.json(
+          { error: "Your portal data snapshot is too large for this request." },
+          { status: 400 }
+        );
+      }
+
+      const rawHistory: unknown[] = Array.isArray(body.history) ? body.history : [];
+      const history = rawHistory
+        .filter(
+          (entry): entry is { role: "user" | "assistant"; content: string } =>
+            !!entry &&
+            typeof entry === "object" &&
+            ((entry as { role?: unknown }).role === "user" || (entry as { role?: unknown }).role === "assistant") &&
+            typeof (entry as { content?: unknown }).content === "string"
+        )
+        .slice(-6)
+        .map((entry) => ({ role: entry.role, content: entry.content.slice(0, 1000) }));
+
+      const researchAssistantSystemPrompt =
+        "You are Cerise, the research assistant inside Cerise Scholar's Research Desk. " +
+        "You are given a JSON snapshot of the user's REAL research status — project names/phases/progress, " +
+        "stats, per-section overview metrics, synthesis funnel numbers, next steps, recent activity, and evidence " +
+        "library counts. Ground every number or claim you make in that snapshot; if the snapshot doesn't contain " +
+        "something, say plainly that you can't see it rather than guessing or inventing a number. Explain portal " +
+        "concepts (sections, readiness, the synthesis funnel, the monthly AI allowance) in plain, encouraging " +
+        "language when the user seems unsure what something means. For questions about the CONTENT of a specific " +
+        "paper or source — not the user's overall progress — tell the user to open ScholarAsk instead; you don't " +
+        "have access to paper text here. Keep answers short (at most about 180 words), concrete, and next-step " +
+        "oriented.";
+
+      const allMessages = [
+        { role: "system", content: researchAssistantSystemPrompt },
+        ...history,
+        { role: "user", content: `Portal data snapshot (JSON):\n${contextJson}\n\nQuestion: ${question}` },
+      ];
+
+      try {
+        const { content, servedModel, usage } = await callOpenRouterChat({
+          route: "research_assistant",
+          messages: allMessages,
+          models,
+          apiKey,
+          timeoutMs: 25000,
+          temperature: 0.3,
+          maxTokens: 500,
+        });
+        void recordAiUsage(supabase, {
+          userId: user.id,
+          projectId: null,
+          feature: "research_assistant",
+          lane,
+          servedModel,
+          usage,
+        });
+        return NextResponse.json({ content });
+      } catch (err) {
+        if (err instanceof OpenRouterError) {
+          return aiErrorResponse(err, lane);
+        }
+        throw err;
+      }
+    }
+
+    // Daily AI behavior-insight generation (Stage 2 of "personalized AI data
+    // analysis") — reads Stage 1's deterministic BehaviorProfile
+    // (src/lib/dashboard/behaviorProfile.ts) computed client-side and asks the
+    // model for ONE short, honest, personalized note. Cached one-per-day in
+    // ai_behavior_insights (migration 028); the client (useDashboardState.ts)
+    // guards this to at most one attempt per project per day.
+    if (task === "behavior_insight") {
+      const { projectId, projectName } = body;
+      const profile = body.profile;
+
+      if (typeof projectId !== "string" || !projectId) {
+        return NextResponse.json({ error: "A project is required." }, { status: 400 });
+      }
+      if (!profile || typeof profile !== "object" || Array.isArray(profile)) {
+        return NextResponse.json({ error: "Behavior profile data is missing or invalid." }, { status: 400 });
+      }
+      let profileJson: string;
+      try {
+        profileJson = JSON.stringify(profile);
+      } catch {
+        return NextResponse.json({ error: "Behavior profile data is missing or invalid." }, { status: 400 });
+      }
+      if (profileJson.length > 4000) {
+        return NextResponse.json({ error: "Behavior profile data is too large." }, { status: 400 });
+      }
+
+      const FOCUS_SECTIONS = new Set([
+        "workspace",
+        "literature-review",
+        "scholarask",
+        "draft",
+        "meta-analysis",
+        "citations",
+      ]);
+
+      const behaviorInsightSystemPrompt =
+        "You are Cerise, a research-habit coach inside Cerise Scholar. You are given a JSON " +
+        "behavior profile — deterministic, real usage signals for one user/project (task " +
+        "completion rate, active days per week, longest gap since last activity, which " +
+        "readiness-relevant section they avoid, how often they jump between sections). Return " +
+        "STRICT JSON only, with no prose outside the JSON, with exactly these two keys: " +
+        '{"guidance": string, "focus_section": string}. ' +
+        "guidance must be at most 40 words, plain, encouraging, and CONCRETE — personalize it to " +
+        "the real pattern in the profile (mention a real gap, an avoided section, or a strong " +
+        "rhythm as appropriate). Never invent a number that is not in the profile. focus_section " +
+        'must be exactly one of: "workspace", "literature-review", "scholarask", "draft", ' +
+        '"meta-analysis", "citations".';
+
+      const projectLabel = typeof projectName === "string" && projectName.trim() ? projectName.trim() : "this project";
+
+      try {
+        const { content, servedModel, usage } = await callOpenRouterChat({
+          route: "behavior_insight",
+          messages: [
+            { role: "system", content: behaviorInsightSystemPrompt },
+            {
+              role: "user",
+              content: `Project: ${projectLabel}\nBehavior profile (JSON):\n${profileJson}`,
+            },
+          ],
+          models,
+          apiKey,
+          timeoutMs: 20000,
+          temperature: 0.4,
+          maxTokens: 200,
+        });
+
+        // Parse defensively: pull the first {...} block out of the reply rather
+        // than trusting the whole response is clean JSON.
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        let guidance = "";
+        let focusSection = "";
+        try {
+          const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+          guidance = typeof parsed?.guidance === "string" ? parsed.guidance.trim() : "";
+          focusSection = typeof parsed?.focus_section === "string" ? parsed.focus_section.trim() : "";
+        } catch {
+          guidance = "";
+        }
+
+        if (!guidance || !FOCUS_SECTIONS.has(focusSection)) {
+          return NextResponse.json(
+            { error: "Couldn't generate today's insight. Please try again later." },
+            { status: 502 }
+          );
+        }
+
+        const day = new Date().toISOString().slice(0, 10);
+        const { error: upsertError } = await supabase.from("ai_behavior_insights").upsert(
+          {
+            user_id: user.id,
+            project_id: projectId,
+            day,
+            profile,
+            guidance,
+            focus_section: focusSection,
+            model: servedModel,
+          },
+          { onConflict: "user_id,project_id,day" }
+        );
+        if (upsertError) {
+          return NextResponse.json(
+            { error: "Couldn't save today's insight. Please try again later." },
+            { status: 502 }
+          );
+        }
+
+        void recordAiUsage(supabase, {
+          userId: user.id,
+          projectId,
+          feature: "behavior_insight",
+          lane,
+          servedModel,
+          usage,
+        });
+
+        return NextResponse.json({ guidance, focus_section: focusSection, day });
       } catch (err) {
         if (err instanceof OpenRouterError) {
           return aiErrorResponse(err, lane);

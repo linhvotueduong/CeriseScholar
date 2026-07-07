@@ -103,7 +103,7 @@ export default function ConnectKeyForm({
   if (connected) {
     return (
       <p className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700" role="status">
-        Connected — unlimited AI ✓
+        Connected. Your OpenRouter key is ready.
       </p>
     );
   }
@@ -128,12 +128,12 @@ export default function ConnectKeyForm({
           spellCheck={false}
           aria-label="Your OpenRouter API key"
           disabled={connecting}
-          className="w-full rounded-xl border border-[#e8d8c6] bg-white px-4 py-3 text-sm text-[#17120d] outline-none placeholder:text-[#a89a88] focus:border-[#8f6132] disabled:opacity-60"
+          className="w-full rounded-[8px] border border-[#d6dbe1] bg-white px-4 py-3 text-sm text-[#17120d] outline-none placeholder:text-[#7d8794] focus:border-[#111111] disabled:opacity-60"
         />
         <button
           type="submit"
           disabled={!key.trim() || connecting}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#8f6132] px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-[#7a5229] disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-[8px] bg-black px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-[#1f2933] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {connecting ? (
             <>
@@ -156,9 +156,9 @@ export default function ConnectKeyForm({
         href="https://openrouter.ai/keys"
         target="_blank"
         rel="noreferrer"
-        className="mt-3 inline-block text-sm font-semibold text-[#8f6132] underline-offset-4 hover:underline"
+        className="mt-3 inline-block text-sm font-semibold text-[#111111] underline-offset-4 hover:underline"
       >
-        Get a free key at openrouter.ai ↗
+        Create a key at openrouter.ai
       </a>
     </div>
   );

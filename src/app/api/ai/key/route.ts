@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
 import { callOpenRouterChat, OpenRouterError } from "@/lib/server/openrouter";
-import { encryptSecret } from "@/lib/server/keyVault";
+import { decryptSecret, encryptSecret } from "@/lib/server/keyVault";
 import { DEFAULT_FREE_PRIMARY_MODEL } from "@/lib/server/aiCredentials";
 import { isAllowedPreferredModel } from "@/lib/ai/preferredModels";
 
@@ -23,7 +23,7 @@ const KEY_INFO_TIMEOUT_MS = 10000;
 const REJECTED_MESSAGE =
   "That key was rejected by OpenRouter — check it was copied fully, or create a fresh one at openrouter.ai.";
 const NO_CREDIT_MESSAGE =
-  "This key has no credit remaining on OpenRouter. Add credit there, raise the key's limit, or use the Included AI instead.";
+  "This key has no credit remaining on OpenRouter. Add credit there or raise the key limit before using it for fuller Cerise usage.";
 const SHAPE_MESSAGE =
   "That doesn't look like an OpenRouter key. It should start with sk-or- — copy the whole key from openrouter.ai.";
 const UNREACHABLE_MESSAGE =
@@ -64,7 +64,7 @@ async function validateKeyWithOpenRouter(key: string): Promise<ValidationResult>
     if (res.ok) {
       const info = (await res.json().catch(() => null)) as KeyInfoResponse | null;
       const remaining = info?.data?.limit_remaining;
-      // limit_remaining is null when the key is unlimited; a number <= 0 means
+      // limit_remaining is null when OpenRouter reports no explicit cap; a number <= 0 means
       // the key's credit is used up — distinguishable, so say so clearly.
       if (typeof remaining === "number" && remaining <= 0) {
         return { ok: false, status: 400, reason: NO_CREDIT_MESSAGE };
@@ -171,7 +171,7 @@ export async function GET() {
 
     const { data } = await supabase
       .from("user_ai_settings")
-      .select("key_last4, preferred_model")
+      .select("provider, key_last4, preferred_model")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -181,6 +181,7 @@ export async function GET() {
 
     return NextResponse.json({
       connected: true,
+      provider: data.provider ?? "openrouter",
       last4: data.key_last4,
       preferredModel: data.preferred_model ?? null,
     });
@@ -207,6 +208,62 @@ export async function DELETE() {
     return NextResponse.json({ connected: false });
   } catch (err) {
     console.error("BYOK key disconnect error:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+  }
+}
+
+export async function PUT() {
+  try {
+    const { supabase, user } = await requireUser();
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    if (!checkRateLimit(user.id, "ai-key-test", 20, 24 * 60 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: "Too many key checks today. Please try again tomorrow." },
+        { status: 429 }
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("user_ai_settings")
+      .select("provider, encrypted_key, key_last4")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("BYOK key lookup failed", { userId: user.id, message: error.message });
+      return NextResponse.json({ error: "Checking the key failed. Please try again." }, { status: 500 });
+    }
+
+    if (!data) {
+      return NextResponse.json({ error: "Connect an OpenRouter key before testing it." }, { status: 400 });
+    }
+
+    if ((data.provider ?? "openrouter") !== "openrouter") {
+      return NextResponse.json({ error: "Only OpenRouter keys can be tested in this build." }, { status: 400 });
+    }
+
+    let key = "";
+    try {
+      key = decryptSecret(data.encrypted_key);
+    } catch (err) {
+      console.error("Stored BYOK key decrypt failed", {
+        userId: user.id,
+        message: err instanceof Error ? err.message : "unknown",
+      });
+      return NextResponse.json({ error: "The stored key could not be read. Reconnect it in Settings." }, { status: 500 });
+    }
+
+    const validation = await validateKeyWithOpenRouter(key);
+    if (!validation.ok) {
+      return NextResponse.json({ connected: true, ok: false, error: validation.reason }, { status: validation.status });
+    }
+
+    return NextResponse.json({ connected: true, ok: true, provider: "openrouter", last4: data.key_last4 });
+  } catch (err) {
+    console.error("BYOK key test error:", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 }

@@ -10,7 +10,6 @@ import { logDashboardActivity } from "@/lib/dashboard/activity";
 import type { DashboardSectionId } from "@/lib/dashboard/deriveDashboardState";
 import { dashboardSections } from "@/lib/app-data/dashboard";
 import { useDashboardState } from "@/hooks/useDashboardState";
-import { useLocalAgentStatus } from "@/hooks/useLocalAgentStatus";
 import { useUser } from "@/hooks/useUser";
 import { useProfile } from "@/hooks/useProfile";
 import { createClient } from "@/lib/supabase/client";
@@ -45,19 +44,11 @@ export default function DashboardPage() {
   // Greeting name from the profile/display-name helper; never expose the raw email.
   const { displayName } = useProfile("");
   const greetingName = displayName && displayName !== user?.email ? displayName.split(/\s+/)[0] : "";
-  const localAgent = useLocalAgentStatus();
   const projectOptions = projects.length ? projects : fallbackProjects;
   const activeProject = projectOptions.find((project) => project.id === activeProjectId) || projectOptions[0];
-  const agentReady = localAgent.hostedAiBypass || localAgent.ui.status === "connected";
-  const ollamaReady =
-    localAgent.hostedAiBypass || Boolean(localAgent.health?.ollama?.ok ?? localAgent.health?.ollama?.connected);
-  const safetyReady = localAgent.health?.ollama?.security?.ok !== false;
   const dashboardState = useDashboardState({
     project: activeProject,
     userId: user?.id,
-    agentReady,
-    ollamaReady,
-    safetyReady,
   });
 
   useEffect(() => {
@@ -169,20 +160,16 @@ export default function DashboardPage() {
 
   return (
     <>
-      {/* One-time AI welcome (replaces the old local-agent setup wizard) —
-          only for real signed-in accounts, never over the demo dashboard. */}
+      {/* One-time AI welcome: only for real signed-in accounts, never over the demo dashboard. */}
       {user && !dashboardState.usingDemo && <WelcomeAiPopup />}
       <DashboardExactTemplate
         activeProject={activeProject}
-        agentReady={agentReady}
         creating={creating}
         dashboardData={dashboardState.data}
         dashboardError={dashboardState.error}
         dashboardLoading={dashboardState.loading}
-        localAgentChecking={localAgent.checking}
         newDesc={newDesc}
         newName={newName}
-        ollamaReady={ollamaReady}
         onAddScheduleTask={dashboardState.addTask}
         onCompleteTask={dashboardState.completeTask}
         onCreateProject={handleCreate}
@@ -198,7 +185,6 @@ export default function DashboardPage() {
         onToggleCreate={() => setShowCreate((current) => !current)}
         onToggleSection={toggleSection}
         projectOptions={projectOptions}
-        safetyReady={safetyReady}
         showCreate={showCreate}
         targetSettings={dashboardState.targetSettings}
         visibleSections={visibleSections}

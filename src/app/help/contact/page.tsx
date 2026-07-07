@@ -112,7 +112,7 @@ export default async function ContactPage({
             <SideCard title="Useful links">
               <UsefulLink href="/help/privacy" label="Privacy Policy" />
               <UsefulLink href="/help/terms" label="Terms of Use" />
-              <UsefulLink href="/help/articles/local-agent-setup" label="Local Agent & Setup" />
+              <UsefulLink href="/help/articles/ai-setup" label="AI Setup" />
               <UsefulLink href="/help/articles/research-workflow" label="Research Workflow" />
             </SideCard>
 

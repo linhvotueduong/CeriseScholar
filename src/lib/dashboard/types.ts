@@ -104,12 +104,24 @@ export type ActivityLogState = {
   items: ActivityLogItem[];
 };
 
-export type LocalSetupState = {
-  readyCount: number;
-  readyPercent: number;
-  checks: Array<{ label: string; ready: boolean }>;
-  deviceScoped: true;
-  lastCheckedAt: string | null;
+export type AiUsageState = {
+  lane: "default" | "byok";
+  usedThisMonth: number;
+  allowance: number | null;
+  keyLast4: string | null;
+  /**
+   * Usage-speed-health fields (docs/ai-usage-card-states.md) — feed
+   * `deriveAiUsagePace` (src/lib/ai/usagePace.ts). Safe defaults so old
+   * callers/tests that never set these still get sane values: 0 / 150 /
+   * "month" / 0 / ms-to-month-end / 0 / true.
+   */
+  usedToday: number;
+  quota: number;
+  cycle: "month" | "day";
+  cycleElapsedFraction: number;
+  cycleRemainingMs: number;
+  priorDailyAverage: number;
+  spikeAlertEnabled: boolean;
 };
 
 export type CalendarDay = {
@@ -184,7 +196,7 @@ export type DashboardSnapshot = {
     todayTarget: CardState<TodayTargetState>;
     schedule: CardState<ScheduleState>; // Today's Plan + Today's Schedule
     activityLog: CardState<ActivityLogState>;
-    localSetup: CardState<LocalSetupState>;
+    aiUsage: CardState<AiUsageState>;
     sections: CardState<SectionsState>; // Research Sections + Section Details
     researchFocus: CardState<ResearchFocusState>;
     continueLearning: CardState<ContinueLearningState>;

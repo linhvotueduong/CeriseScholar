@@ -63,6 +63,49 @@
   line-height: 1.42;
 }
 
+.emptyState {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  max-width: 420px;
+  margin-top: 48px;
+  padding: 28px 26px;
+  border: 1px solid #e7e2dc;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.emptyState h2 {
+  margin: 0;
+  color: #121212;
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.emptyState p {
+  margin: 0;
+  color: #625d56;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.5;
+}
+
+.emptyStateAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  margin-top: 6px;
+  padding: 0 18px;
+  border-radius: 7px;
+  background: #121212;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
 .foundationActions {
   display: flex;
   grid-column: 3;
@@ -98,6 +141,13 @@
 
 .darkAction {
   width: calc((100% - 8px) / 2);
+  border: 1px solid #121212;
+  background: #121212;
+  color: #fff;
+}
+
+.singleAction {
+  width: 100%;
   border: 1px solid #121212;
   background: #121212;
   color: #fff;
@@ -631,6 +681,101 @@
   line-height: 1;
 }
 
+.overviewTasksPanel {
+  padding: 12px 22px 14px;
+  border-top: 1px solid #e7e2dc;
+}
+
+.overviewTasksHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.overviewTasksHeader span {
+  color: #625d56;
+  font-size: 9px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.overviewTasksHeader a {
+  color: #625d56;
+  font-size: 9px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.overviewGuidance {
+  margin: 0 0 8px;
+  padding: 7px 10px;
+  border: 1px solid #e6e1da;
+  border-radius: 7px;
+  background: #faf8f5;
+}
+
+.overviewGuidanceLabel {
+  display: block;
+  margin-bottom: 3px;
+  color: #8f8275;
+  font-size: 7.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.overviewGuidanceText {
+  display: block;
+  color: #121212;
+  font-size: 9.5px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.overviewTaskList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overviewTaskItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #121212;
+  font-size: 9.5px;
+  font-weight: 650;
+}
+
+.overviewTaskTick {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid #d8d2c9;
+  border-radius: 999px;
+  color: transparent;
+  font-size: 8px;
+}
+
+.overviewTaskDone {
+  color: #948c82;
+  text-decoration: line-through;
+}
+
+.overviewTaskDone .overviewTaskTick {
+  border-color: #a9c08c;
+  background: #edf4e8;
+  color: #4f6f3d;
+}
+
 .evidenceZone {
   min-height: 248px;
   overflow: visible;
@@ -788,37 +933,119 @@
 
 .evidenceTable th:nth-child(1),
 .evidenceTable td:nth-child(1) {
-  width: 33%;
+  width: 24%;
   color: #121212;
   font-weight: 850;
 }
 
 .evidenceTable th:nth-child(2),
 .evidenceTable td:nth-child(2) {
-  width: 14%;
+  width: 10%;
 }
 
 .evidenceTable th:nth-child(3),
 .evidenceTable td:nth-child(3) {
-  width: 14%;
+  width: 11%;
 }
 
 .evidenceTable th:nth-child(4),
 .evidenceTable td:nth-child(4) {
-  width: 16%;
+  width: 18%;
 }
 
 .evidenceTable th:nth-child(5),
 .evidenceTable td:nth-child(5) {
-  width: 20%;
+  width: 14%;
 }
 
 .evidenceTable th:nth-child(6),
 .evidenceTable td:nth-child(6) {
-  width: 3%;
-  padding-right: 6px;
-  padding-left: 0;
-  text-align: center;
+  width: 12%;
+}
+
+.evidenceTable th:nth-child(7),
+.evidenceTable td:nth-child(7) {
+  width: 11%;
+  text-align: right;
+}
+
+/* Card-only modifier: keeps the header fixed while the body scrolls after 5
+   rows (research-desk card). The subpage uses plain `.evidenceTable` with
+   pagination instead, so it never gets this treatment. */
+.evidenceTableFixedRows {
+  display: block;
+}
+
+.evidenceTableFixedRows thead,
+.evidenceTableFixedRows tbody {
+  display: block;
+  width: 100%;
+}
+
+.evidenceTableFixedRows tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.evidenceTableFixedRows tbody {
+  max-height: 145px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.evidencePending {
+  color: #a87f4f;
+  font-style: italic;
+}
+
+.evidenceFailed {
+  color: #b3463f;
+  font-weight: 750;
+}
+
+.evidenceRowActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+}
+
+.evidenceRetryButton {
+  height: 18px;
+  padding: 0 8px;
+  border: 1px solid #e6e2dd;
+  border-radius: 999px;
+  background: #fff;
+  color: #5f5a53;
+  font-size: 8.4px;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.evidenceRetryButton:disabled {
+  opacity: 0.55;
+}
+
+.evidenceDeleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #e6e2dd;
+  border-radius: 999px;
+  background: #fff;
+  color: #8a8178;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.evidenceDeleteButton:hover {
+  border-color: #e0a8a3;
+  color: #b3463f;
 }
 
 .scholarSource {
@@ -831,13 +1058,17 @@
   font-weight: 850;
 }
 
-.bookmarkIcon {
-  width: 9px;
-  height: 10px;
-  fill: none;
-  stroke: #121212;
-  stroke-linejoin: round;
-  stroke-width: 1.4;
+.litReviewSource {
+  color: #c17622;
+  font-weight: 850;
+}
+
+.railEmptyText {
+  margin: 10px 0 0;
+  color: #625d56;
+  font-size: 9.6px;
+  font-weight: 650;
+  line-height: 1.4;
 }
 
 .rightRailZone {
@@ -1181,6 +1412,121 @@
   color: #121212;
 }
 
+.assistantInput button:disabled {
+  opacity: 0.4;
+}
+
+.assistantMessages {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-height: 220px;
+  margin-top: 10px;
+  overflow-y: auto;
+}
+
+.assistantMessageUser,
+.assistantMessageBot,
+.assistantMessageAlert {
+  max-width: 88%;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 9.6px;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.assistantMessageUser {
+  align-self: flex-end;
+  border-bottom-right-radius: 3px;
+  background: #121212;
+  color: #fff;
+}
+
+.assistantMessageBot {
+  align-self: flex-start;
+  border-bottom-left-radius: 3px;
+  background: #f7f4f1;
+  color: #2c2823;
+}
+
+.assistantMessageAlert {
+  align-self: flex-start;
+  border-bottom-left-radius: 3px;
+  background: #fff4dc;
+  color: #7a5a1f;
+}
+
+.assistantInlineLink {
+  display: inline-block;
+  margin-top: 4px;
+  color: #1c80ff;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.assistantLoadingDots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.assistantLoadingDots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #9a938a;
+  animation: assistantDotPulse 1.1s ease-in-out infinite;
+}
+
+.assistantLoadingDots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.assistantLoadingDots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes assistantDotPulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.assistantRetryButton {
+  align-self: flex-start;
+  height: 22px;
+  padding: 0 10px;
+  border: 1px solid #eee9e4;
+  border-radius: 999px;
+  background: #fff;
+  color: #121212;
+  font-size: 8.6px;
+  font-weight: 850;
+}
+
+.assistantFooterNote {
+  margin: 9px 0 0;
+  color: #8a8178;
+  font-size: 7.8px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.assistantFooterNote a {
+  color: #1c80ff;
+  font-weight: 850;
+  text-decoration: none;
+}
+
 .funnelHeader h2 {
   margin: 0;
   color: #121212;
@@ -1443,8 +1789,28 @@
 :global(html.cerise-night-mode) .changeItem small,
 :global(html.cerise-night-mode) .changeItem time,
 :global(html.cerise-night-mode) .quickNoteItem time,
-:global(html.cerise-night-mode) .assistantRailCard p span {
+:global(html.cerise-night-mode) .assistantRailCard p span,
+:global(html.cerise-night-mode) .railEmptyText,
+:global(html.cerise-night-mode) .emptyState p {
   color: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .emptyState {
+  border-color: #2b3030 !important;
+  background: #0f1111 !important;
+}
+
+:global(html.cerise-night-mode) .emptyState h2 {
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .emptyStateAction {
+  background: #f0ece5 !important;
+  color: #171817 !important;
+}
+
+:global(html.cerise-night-mode) .litReviewSource {
+  color: #dca25d !important;
 }
 
 :global(html.cerise-night-mode) .foundationActions button,
@@ -1481,7 +1847,8 @@
   color: #f0ece5 !important;
 }
 
-:global(html.cerise-night-mode) .darkAction {
+:global(html.cerise-night-mode) .darkAction,
+:global(html.cerise-night-mode) .singleAction {
   border-color: #333938 !important;
   background: #101212 !important;
   color: #f5f1ea !important;
@@ -1640,6 +2007,55 @@
   color: #b9b2aa !important;
 }
 
+:global(html.cerise-night-mode) .evidencePending {
+  color: #d8a05d !important;
+}
+
+:global(html.cerise-night-mode) .evidenceFailed {
+  color: #e08079 !important;
+}
+
+:global(html.cerise-night-mode) .evidenceRetryButton,
+:global(html.cerise-night-mode) .evidenceDeleteButton {
+  border-color: #2f3434 !important;
+  background: #0b0d0d !important;
+  color: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .assistantMessageBot {
+  background: #171a1a !important;
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .assistantMessageUser {
+  background: #f0ece5 !important;
+  color: #171817 !important;
+}
+
+:global(html.cerise-night-mode) .assistantMessageAlert {
+  background: #332514 !important;
+  color: #dca25d !important;
+}
+
+:global(html.cerise-night-mode) .assistantInlineLink,
+:global(html.cerise-night-mode) .assistantFooterNote a {
+  color: #4e9bff !important;
+}
+
+:global(html.cerise-night-mode) .assistantRetryButton {
+  border-color: #2f3434 !important;
+  background: #0b0d0d !important;
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .assistantFooterNote {
+  color: #8a8781 !important;
+}
+
+:global(html.cerise-night-mode) .assistantLoadingDots i {
+  background: #6f6a63 !important;
+}
+
 :global(html.cerise-night-mode) .funnelHeader span {
   background: #2b1c23 !important;
   color: #f1d3d9 !important;
@@ -1710,6 +2126,40 @@
 
 :global(html.cerise-night-mode) .quickNoteComposer input::placeholder {
   color: #827a71 !important;
+}
+
+:global(html.cerise-night-mode) .overviewTasksPanel {
+  border-color: #2b3030 !important;
+}
+
+:global(html.cerise-night-mode) .overviewTasksHeader span,
+:global(html.cerise-night-mode) .overviewTasksHeader a,
+:global(html.cerise-night-mode) .overviewGuidanceLabel {
+  color: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .overviewGuidance {
+  border-color: #2b3030 !important;
+  background: #0b0d0d !important;
+}
+
+:global(html.cerise-night-mode) .overviewGuidanceText,
+:global(html.cerise-night-mode) .overviewTaskItem {
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .overviewTaskDone {
+  color: #8b9484 !important;
+}
+
+:global(html.cerise-night-mode) .overviewTaskTick {
+  border-color: #2f3434 !important;
+}
+
+:global(html.cerise-night-mode) .overviewTaskDone .overviewTaskTick {
+  border-color: #3f6b34 !important;
+  background: #16210f !important;
+  color: #8fd486 !important;
 }
 
 @media (max-width: 1420px) {

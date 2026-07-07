@@ -131,10 +131,6 @@ export default function AccountSettingsPage() {
                 {initials}
               </div>
             )}
-            <button className="inline-flex h-8 items-center gap-2 rounded-[8px] border border-[#d8d3ce] px-3 text-[11px] font-bold text-[#17120d]" type="button">
-              <AppIcon className="h-4 w-4" name="upload" />
-              Change photo
-            </button>
           </div>
 
           <div className="grid gap-3">
@@ -215,17 +211,6 @@ export default function AccountSettingsPage() {
             </Button>
           }
         />
-        <DetailLine
-          label="Connected accounts"
-          value={
-            <span className="flex items-center gap-3">
-              <span className="text-[15px] font-bold text-[#4285f4]">G</span>
-              <AppIcon className="h-4 w-4 text-[#17120d]" name="book-open" />
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#a6c94a] text-[10px] font-bold text-white">id</span>
-            </span>
-          }
-          action={<Button>Manage Connections</Button>}
-        />
       </SettingsSection>
 
       <SettingsSection
@@ -235,14 +220,6 @@ export default function AccountSettingsPage() {
         <PreferenceLine icon="mail" title="Communication preferences" body="Choose how we contact you." />
         <PreferenceLine icon="globe" title="Language preference" body="Set your preferred language." value="English" />
         <PreferenceLine icon="clock" title="Timezone" body="Set your current timezone." value="(UTC+8) Kuala Lumpur" />
-      </SettingsSection>
-
-      <SettingsSection
-        body="Review your recent activity and account history."
-        title="Account Activity"
-      >
-        <PreferenceLine icon="shield" title="Login history" body="See devices and locations where you've signed in." />
-        <PreferenceLine icon="lock" title="Active sessions" body="Manage your active sessions across devices." />
       </SettingsSection>
     </SettingsPanel>
   );

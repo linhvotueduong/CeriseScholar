@@ -1,5 +1,6 @@
 .settingsMain {
   overflow-x: hidden;
+  padding-top: 12px !important;
 }
 
 .settingsFrame {
@@ -66,31 +67,26 @@
     margin-top: 10px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"]),
   .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"]),
   .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"]) {
     padding-bottom: 16px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody),
   .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody),
   .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody) {
     margin-top: 10px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody .mt-4),
   .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .mt-4),
   .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody .mt-4) {
     margin-top: 8px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody .mt-3),
   .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .mt-3),
   .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody .mt-3) {
     margin-top: 7px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody section),
   .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody article),
   .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody article) {
     padding-top: 10px !important;
@@ -98,7 +94,6 @@
   }
 
   .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody [class*="py-2.5"]),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody [class*="py-2.5"]),
   .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody [class*="py-2.5"]) {
     padding-top: 7px !important;
     padding-bottom: 7px !important;
@@ -109,7 +104,6 @@
     gap: 10px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody .gap-3),
   .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .gap-3),
   .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody .gap-3) {
     gap: 7px !important;
@@ -128,7 +122,7 @@
 @media (max-width: 1420px) {
   .settingsMain {
     padding-inline: 16px !important;
-    padding-block: 14px 20px !important;
+    padding-block: 10px 20px !important;
   }
 
   .settingsFrame {

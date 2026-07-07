@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { readApiResponse } from "@/lib/utils/readApiResponse";
 import type { LiteratureReviewEntry } from "@/types/literature-review";
 
 interface ReviewTableRowProps {
@@ -90,6 +92,100 @@ function EditableCell({
   );
 }
 
+// APA Reference cell — same editable text cell as the rest of the row, plus a
+// small "Generate" button (visible on hover, or always when the cell is empty)
+// that calls /api/ai's generate_apa task and writes the result through the
+// same onUpdate path as a manual edit (so it persists + logs literature_row_saved).
+function ApaReferenceCell({
+  entry,
+  onUpdate,
+}: {
+  entry: LiteratureReviewEntry;
+  onUpdate: ReviewTableRowProps["onUpdate"];
+}) {
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleGenerate() {
+    setError(null);
+    setGenerating(true);
+    try {
+      const supabase = createClient();
+      const { data: pdf, error: pdfErr } = await supabase
+        .from("pdfs")
+        .select("filename, ocr_text, ocr_status")
+        .eq("id", entry.pdf_id)
+        .single();
+
+      if (pdfErr || !pdf) {
+        setError("Couldn't load the source PDF.");
+        return;
+      }
+      if (!pdf.ocr_text) {
+        setError(
+          pdf.ocr_status === "failed"
+            ? "Text extraction failed for this PDF — retry OCR from the Workspace panel."
+            : "Still extracting text from this PDF — try again shortly."
+        );
+        return;
+      }
+
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: "generate_apa",
+          pdfText: pdf.ocr_text,
+          filename: pdf.filename,
+        }),
+      });
+      const data = await readApiResponse<{ apa?: string; error?: string }>(res);
+
+      if (!res.ok || data.error) {
+        setError(data.error || "Couldn't generate a citation. Try again.");
+        return;
+      }
+      if (!data.apa) {
+        setError("Couldn't generate a citation. Try again.");
+        return;
+      }
+
+      onUpdate(entry.id, { apa_reference: data.apa });
+    } catch {
+      setError("Network error. Try again.");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  return (
+    <div className="group relative">
+      <EditableCell
+        value={entry.apa_reference}
+        field="apa_reference"
+        entryId={entry.id}
+        onUpdate={onUpdate}
+        multiline
+        placeholder="Paste APA reference..."
+      />
+      <button
+        type="button"
+        onClick={handleGenerate}
+        disabled={generating}
+        title="Generate an APA reference from this PDF's extracted text"
+        className={`absolute top-0.5 right-0.5 rounded border border-[#e0cdb8] bg-white px-1.5 py-0.5 text-[9px] font-semibold text-[#8f6132] hover:bg-[#f6efe4] disabled:opacity-60 transition-opacity ${
+          entry.apa_reference ? "opacity-0 group-hover:opacity-100" : "opacity-100"
+        }`}
+      >
+        {generating ? "Generating…" : "Generate"}
+      </button>
+      {error && (
+        <p className="px-2 pb-1 text-[10px] text-red-500 leading-snug">{error}</p>
+      )}
+    </div>
+  );
+}
+
 export default function ReviewTableRow({ entry, onUpdate, onDelete }: ReviewTableRowProps) {
   return (
     <tr className="border-b border-gray-100 hover:bg-[#fdfcfa] align-top">
@@ -107,16 +203,9 @@ export default function ReviewTableRow({ entry, onUpdate, onDelete }: ReviewTabl
         )}
       </td>
 
-      {/* APA Reference — editable */}
+      {/* APA Reference — editable, with an AI "Generate" helper */}
       <td className="px-1 py-1 min-w-[160px] max-w-[250px]">
-        <EditableCell
-          value={entry.apa_reference}
-          field="apa_reference"
-          entryId={entry.id}
-          onUpdate={onUpdate}
-          multiline
-          placeholder="Paste APA reference..."
-        />
+        <ApaReferenceCell entry={entry} onUpdate={onUpdate} />
       </td>
 
       {/* B: Code / Section — editable */}

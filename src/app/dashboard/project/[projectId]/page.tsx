@@ -5,6 +5,7 @@ import PdfViewer from "@/components/pdf/PdfViewer";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { logDashboardActivity } from "@/lib/dashboard/activity";
 import type { Project } from "@/types/project";
 
 export default function ProjectWorkspacePage() {
@@ -19,11 +20,20 @@ export default function ProjectWorkspacePage() {
   const [nameDraft, setNameDraft] = useState("");
   const [descDraft, setDescDraft] = useState("");
   const [savingIdentity, setSavingIdentity] = useState(false);
+  // Research Pathway home (docs/research-readiness-checklist-model.md §6.3): question is
+  // the main field, approach/hypothesis optional. Joins the same identity popover per §8's
+  // "Research Pathway field (§6.3) joins this popover once its migration lands".
+  const [pathwayQuestionDraft, setPathwayQuestionDraft] = useState("");
+  const [pathwayApproachDraft, setPathwayApproachDraft] = useState("");
+  const [pathwayHypothesisDraft, setPathwayHypothesisDraft] = useState("");
 
   function openIdentityEditor() {
     if (!project) return;
     setNameDraft(project.name ?? "");
     setDescDraft(project.description ?? "");
+    setPathwayQuestionDraft(project.research_question ?? "");
+    setPathwayApproachDraft(project.research_approach ?? "");
+    setPathwayHypothesisDraft(project.research_hypothesis ?? "");
     setEditOpen(true);
   }
 
@@ -31,11 +41,27 @@ export default function ProjectWorkspacePage() {
     if (!project || !nameDraft.trim()) return;
     setSavingIdentity(true);
     const supabase = createClient();
-    const updates = { name: nameDraft.trim(), description: descDraft.trim() };
+    const updates = {
+      name: nameDraft.trim(),
+      description: descDraft.trim(),
+      research_question: pathwayQuestionDraft.trim(),
+      research_approach: pathwayApproachDraft.trim(),
+      research_hypothesis: pathwayHypothesisDraft.trim(),
+    };
     const { error } = await supabase.from("projects").update(updates).eq("id", project.id);
     if (!error) {
       setProject({ ...project, ...updates });
       setEditOpen(false);
+      // Log the Research Pathway save (§6.3 entry route 1: "type it") whenever any
+      // pathway field carries text — feeds §5.3 status-follows-the-user (Theme clarity).
+      if (updates.research_question || updates.research_approach || updates.research_hypothesis) {
+        await logDashboardActivity({
+          projectId: project.id,
+          eventType: "research_pathway_saved",
+          sectionId: "workspace",
+          label: "Saved research pathway",
+        });
+      }
     }
     setSavingIdentity(false);
   }
@@ -101,6 +127,30 @@ export default function ProjectWorkspacePage() {
                 {project.name}
                 <span aria-hidden style={{ color: "#8f6132", fontSize: "10px" }}>✎</span>
               </button>
+              <button
+                aria-label={project.research_question ? "Edit research pathway" : "State your research pathway"}
+                onClick={openIdentityEditor}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  background: "#f6efe4",
+                  color: "#8f6132",
+                  border: "none",
+                  borderRadius: "999px",
+                  padding: "2px 8px",
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  maxWidth: "220px",
+                }}
+                title={project.research_question || "Add your research question"}
+                type="button"
+              >
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {project.research_question ? `Pathway: ${project.research_question}` : "+ State your pathway"}
+                </span>
+              </button>
               {editOpen && (
                 <div
                   className="absolute left-0 top-[30px] z-50 w-80 rounded-xl border border-[#e8d8c6] bg-[#fbf6ef] p-4 shadow-lg"
@@ -130,6 +180,46 @@ export default function ProjectWorkspacePage() {
                     rows={3}
                     value={descDraft}
                   />
+
+                  <div className="mt-4 border-t border-[#e8d8c6] pt-3">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#8f6132]">Research pathway</p>
+                    <p className="mt-1 text-[10px] leading-snug text-[#7a6a5a]">
+                      State your research question so we can guide you around it — no need to explore ScholarAsk first if you already know it.
+                    </p>
+                    <label className="mt-2 block text-[11px] font-semibold text-[#4a4238]" htmlFor="project-pathway-question-input">
+                      Research question
+                    </label>
+                    <textarea
+                      className="mt-1 w-full rounded-md border border-[#e0cdb8] bg-white px-2 py-1.5 text-[12px] leading-relaxed text-[#17120d] focus:outline-none focus:ring-2 focus:ring-[#b6844e]"
+                      id="project-pathway-question-input"
+                      onChange={(e) => setPathwayQuestionDraft(e.target.value)}
+                      placeholder="What are you trying to find out?"
+                      rows={2}
+                      value={pathwayQuestionDraft}
+                    />
+                    <label className="mt-2 block text-[11px] font-semibold text-[#4a4238]" htmlFor="project-pathway-approach-input">
+                      Approach / angle <span className="font-normal text-[#9a8a7a]">(optional)</span>
+                    </label>
+                    <input
+                      className="mt-1 w-full rounded-md border border-[#e0cdb8] bg-white px-2 py-1.5 text-[12px] text-[#17120d] focus:outline-none focus:ring-2 focus:ring-[#b6844e]"
+                      id="project-pathway-approach-input"
+                      onChange={(e) => setPathwayApproachDraft(e.target.value)}
+                      placeholder="How are you approaching it?"
+                      value={pathwayApproachDraft}
+                    />
+                    <label className="mt-2 block text-[11px] font-semibold text-[#4a4238]" htmlFor="project-pathway-hypothesis-input">
+                      Working hypothesis <span className="font-normal text-[#9a8a7a]">(optional)</span>
+                    </label>
+                    <textarea
+                      className="mt-1 w-full rounded-md border border-[#e0cdb8] bg-white px-2 py-1.5 text-[12px] leading-relaxed text-[#17120d] focus:outline-none focus:ring-2 focus:ring-[#b6844e]"
+                      id="project-pathway-hypothesis-input"
+                      onChange={(e) => setPathwayHypothesisDraft(e.target.value)}
+                      placeholder="What do you expect to find?"
+                      rows={2}
+                      value={pathwayHypothesisDraft}
+                    />
+                  </div>
+
                   <div className="mt-3 flex justify-end gap-2">
                     <button
                       className="rounded-md border border-[#e0cdb8] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#4a4238] hover:bg-[#f6efe4]"

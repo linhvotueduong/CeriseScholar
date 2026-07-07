@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { usePdf } from "@/hooks/usePdf";
 import { useHighlights } from "@/hooks/useHighlights";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useCodes } from "@/hooks/useCodes";
 import { useTts } from "@/hooks/useTts";
 import { extractPageText } from "@/lib/pdf/extractText";
+import { createClient } from "@/lib/supabase/client";
+import { toggleSourceFinished } from "@/lib/dashboard/finishSource";
 import PdfPage from "./PdfPage";
 import PdfToolbar from "./PdfToolbar";
 import TtsWidget from "@/components/tts/TtsWidget";
@@ -235,6 +238,36 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   const { annotations, createAnnotation, updateAnnotation } = useAnnotations(pdfId);
   const { codes, createCode, updateCode, deleteCode } = useCodes(projectId);
   const tts = useTts();
+  const router = useRouter();
+
+  // Per-source Finish button (docs/research-readiness-checklist-model.md §7.1):
+  // this header mirrors the same finished_at column the document panel toggles.
+  const [finishedAt, setFinishedAt] = useState<string | null>(null);
+  useEffect(() => {
+    if (!pdfId) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("pdfs").select("finished_at").eq("id", pdfId).single();
+      if (!cancelled) setFinishedAt((data?.finished_at as string | null) ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pdfId]);
+
+  const handleToggleFinished = useCallback(async () => {
+    const supabase = createClient();
+    const { ok, finishedAt: nextFinishedAt } = await toggleSourceFinished({
+      supabase,
+      pdfId,
+      projectId,
+      displayName: pdfDisplayName || "This source",
+      currentlyFinished: !!finishedAt,
+      navigate: (href) => router.push(href),
+    });
+    if (ok) setFinishedAt(nextFinishedAt);
+  }, [pdfId, projectId, pdfDisplayName, finishedAt, router]);
 
   const [highlightMode, setHighlightMode] = useState(false);
   const [reHighlightId, setReHighlightId] = useState<string | null>(null);
@@ -583,6 +616,8 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
           onReadSelection={handleReadSelection}
           onToggleChat={() => setChatOpen((o) => !o)}
           chatOpen={chatOpen}
+          finished={!!finishedAt}
+          onToggleFinished={pdfId ? handleToggleFinished : undefined}
         />
 
         {reHighlightId && (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useLiteratureReview } from "@/hooks/useLiteratureReview";
 import ReviewTable from "@/components/literature-review/ReviewTable";
 import ReviewTableFilters from "@/components/literature-review/ReviewTableFilters";
@@ -12,8 +12,14 @@ import Link from "next/link";
 export default function ProjectLiteratureReviewPage() {
   const params = useParams();
   const projectId = params.projectId as string;
+  const searchParams = useSearchParams();
   const { entries, loading, loadingMore, hasMore, loadMore, updateEntry, deleteEntry } = useLiteratureReview(projectId);
-  const [selectedSource, setSelectedSource] = useState("");
+  // Deep-link from the Finish button's moment-of-completion toast
+  // (docs/research-readiness-checklist-model.md §7.1/§7.4.4): pre-filter the table to
+  // the just-finished source via ?source=<display name>. Read once as the initial
+  // state (not in an effect — this page remounts on navigation, and the user is free
+  // to change the filter afterward without the URL fighting them back).
+  const [selectedSource, setSelectedSource] = useState(() => searchParams.get("source") ?? "");
   const [selectedSection, setSelectedSection] = useState("");
   const [searchText, setSearchText] = useState("");
 

@@ -329,12 +329,19 @@ export default function PaperWriterPage() {
                     {activeSection === "methodology" && (
                       <div className="mt-4 p-3 bg-pink-50 border border-pink-200 rounded-lg">
                         <p className="text-xs text-[#1a1208] font-medium mb-1">
-                          Copy from Meta-Analysis
+                          Start from your Meta-Analysis setup
                         </p>
                         <p className="text-xs text-pink-600">
-                          If you used the Methodology Guide, copy the
-                          auto-generated write-up from the Meta-Analysis page as
-                          a starting point.
+                          If you ran a meta-analysis, open the{" "}
+                          <Link
+                            href={`/dashboard/project/${projectId}/meta-analysis`}
+                            className="underline hover:text-pink-800"
+                          >
+                            Meta-analysis page
+                          </Link>{" "}
+                          and use your saved research question and hypothesis
+                          from Step 1 as a starting point for describing your
+                          methodology here.
                         </p>
                       </div>
                     )}

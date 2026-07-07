@@ -34,6 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_events_user_created
 
 ALTER TABLE public.ai_usage_events ENABLE ROW LEVEL SECURITY;
 
+REVOKE UPDATE, DELETE ON public.ai_usage_events FROM authenticated;
 GRANT SELECT, INSERT ON public.ai_usage_events TO authenticated;
 
 -- Owner-only, append-only: SELECT + INSERT only. No UPDATE/DELETE policies —

@@ -481,11 +481,6 @@ export default function DashboardResearchSectionsExact({
         <text dominantBaseline="middle" fill={svgTone.headerText} fontSize="32" fontWeight="850" x="54" y="70">
           Research Sections
         </text>
-        <rect fill={svgTone.controlFill} height="46" rx="23" stroke={svgTone.controlStroke} strokeWidth="2" width="118" x="496" y="47" />
-        <text dominantBaseline="middle" fill={svgTone.controlText} fontSize="18" fontWeight="760" textAnchor="middle" x="547" y="70">
-          Today
-        </text>
-        <path d="m586 65 8 8 8-8" fill="none" stroke={svgTone.controlText} strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
         <text dominantBaseline="middle" fill={svgTone.headerText} fontSize="32" fontWeight="850" x="680" y="70">
           Section Details
         </text>

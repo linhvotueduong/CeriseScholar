@@ -64,7 +64,13 @@ Two modes (toggle on the input box) + journey starter types:
 | "Read paper ↗" | nothing | external DOI link |
 | Copy response / show references / retry / new research / delete conversation | conversation list changes | localStorage only |
 
-**CRITICAL FOR READINESS:** ScholarAsk writes **NOTHING to the database. Not even an activity event** — the `research_query_submitted` event mentioned in older docs DOES NOT EXIST in code. There is no save-to-lit-review path. Every ScholarAsk check is therefore unmeasurable → advisory only, forever, until the product changes.
+**CRITICAL FOR READINESS — CORRECTION 2026-07-07:** the claim below that ScholarAsk writes nothing at all is now FALSE. `/api/research` (`src/app/api/research/route.ts`) fire-and-forget inserts one `dashboard_activity_events` row (`event_type: "research_query_submitted"`, `section_id: "scholarask"`) per question/journey answer — added in AI-pivot Phase 1 specifically so this "Theme clarity" check would stop being unmeasurable. The readiness engine (`src/lib/dashboard/researchReadiness.ts`, `src/lib/dashboard/deriveDashboardState.ts`) consumes this event to satisfy checklist item 3.1 ("Pathways explored") in `docs/research-readiness-checklist-model.md`. Everything else in this section still stands: the conversation content itself still saves nowhere but **localStorage ONLY** (`cerise_ask_${projectId}`) — there is still no save-to-lit-review path, and no other ScholarAsk action persists server-side.
+
+<details><summary>Original 2026-07-02 claim (superseded above)</summary>
+
+ScholarAsk writes **NOTHING to the database. Not even an activity event** — the `research_query_submitted` event mentioned in older docs DOES NOT EXIST in code. There is no save-to-lit-review path. Every ScholarAsk check is therefore unmeasurable → advisory only, forever, until the product changes.
+
+</details>
 
 ## 5. Literature Review (`/dashboard/project/[projectId]/literature-review`)
 

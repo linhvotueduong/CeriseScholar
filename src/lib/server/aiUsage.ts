@@ -91,3 +91,46 @@ export async function getMonthlyDefaultLaneUsage(
 export async function getMonthlyTotalUsage(supabase: SupabaseClient, userId: string, now: Date): Promise<number> {
   return countUsageEventsSince(supabase, userId, monthStartUtcIso(now));
 }
+
+/** Start of the UTC calendar day containing `now`, as an ISO string. */
+function dayStartUtcIso(now: Date): string {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+}
+
+/**
+ * Count of ALL this user's calls (any lane) since the start of today (UTC) —
+ * drives the usage-speed-health engine's `usedToday` input. Fail-open like
+ * every other helper here: an error warns and returns 0 rather than throwing.
+ */
+export async function getDailyUsage(supabase: SupabaseClient, userId: string, now: Date): Promise<number> {
+  return countUsageEventsSince(supabase, userId, dayStartUtcIso(now));
+}
+
+/**
+ * Average daily usage (any lane) over the `days` UTC days immediately BEFORE
+ * today (today itself is excluded — see `getDailyUsage` for that) — drives
+ * the usage-speed-health engine's `priorDailyAverage` spike baseline. Fail-open:
+ * any error returns 0 (never throws, never blocks the card).
+ */
+export async function getPriorDailyAverage(
+  supabase: SupabaseClient,
+  userId: string,
+  now: Date,
+  days = 7
+): Promise<number> {
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const periodStart = new Date(todayStart.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const { count, error } = await supabase
+    .from("ai_usage_events")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", periodStart.toISOString())
+    .lt("created_at", todayStart.toISOString());
+
+  if (error) {
+    console.warn("Failed to read prior daily AI usage average", { userId, message: error.message });
+    return 0;
+  }
+  return (count ?? 0) / days;
+}

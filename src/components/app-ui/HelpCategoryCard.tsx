@@ -22,7 +22,7 @@ export default function HelpCategoryCard({
   }[tone];
   const iconMap: Record<string, AppIconName> = {
     "Getting Started": "book-open",
-    "Local Agent & Setup": "dashboard",
+    "AI Setup": "dashboard",
     "Privacy & Protection": "shield",
     "Account & Access": "user",
     "Research Workflow": "folder",

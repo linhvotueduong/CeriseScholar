@@ -45,28 +45,28 @@ const projectRows = [
 
 const setupRows = [
   {
-    label: "Local Agent",
+    label: "OpenRouter setup",
     status: "Connected",
     tone: "ready" as const,
-    body: "Running on this trusted laptop.",
+    body: "Ready for limited testing.",
   },
   {
-    label: "Ollama",
+    label: "OpenRouter",
     status: "Ready",
     tone: "ready" as const,
-    body: "Local AI is available for private research help.",
+    body: "Serving the included and own-key lanes.",
   },
   {
-    label: "Research folder",
+    label: "Project files",
     status: "User controlled",
     tone: "quiet" as const,
-    body: "Access can be changed, paused, or removed.",
+    body: "Handled through hosted project workflows.",
   },
   {
-    label: "Safety",
-    status: "Checked",
+    label: "Metering",
+    status: "Active",
     tone: "ready" as const,
-    body: "Local AI access is checked before source-file work starts.",
+    body: "Requests are counted before and after AI answers.",
   },
 ];
 
@@ -74,34 +74,34 @@ const permissionMetrics = [
   {
     label: "Checks ready",
     value: "4/4",
-    note: "Agent, model, folder, safety",
+    note: "Lane, key, files, meter",
     tone: "ready" as const,
   },
   {
-    label: "Local services",
+    label: "AI services",
     value: "2",
-    note: "Agent and Ollama online",
+    note: "OpenRouter and routing ready",
     tone: "active" as const,
   },
   {
-    label: "Folder access",
+    label: "Project storage",
     value: "1",
-    note: "Research folder allowed",
+    note: "Hosted workspace active",
     tone: "quiet" as const,
   },
   {
-    label: "Cloud file share",
-    value: "Off",
-    note: "Private sources stay local",
+    label: "Own-key lane",
+    value: "On",
+    note: "Unlimited when connected",
     tone: "attention" as const,
   },
 ];
 
 const permissionSegments = [
-  ["Agent", "27%", "#c0392b"],
-  ["Ollama", "26%", "#d4a843"],
-  ["Folder", "25%", "#7a8a6a"],
-  ["Safety", "22%", "#1a1208"],
+  ["Included", "27%", "#c0392b"],
+  ["Own key", "26%", "#d4a843"],
+  ["Storage", "25%", "#7a8a6a"],
+  ["Meter", "22%", "#1a1208"],
 ];
 
 const readinessBars = [36, 48, 58, 44, 72, 84, 68, 92];
@@ -116,13 +116,13 @@ const vaultFolders = [
 const nextActions = [
   ["Source gap", "Find one methods paper for the literature review.", "#c0392b"],
   ["Draft step", "Move the strongest quote into the intro outline.", "#d4a843"],
-  ["Setup", "Local Agent is ready for private source checks.", "#7a8a6a"],
+  ["AI", "OpenRouter setup is ready for ScholarAsk.", "#7a8a6a"],
 ];
 
 const accountLinks = [
   ["Profile", "Name, email, login method"],
-  ["Local setup", "Agent, Ollama, folder access"],
-  ["Privacy", "Laptop boundary and hosted account data"],
+  ["AI setup", "OpenRouter, provider key, usage"],
+  ["Privacy", "Hosted workspace and account data"],
   ["Support", "Help Center and contact"],
 ];
 
@@ -295,7 +295,7 @@ export default function UserDashboardPreviewPage() {
                     Beta note
                   </p>
                   <p className="mt-2 text-xs leading-5 text-[#7a6a5a]">
-                    Local Agent features stay tied to the trusted laptop setup.
+                    AI features run through the included lane or your connected key.
                   </p>
                 </div>
               </aside>
@@ -485,7 +485,7 @@ function ContinueCard() {
         <div className="grid content-start gap-3 border-t border-[#eee6dd] pt-4 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
           <Metric label="Projects" value="3" />
           <Metric label="Latest edit" value="May 14" />
-          <Metric label="Local AI" value="Ready" />
+          <Metric label="AI" value="Included" />
         </div>
       </div>
     </section>
@@ -574,7 +574,7 @@ function VaultFolderPanel() {
   return (
     <section className="mt-4">
       <p className="text-[11px] font-black uppercase tracking-normal text-[#c0392b]">
-        Local vault
+        Project workspace
       </p>
       <div className="mt-3 grid grid-cols-2 gap-3">
         {vaultFolders.map(([label, body, color]) => (
@@ -785,18 +785,18 @@ function PrivacyFilesCard() {
   return (
     <section className="cerise-preview-card p-5">
       <p className="text-[11px] font-black uppercase tracking-normal text-[#c0392b]">
-        Local-first boundary
+        Hosted boundary
       </p>
       <h3 className="mt-2 text-base font-black tracking-normal text-[#1a1208]">
-        Privacy and local files
+        Privacy and project files
       </h3>
       <p className="mt-4 text-sm leading-6 text-[#7a6a5a]">
-        Private source files and AI-heavy research work stay tied to the trusted laptop flow.
-        Hosted account and support records remain separate.
+        Project materials and AI requests move through the hosted workspace and selected providers.
+        Support records remain separate.
       </p>
       <div className="mt-5 grid gap-2 text-sm">
-        <DetailRow label="Private source files" value="Handled through the trusted laptop flow" />
-        <DetailRow label="Folder access" value="Pause, change, or remove from local controls" />
+        <DetailRow label="Private source files" value="Handled through hosted project workflows" />
+        <DetailRow label="AI provider" value="OpenRouter included or own-key lane" />
         <DetailRow label="Hosted account data" value="Managed through Supabase authentication" />
       </div>
     </section>

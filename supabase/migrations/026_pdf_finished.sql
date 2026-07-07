@@ -1,0 +1,32 @@
+-- ============================================
+-- Cerise Scholar — Per-source Finish button (migration 026)
+-- Spec: docs/research-readiness-checklist-model.md §7 "Completion signals &
+-- moment-of-completion nudges" (founder-proposed, refined 2026-07-02/07).
+--
+-- Column: pdfs.finished_at (nullable TIMESTAMPTZ).
+-- Semantics: NULL = the user has not declared this source "done" yet;
+-- a timestamp = the moment the user clicked "Mark source finished" in the
+-- PDF viewer header or the document panel (§7.1). Un-finish (undo) simply
+-- sets it back to NULL — this is a user DECLARATION, not a computed value
+-- (design principle P6, §6.5: "Completion of READING/capture is invisible …
+-- the user declares it with a Finish button").
+--
+-- This is a timing aid ONLY, never a gate (P4/§7.2 escape hatch): a source
+-- with no finished_at but with meaningful insights on its rows is still
+-- treated as effectively finished by the readiness engine
+-- (`src/lib/dashboard/researchReadiness.ts`) so minimalists who never click
+-- the button are never penalized or blocked.
+--
+-- RLS: none added here. `pdfs` already has owner-scoped RLS from migration
+-- 001 (`001_initial_schema.sql`) covering SELECT/INSERT/UPDATE/DELETE via
+-- `auth.uid() = user_id`; finished_at is a plain column on that same row, so
+-- the existing "Users can update their own PDFs" policy already governs
+-- writes to it — no new policy needed.
+--
+-- Idempotent / re-run safe: ADD COLUMN IF NOT EXISTS. Touches no other table.
+-- (The companion `source_review_finished` activity event needs no schema
+-- change — it reuses the existing `dashboard_activity_events` table.)
+-- ============================================
+
+ALTER TABLE public.pdfs
+  ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ;

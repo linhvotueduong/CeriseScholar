@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { useLocalAgentStatus } from "@/hooks/useLocalAgentStatus";
 import { useProfile } from "@/hooks/useProfile";
 import { useUser } from "@/hooks/useUser";
 import Spinner from "@/components/ui/Spinner";
@@ -12,14 +11,13 @@ import Spinner from "@/components/ui/Spinner";
 const accountLinks = [
   { href: "/help", label: "Help Center", body: "Setup notes, privacy answers, and beta FAQs." },
   { href: "/help/contact", label: "Contact support", body: "Send a setup question, bug report, or feature request." },
-  { href: "/help/privacy", label: "Privacy Policy", body: "Read the local-first and hosted-service privacy boundary." },
+  { href: "/help/privacy", label: "Privacy Policy", body: "See how your account, files, and AI requests are handled in the cloud." },
   { href: "/help/terms", label: "Terms of Use", body: "Review public beta account responsibilities." },
 ];
 
 export default function AccountPage() {
   const { user, loading } = useUser();
   const { displayName, initials } = useProfile("Cerise Scholar member");
-  const localAgent = useLocalAgentStatus();
   const router = useRouter();
 
   async function handleSignOut() {
@@ -56,8 +54,6 @@ export default function AccountPage() {
 
   const betaStatus = getBetaStatus(user);
   const providerLabel = getProviderLabel(user);
-  const ollamaReady = localAgent.hostedAiBypass || Boolean(localAgent.health?.ollama?.ok ?? localAgent.health?.ollama?.connected);
-  const safetyReady = localAgent.health?.ollama?.security?.ok !== false;
 
   return (
     <div className="mx-auto max-w-[980px] px-4 py-8 pb-20 sm:px-6 lg:px-8">
@@ -69,7 +65,7 @@ export default function AccountPage() {
               Your Cerise profile
             </h1>
             <p className="mt-3 max-w-[620px] text-sm leading-6 text-[#7a6a5a]">
-              Keep a clear view of your beta account, laptop readiness, and the support paths that
+              Keep a clear view of your beta account, AI access, and the support paths that
               help Cerise stay gentle with your research work.
             </p>
           </div>
@@ -116,58 +112,57 @@ export default function AccountPage() {
       </section>
 
       <section className="mt-4 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <Card title="Local Agent status" eyebrow="Trusted laptop">
+        <Card title="AI access" eyebrow="OpenRouter">
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm leading-6 text-[#7a6a5a]">
-              Cerise checks what this laptop can safely do before local AI or file work begins.
+              Cerise Scholar now runs AI through OpenRouter. Connect an OpenRouter key for
+              limited testing, then add credit when you are ready for fuller product usage.
             </p>
-            <button
-              className="inline-flex h-9 shrink-0 items-center rounded-full border border-[#d4cdc5] bg-white px-4 text-xs font-black text-[#1a1208] transition hover:bg-[#faf7f0] disabled:opacity-60"
-              disabled={localAgent.checking}
-              onClick={() => void localAgent.checkNow()}
-              type="button"
+            <Link
+              className="inline-flex h-9 shrink-0 items-center rounded-full border border-[#d4cdc5] bg-white px-4 text-xs font-black text-[#1a1208] no-underline transition hover:bg-[#faf7f0]"
+              href="/settings/ai"
             >
-              {localAgent.checking ? "Checking..." : "Check now"}
-            </button>
+              Manage AI
+            </Link>
           </div>
 
           <div className="mt-4 divide-y divide-[#eee6dd]">
             <ConnectionRow
-              body={localAgent.ui.detail}
-              label="Local Agent"
-              status={localAgent.ui.label}
-              tone={toneFromLocalStatus(localAgent.ui.status)}
+              body="OpenRouter setup starts with limited testing before credit is added."
+              label="OpenRouter setup"
+              status="Settings"
+              tone="ready"
             />
             <ConnectionRow
-              body={localAgent.hostedAiBypass ? "Not required for this account." : localAgent.health?.ollama?.selectedModel || "Model appears after Ollama is ready."}
-              label="Ollama"
-              status={localAgent.hostedAiBypass ? "Bypassed" : ollamaReady ? "Ready" : "Needs setup"}
-              tone={ollamaReady ? "ready" : "attention"}
-            />
-            <ConnectionRow
-              body="Managed through the local vault controls on your dashboard."
-              label="Research folder"
-              status="User controlled"
+              body="Provider-key routing for OpenAI or Anthropic belongs in Settings once backend support is available."
+              label="Your own provider"
+              status="Optional"
               tone="quiet"
             />
             <ConnectionRow
-              body={safetyReady ? "No local AI safety blocker is reported." : "Review Ollama access before using local AI."}
-              label="Safety"
-              status={safetyReady ? "Checked" : "Needs review"}
-              tone={safetyReady ? "ready" : "attention"}
+              body="Private source files are stored in Supabase-backed project workflows rather than a laptop vault."
+              label="Source files"
+              status="Cloud-only"
+              tone="quiet"
+            />
+            <ConnectionRow
+              body="Usage is counted server-side so Cerise can show request history and protect test limits."
+              label="Metering"
+              status="Active"
+              tone="ready"
             />
           </div>
         </Card>
 
-        <Card title="Privacy and local files" eyebrow="Local-first boundary">
+        <Card title="Privacy and files" eyebrow="Cloud boundary">
           <p className="text-sm leading-6 text-[#7a6a5a]">
-            Your private source files and AI-heavy research work are meant to stay on the trusted
-            laptop where the Cerise Scholar Local Agent and local vault are set up. Hosted account,
-            support, and app records still exist so login and help can work reliably.
+            Your account, project records, and selected research materials are handled through the
+            hosted app and Supabase-backed storage. AI requests use the included OpenRouter lane
+            or your connected key.
           </p>
           <div className="mt-5 grid gap-2 text-sm">
-            <DetailRow label="Private source files" value="Handled through the trusted laptop flow" />
-            <DetailRow label="Local vault controls" value="Available from the dashboard setup panel" />
+            <DetailRow label="Private source files" value="Handled through hosted project workflows" />
+            <DetailRow label="AI provider" value="OpenRouter" />
             <DetailRow label="Hosted account data" value="Managed through Supabase authentication" />
           </div>
         </Card>
@@ -281,13 +276,13 @@ function getBetaStatus(user: User) {
   if (source === "public_laptop_beta") {
     return {
       title: "Public laptop beta tester",
-      body: "Your account is part of the public beta. The deeper research workflow expects the trusted laptop where your local workspace is set up.",
+      body: "Your account is part of the public beta. The deeper research workflow now runs through Cerise Scholar's hosted AI and project workspace.",
     };
   }
 
   return {
     title: "Cerise Scholar beta account",
-    body: "Your account can access the beta app. Local-file and local-AI work still depends on the trusted laptop setup.",
+    body: "Your account can access the beta app. Research AI setup now starts with an OpenRouter key and can expand with OpenRouter credit.",
   };
 }
 
@@ -315,14 +310,6 @@ function formatDate(value?: string) {
     day: "numeric",
     year: "numeric",
   }).format(date);
-}
-
-function toneFromLocalStatus(
-  status: ReturnType<typeof useLocalAgentStatus>["ui"]["status"]
-): "ready" | "attention" | "quiet" {
-  if (status === "connected") return "ready";
-  if (status === "checking") return "quiet";
-  return "attention";
 }
 
 function readMetadataString(value: unknown) {

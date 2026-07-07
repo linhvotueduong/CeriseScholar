@@ -18,6 +18,7 @@ import {
 } from "@/lib/dashboard/demoDashboardData";
 import { getLocalDay } from "@/lib/dashboard/localDay";
 import { recommendSchedule } from "@/lib/dashboard/recommendSchedule";
+import { computeBehaviorProfile } from "@/lib/dashboard/behaviorProfile";
 import {
   submitProgressFeedback,
   upsertAiEvaluation,
@@ -43,9 +44,6 @@ import type { MetaAnalysis } from "@/types/meta-analysis";
 type UseDashboardStateParams = {
   project: Project;
   userId?: string | null;
-  agentReady: boolean;
-  ollamaReady: boolean;
-  safetyReady: boolean;
 };
 
 type TaskUpdate = Partial<Pick<DashboardTask, "scheduled_time" | "title" | "subtitle" | "section_id" | "sort_order">>;
@@ -74,11 +72,6 @@ async function safeSelect<T>(query: PromiseLike<{ data: unknown; error: unknown 
   return data as T;
 }
 
-// Neutral local-setup for the schedule's section-progress read only. The five
-// research sections below don't depend on local-agent status, so this keeps the
-// recommendation independent of agent/ollama/folder readiness.
-const NEUTRAL_LOCAL_SETUP = { agentReady: false, ollamaReady: false, safetyReady: false };
-
 // Sections the schedule engine may recommend work on (excludes the "notes"/Cerise
 // support tile, which is help links, not a research work area).
 const RECOMMENDABLE_SECTIONS = new Set<DashboardSectionId>([
@@ -89,12 +82,15 @@ const RECOMMENDABLE_SECTIONS = new Set<DashboardSectionId>([
   "citations",
 ]);
 
+// Stage 1 personalization (behaviorProfile.ts) needs real history, not just today —
+// widen the dashboard_tasks read to this many days back. Today-specific logic (the
+// once-per-day auto-seed gate, the schedule card's tasks) still derives its own
+// today-only slice from this wider set below; nothing that reads "today" changes.
+const BEHAVIOR_HISTORY_WINDOW_DAYS = 30;
+
 export function useDashboardState({
   project,
   userId,
-  agentReady,
-  ollamaReady,
-  safetyReady,
 }: UseDashboardStateParams) {
   const taskDate = useMemo(() => getLocalDay(), []);
   const [sourceData, setSourceData] = useState<DashboardSourceData>(() => blankSourceData());
@@ -154,12 +150,23 @@ export function useDashboardState({
       const pdfs = await safeSelect<Array<Record<string, unknown>>>(
         supabase
           .from("pdfs")
-          .select("id, user_id, project_id, display_name, page_count, ocr_status, created_at, updated_at")
+          .select("id, user_id, project_id, display_name, page_count, ocr_status, finished_at, created_at, updated_at")
           .eq("project_id", project.id)
           .order("created_at", { ascending: false }),
         []
       );
       const pdfIds = pdfs.map((pdf) => String(pdf.id)).filter(Boolean);
+
+      // Usage-speed-health boundaries (docs/ai-usage-card-states.md) — computed
+      // once so the "today" and "prior 7 days" queries below agree on the same
+      // UTC day boundary.
+      const usageNow = new Date();
+      const usageDayStartIso = new Date(
+        Date.UTC(usageNow.getUTCFullYear(), usageNow.getUTCMonth(), usageNow.getUTCDate())
+      ).toISOString();
+      const usagePriorWeekStartIso = new Date(
+        Date.parse(usageDayStartIso) - 7 * 24 * 60 * 60 * 1000
+      ).toISOString();
 
       const [
         highlights,
@@ -174,6 +181,9 @@ export function useDashboardState({
         courseNotes,
         aiKeySettingsRow,
         aiUsageCountResult,
+        aiUsageTodayCountResult,
+        aiUsagePriorWeekCountResult,
+        aiGuardrailsRow,
       ] = await Promise.all([
           pdfIds.length
             ? safeSelect<Array<Record<string, unknown>>>(
@@ -235,20 +245,128 @@ export function useDashboardState({
             .select("*", { count: "exact", head: true })
             .eq("user_id", userId)
             .gte("created_at", monthStartUtcIso(new Date())),
+          // Usage-speed-health: today's count (any lane) and the prior-7-day
+          // count (any lane, excluding today) feed the pace engine's
+          // usedToday/priorDailyAverage inputs (docs/ai-usage-card-states.md).
+          supabase
+            .from("ai_usage_events")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .gte("created_at", usageDayStartIso),
+          supabase
+            .from("ai_usage_events")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .gte("created_at", usagePriorWeekStartIso)
+            .lt("created_at", usageDayStartIso),
+          safeSelect<{ unusual_spike_alert: boolean | null } | null>(
+            supabase.from("ai_usage_guardrails").select("unusual_spike_alert").eq("user_id", userId).maybeSingle(),
+            null
+          ),
         ]);
 
       const aiKeyLast4 = aiKeySettingsRow?.key_last4 ?? null;
       const aiUsageCountThisMonth = aiUsageCountResult.error ? 0 : aiUsageCountResult.count ?? 0;
+      const aiUsageCountToday = aiUsageTodayCountResult.error ? 0 : aiUsageTodayCountResult.count ?? 0;
+      const aiUsagePriorDailyAverage = aiUsagePriorWeekCountResult.error
+        ? 0
+        : (aiUsagePriorWeekCountResult.count ?? 0) / 7;
+      const aiSpikeAlertEnabled = aiGuardrailsRow?.unusual_spike_alert ?? true;
 
-      const existingTasks = await safeSelect<DashboardTask[]>(
+      // Widened to ~30 days (not just today) so Stage 1 personalization
+      // (behaviorProfile.ts) has real history to compute a completion rate, work
+      // rhythm, etc. from. Every existing "today only" behavior below (the
+      // once-per-day auto-seed gate, the schedule card's tasks) derives its own
+      // today-only slice from this wider set, so nothing that reads "today" changes.
+      const historyStartDate = getLocalDay(new Date(Date.now() - BEHAVIOR_HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000));
+      const taskHistory = await safeSelect<DashboardTask[]>(
         supabase
           .from("dashboard_tasks")
           .select("*")
           .eq("project_id", project.id)
-          .eq("task_date", taskDate)
+          .gte("task_date", historyStartDate)
           .order("sort_order", { ascending: true }),
         []
       );
+      const existingTasks = taskHistory.filter((task) => task.task_date === taskDate);
+
+      // Moved up (was fetched later, after the recommendation seed) so Stage 1's
+      // behavior profile — which recommendSchedule below can personalize with —
+      // has real activity to read. Reused as-is for the final source data.
+      const activityEvents = await safeSelect<Array<DashboardSourceData["activityEvents"][number]>>(
+        supabase
+          .from("dashboard_activity_events")
+          .select("*")
+          .eq("project_id", project.id)
+          .order("created_at", { ascending: false })
+          .limit(60),
+        []
+      );
+
+      // Stage 2's cached daily guidance row (migration 028). Read fail-open: a
+      // missing/errored row just means "no AI insight yet today," never a blocking
+      // error. No job writes this table yet — Stage 2 (a later agent) is the producer.
+      const aiInsightRow = await safeSelect<{ guidance: string | null; focus_section: string | null } | null>(
+        supabase
+          .from("ai_behavior_insights")
+          .select("guidance, focus_section")
+          .eq("user_id", userId)
+          .eq("project_id", project.id)
+          .eq("day", taskDate)
+          .maybeSingle(),
+        null
+      );
+
+      // Stage 1 personalization profile (behaviorProfile.ts) — pure/deterministic,
+      // computed from the real history above. Fed into recommendSchedule below and
+      // also exposed on derived state for Stage 2 to read/store.
+      const behaviorProfile = computeBehaviorProfile({ activityEvents, taskHistory, now: new Date() });
+
+      // Stage 2 trigger: today's daily AI insight is generated lazily, at most
+      // once per project per day. If no cached row exists yet AND the profile is
+      // confident enough to say something honest and non-generic, fire a
+      // background request to /api/ai (task "behavior_insight"). Guarded by a
+      // same-day localStorage flag so a failed attempt doesn't retry until
+      // tomorrow (the server-side cache is the source of truth; this flag only
+      // prevents hammering the endpoint on repeat loads/errors). This NEVER
+      // blocks or throws into the dashboard's own load — every failure mode is
+      // swallowed.
+      if (!aiInsightRow && !behaviorProfile.lowConfidence) {
+        try {
+          const attemptKey = `cerise_insight_attempt_${project.id}_${taskDate}`;
+          if (typeof window !== "undefined" && !window.localStorage.getItem(attemptKey)) {
+            window.localStorage.setItem(attemptKey, "1");
+            void (async () => {
+              try {
+                const res = await fetch("/api/ai", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    task: "behavior_insight",
+                    projectId: project.id,
+                    projectName: project.name,
+                    profile: behaviorProfile,
+                  }),
+                });
+                if (!res.ok) return;
+                const payload = (await res.json()) as { guidance?: string; focus_section?: string };
+                if (payload?.guidance) {
+                  setSourceData((current) => ({
+                    ...current,
+                    aiInsight: { guidance: payload.guidance ?? null, focusSection: payload.focus_section ?? null },
+                  }));
+                }
+              } catch {
+                // Fire-and-forget: a failed background insight request must never
+                // surface to the user or block the dashboard.
+              }
+            })();
+          }
+        } catch {
+          // localStorage can throw in some private-browsing contexts (or be
+          // unavailable during SSR) — never let that affect the dashboard load.
+        }
+      }
 
       // Everything in the source data except tasks/activity (which load below). Used
       // both for the schedule's section-progress read and the final source data.
@@ -266,6 +384,9 @@ export function useDashboardState({
         courseNotes,
         aiKeyLast4,
         aiUsageCountThisMonth,
+        aiUsageCountToday,
+        aiUsagePriorDailyAverage,
+        aiSpikeAlertEnabled,
       };
 
       // Load Today's Target settings first — pace drives the schedule's intensity.
@@ -288,7 +409,6 @@ export function useDashboardState({
         const sectionProgress = deriveDashboardState(
           project,
           { ...realSourceBase, tasks: existingTasks, activityEvents: [] },
-          NEUTRAL_LOCAL_SETUP,
           taskDate
         )
           .researchSections.filter((section) => RECOMMENDABLE_SECTIONS.has(section.id))
@@ -299,6 +419,7 @@ export function useDashboardState({
           taskDate,
           paceMode: persisted.paceMode,
           sections: sectionProgress,
+          profile: behaviorProfile,
         });
         const runId = crypto.randomUUID();
         const recommendedRows = recommendation.tasks.map((spec) => ({
@@ -336,15 +457,6 @@ export function useDashboardState({
           .order("sort_order", { ascending: true }),
         existingTasks
       );
-      const activityEvents = await safeSelect<Array<DashboardSourceData["activityEvents"][number]>>(
-        supabase
-          .from("dashboard_activity_events")
-          .select("*")
-          .eq("project_id", project.id)
-          .order("created_at", { ascending: false })
-          .limit(60),
-        []
-      );
       // Dedicated Activity Log feed: exclude page-load noise at the DB level so real
       // meaningful events are found even when recent rows are dominated by opens.
       // Chained neq (robust) instead of not-in, and a generous limit so older real
@@ -367,6 +479,10 @@ export function useDashboardState({
         tasks,
         activityEvents,
         activityFeed,
+        behaviorProfile,
+        aiInsight: aiInsightRow
+          ? { guidance: aiInsightRow.guidance, focusSection: aiInsightRow.focus_section }
+          : null,
       };
       const nextSource = applyDemoDashboardFallback(realSourceData, {
         userId,
@@ -416,11 +532,6 @@ export function useDashboardState({
       deriveDashboardState(
         project,
         sourceData,
-        {
-          agentReady,
-          ollamaReady,
-          safetyReady,
-        },
         taskDate,
         {
           // The unified Today's Target model reads the live settings (pace, deadline,
@@ -433,7 +544,7 @@ export function useDashboardState({
           hasPersistedTarget: persistedSettingsRef.current !== null,
         }
       ),
-    [agentReady, ollamaReady, project, safetyReady, sourceData, targetSettings, taskDate]
+    [project, sourceData, targetSettings, taskDate]
   );
 
   // Section percents the evaluator produced (research sections only), for storage/feedback.

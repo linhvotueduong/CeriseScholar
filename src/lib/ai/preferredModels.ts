@@ -7,8 +7,8 @@
 // on 2026-07-06 (a model catalog changes over time; re-verify before adding
 // more or before reusing this list after a long gap). Grouped into free vs.
 // paid so callers can render two option groups instead of one flat list —
-// the welcome popup's two tabs ("Free APIs" / "Paid APIs") each show just one
-// group, and the Settings page renders both as <optgroup>s.
+// Settings uses this list for the premium model preference. Free-model routing
+// stays controlled by Cerise rather than exposed as a user-facing picker.
 //
 // FREE_MODEL_OPTIONS[0] is the same free-first default used by the default
 // lane (src/lib/server/aiCredentials.ts, DEFAULT_FREE_PRIMARY_MODEL) so a

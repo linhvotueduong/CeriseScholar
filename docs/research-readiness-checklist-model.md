@@ -43,7 +43,7 @@ Founder remap: this area = exploring research pathways in ScholarAsk **Research 
 
 | # | Check | Signal | Move copy |
 |---|---|---|---|
-| 3.1 | Pathways explored | ≥ 1 `research_query_submitted` activity event with journey mode — **DEPENDS on the one-line server-side event log added in AI-pivot Phase 1** (see `docs/architecture-pivot-roadmap.md`); until that ships, this check is advisory | "Explore research pathways" |
+| 3.1 | Pathways explored | ≥ 1 `research_query_submitted` activity event with journey mode — **CORRECTION 2026-07-07: the server-side event log has SHIPPED** (`src/app/api/research/route.ts` inserts the event on every answer; see `docs/user-actions-per-surface.md` §4 and `docs/architecture-pivot-roadmap.md`). This check is now a real, measurable, gating signal (`journeyEvents` feeds `pathway.recognized` in `src/lib/dashboard/researchReadiness.ts`) — no longer forever-advisory. The 3.A / escape-hatch rows below are unaffected: conversation content still never persists, and real evidence work still satisfies this area for doers who skip ScholarAsk. | "Explore research pathways" |
 | 3.A | *Advisory:* try the journey starter types for angle/strategy | unmeasurable detail (conversation content never persists) | never gates |
 
 Escape hatch: real evidence work (uploads/highlights) satisfies 3.1 — doers who skip ScholarAsk are never trapped.

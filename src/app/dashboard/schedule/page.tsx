@@ -1,104 +1,203 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AppIcon, type AppIconName } from "@/components/app-shell/AppIcons";
+import { useUser } from "@/hooks/useUser";
+import { useScheduleTasks } from "@/hooks/useScheduleTasks";
+import { createClient } from "@/lib/supabase/client";
+import { getLocalDay } from "@/lib/dashboard/localDay";
+import type { DashboardTask } from "@/lib/dashboard/deriveDashboardState";
+import type { Project } from "@/types/project";
 import styles from "./page.module.css";
 
 type Tone = "rose" | "blue" | "purple" | "green" | "amber" | "neutral";
 
-type ScheduleEvent = {
-  day: number;
-  end: number;
-  icon: AppIconName;
-  start: number;
-  subtitle: string;
-  title: string;
-  tone: Tone;
+// Section -> visual tone/icon. Purely cosmetic grouping of the real
+// dashboard_tasks.section_id column (recommendation-engine tasks carry a
+// section id; manual checkpoints don't, so they fall back to "neutral"/"edit").
+const SECTION_TONE: Record<string, Tone> = {
+  "meta-analysis": "purple",
+  "literature-review": "blue",
+  workspace: "green",
+  draft: "rose",
+  citations: "amber",
 };
 
-const hourHeight = 52;
+const SECTION_ICON: Record<string, AppIconName> = {
+  "meta-analysis": "workflow",
+  "literature-review": "search",
+  workspace: "dashboard",
+  draft: "edit",
+  citations: "file",
+};
 
-const days = [
-  { name: "Mon", date: "13" },
-  { name: "Tue", date: "14" },
-  { name: "Wed", date: "15", active: true },
-  { name: "Thu", date: "16" },
-  { name: "Fri", date: "17" },
-  { name: "Sat", date: "18" },
-  { name: "Sun", date: "19" },
-];
+function toneForTask(task: DashboardTask): Tone {
+  return SECTION_TONE[task.section_id] ?? (task.origin === "manual" ? "neutral" : "blue");
+}
 
-const stats: Array<{
-  detail: string;
-  icon: AppIconName;
-  label: string;
-  side: string;
-  subside: string;
-  value: string;
-}> = [
-  { icon: "clock", label: "Focus time", value: "18h 30m", detail: "Scheduled this week", side: "+12%", subside: "vs last week" },
-  { icon: "calendar", label: "Scheduled sessions", value: "18", detail: "Across all projects", side: "+3", subside: "vs last week" },
-  { icon: "check-square", label: "Completed today", value: "2 / 4", detail: "Tasks completed", side: "50%", subside: "of today's plan" },
-  { icon: "list", label: "Open checkpoints", value: "5", detail: "Require your review", side: "2 due soon", subside: "" },
-];
+function iconForTask(task: DashboardTask): AppIconName {
+  return SECTION_ICON[task.section_id] ?? (task.origin === "manual" ? "edit" : "check-square");
+}
 
-const weekEvents: ScheduleEvent[] = [
-  { day: 0, start: 9, end: 11, icon: "edit", title: "Literature review sprint", subtitle: "Rows 1-12", tone: "rose" },
-  { day: 0, start: 11.25, end: 12.25, icon: "laptop", title: "Methods review", subtitle: "Study design", tone: "purple" },
-  { day: 0, start: 14, end: 15.5, icon: "workflow", title: "Meta-analysis deep work", subtitle: "Model specification", tone: "blue" },
-  { day: 0, start: 16, end: 17, icon: "refresh", title: "Citation cleanup", subtitle: "Zotero sync", tone: "amber" },
-  { day: 1, start: 8.5, end: 10.5, icon: "search", title: "Evidence search", subtitle: "New database", tone: "blue" },
-  { day: 1, start: 11, end: 12, icon: "edit", title: "Writing block", subtitle: "Methods draft", tone: "rose" },
-  { day: 1, start: 13.5, end: 15, icon: "dashboard", title: "Data extraction", subtitle: "Pilot coding", tone: "green" },
-  { day: 1, start: 16, end: 17.5, icon: "users", title: "Team sync", subtitle: "Project updates", tone: "purple" },
-  { day: 2, start: 9, end: 10.5, icon: "edit", title: "Literature review sprint", subtitle: "Rows 13-26", tone: "rose" },
-  { day: 2, start: 10.5, end: 12, icon: "workflow", title: "Evidence connection", subtitle: "Synthesis table", tone: "purple" },
-  { day: 2, start: 13, end: 14, icon: "file", title: "Source note cleanup", subtitle: "Add notes & tags", tone: "blue" },
-  { day: 2, start: 15, end: 16, icon: "edit", title: "Project check-in", subtitle: "Review next steps", tone: "amber" },
-  { day: 2, start: 16.25, end: 17.25, icon: "refresh", title: "Citation cleanup", subtitle: "Reference dedup", tone: "green" },
-  { day: 3, start: 8.5, end: 10.5, icon: "edit", title: "Meta-analysis deep work", subtitle: "Results modeling", tone: "purple" },
-  { day: 3, start: 11, end: 12, icon: "edit", title: "Writing block", subtitle: "Results section", tone: "rose" },
-  { day: 3, start: 14, end: 15, icon: "laptop", title: "Methods review", subtitle: "Quality assessment", tone: "blue" },
-  { day: 3, start: 16, end: 17, icon: "users", title: "Team sync", subtitle: "Feedback loop", tone: "purple" },
-  { day: 4, start: 8, end: 10.5, icon: "file", title: "Database update", subtitle: "Import new papers", tone: "blue" },
-  { day: 4, start: 11, end: 12, icon: "edit", title: "Writing block", subtitle: "Discussion outline", tone: "rose" },
-  { day: 4, start: 13.5, end: 15, icon: "refresh", title: "Data analysis", subtitle: "Sensitivity checks", tone: "green" },
-  { day: 4, start: 16, end: 17, icon: "calendar", title: "Checkpoint review", subtitle: "Open items", tone: "amber" },
-  { day: 5, start: 10, end: 12, icon: "target", title: "Focus block", subtitle: "Deep reading", tone: "neutral" },
-  { day: 5, start: 13, end: 15, icon: "clock", title: "Optional focus", subtitle: "Flex time", tone: "neutral" },
-  { day: 6, start: 9, end: 11, icon: "calendar", title: "Plan & prep", subtitle: "Next week", tone: "neutral" },
-  { day: 6, start: 15, end: 16, icon: "workflow", title: "Weekly review", subtitle: "Reflect & adjust", tone: "neutral" },
-];
+function originLabel(origin: string | null | undefined) {
+  if (origin === "manual") return "Manual";
+  if (origin === "recommended") return "Recommended";
+  return "Default";
+}
 
-const todayItems = [
-  { time: "09:00", icon: "edit" as AppIconName, title: "Literature review sprint", subtitle: "Rows 13-26", tag: "Focus", tone: "rose" as Tone },
-  { time: "10:30", icon: "workflow" as AppIconName, title: "Evidence connection", subtitle: "Synthesis table", tag: "Analysis", tone: "purple" as Tone },
-  { time: "13:00", icon: "file" as AppIconName, title: "Source note cleanup", subtitle: "Add notes & tags", tag: "Admin", tone: "blue" as Tone },
-  { time: "15:00", icon: "edit" as AppIconName, title: "Project check-in", subtitle: "Review next steps", tag: "Meeting", tone: "amber" as Tone },
-];
+function addDays(date: Date, amount: number) {
+  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  next.setDate(next.getDate() + amount);
+  return next;
+}
 
-const deadlines = [
-  { date: "17 May", icon: "clock" as AppIconName, title: "Scoping review protocol", subtitle: "Draft due" },
-  { date: "20 May", icon: "calendar" as AppIconName, title: "PRISMA flow diagram", subtitle: "Figures update" },
-  { date: "24 May", icon: "workflow" as AppIconName, title: "Results section draft", subtitle: "Manuscript" },
-];
-
-const notes = [
-  { dot: "rose" as Tone, text: "Check APA 7th edition updates before manuscript writing.", time: "08:45" },
-  { dot: "blue" as Tone, text: "Ask team about inter-rater reliability plan.", time: "08:46" },
-];
-
-function formatTime(value: number) {
-  const hour = Math.floor(value);
-  const minute = Math.round((value - hour) * 60);
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+function formatShort(date: Date) {
+  return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
 export default function DashboardSchedulePage() {
-  const [view, setView] = useState("Week");
+  const { user } = useUser();
+  const userId = user?.id ?? null;
+
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
+  const [projectFilter, setProjectFilter] = useState<string>("all");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!userId) {
+      setProjects([]);
+      setProjectsLoaded(true);
+      return;
+    }
+    async function loadProjects() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("projects")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .then(
+          (result) => result,
+          () => ({ data: null })
+        );
+      if (cancelled) return;
+      setProjects((data as Project[] | null) ?? []);
+      setProjectsLoaded(true);
+    }
+    void loadProjects();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const projectIds = useMemo(() => {
+    if (projectFilter !== "all") return [projectFilter];
+    return projects.map((project) => project.id);
+  }, [projectFilter, projects]);
+
+  // When adding a task with "All projects" selected, attach it to the most
+  // recently updated project (projects are already sorted that way).
+  const defaultProjectId = projectFilter !== "all" ? projectFilter : projects[0]?.id ?? null;
+
+  const [anchorDate, setAnchorDate] = useState(() => new Date());
+  const [view, setView] = useState<"Day" | "Week">("Week");
   const [query, setQuery] = useState("");
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const todayKey = useMemo(() => getLocalDay(new Date()), []);
+  const [selectedDayKey, setSelectedDayKey] = useState(todayKey);
+
+  const { days, tasks, loading: tasksLoading, completeTask, addTask } = useScheduleTasks({
+    userId,
+    projectIds,
+    defaultProjectId,
+    anchorDate,
+  });
+  // Tasks can't be fetched meaningfully until we know which project(s) the
+  // user has, so treat "still loading projects" as part of the loading state.
+  const loading = tasksLoading || !projectsLoaded;
+
+  // If a week navigation moves the selected day out of range, snap back to
+  // the first visible day so "Day" view never shows a stale/impossible date.
+  useEffect(() => {
+    if (!days.some((day) => day.dateKey === selectedDayKey)) {
+      setSelectedDayKey(days.some((day) => day.isToday) ? todayKey : days[0]?.dateKey ?? todayKey);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [days]);
+
+  const [showWeekAddForm, setShowWeekAddForm] = useState(false);
+  const [weekAddTitle, setWeekAddTitle] = useState("");
+  const [weekAddDay, setWeekAddDay] = useState(todayKey);
+
+  const [showTodayAddForm, setShowTodayAddForm] = useState(false);
+  const [todayAddTitle, setTodayAddTitle] = useState("");
+
   const normalizedQuery = query.trim().toLowerCase();
+
+  const tasksByDay = useMemo(() => {
+    const map = new Map<string, DashboardTask[]>();
+    for (const day of days) map.set(day.dateKey, []);
+    for (const task of tasks) {
+      if (map.has(task.task_date)) map.get(task.task_date)!.push(task);
+    }
+    return map;
+  }, [days, tasks]);
+
+  const visibleDays = view === "Day" ? days.filter((day) => day.dateKey === selectedDayKey) : days;
+
+  const todayTasks = tasksByDay.get(todayKey) ?? [];
+  const totalToday = todayTasks.length;
+  const doneToday = todayTasks.filter((task) => task.status === "completed").length;
+
+  const totalWeek = tasks.length;
+  const doneWeek = tasks.filter((task) => task.status === "completed").length;
+  const weekPercent = totalWeek ? Math.round((doneWeek / totalWeek) * 100) : 0;
+  const todayPercent = totalToday ? Math.round((doneToday / totalToday) * 100) : 0;
+  const manualWeekTasks = tasks.filter((task) => task.origin === "manual");
+  const manualDoneCount = manualWeekTasks.filter((task) => task.status === "completed").length;
+
+  const stats: Array<{ detail: string; icon: AppIconName; label: string; side: string; subside: string; value: string }> = [
+    { icon: "calendar", label: "Scheduled this week", value: String(totalWeek), detail: "Tasks planned this week", side: `${weekPercent}%`, subside: "completed" },
+    { icon: "check-square", label: "Completed this week", value: String(doneWeek), detail: "Marked done", side: String(totalWeek - doneWeek), subside: "left to do" },
+    { icon: "clock", label: "Completed today", value: `${doneToday} / ${totalToday}`, detail: "Today's tasks completed", side: `${todayPercent}%`, subside: "of today's plan" },
+    { icon: "list", label: "Checkpoints added", value: String(manualWeekTasks.length), detail: "Added by you this week", side: String(manualDoneCount), subside: "completed" },
+  ];
+
+  function taskMatchesSearch(task: DashboardTask) {
+    if (!normalizedQuery) return true;
+    return `${task.title} ${task.subtitle ?? ""}`.toLowerCase().includes(normalizedQuery);
+  }
+
+  function visibleTasksFor(dateKey: string) {
+    const dayTasks = tasksByDay.get(dateKey) ?? [];
+    return hideCompleted ? dayTasks.filter((task) => task.status !== "completed") : dayTasks;
+  }
+
+  function openWeekAddForm() {
+    setWeekAddDay(days.some((day) => day.dateKey === todayKey) ? todayKey : days[0]?.dateKey ?? todayKey);
+    setWeekAddTitle("");
+    setShowWeekAddForm(true);
+  }
+
+  async function submitWeekAddForm() {
+    if (!weekAddTitle.trim()) return;
+    await addTask(weekAddTitle, weekAddDay);
+    setWeekAddTitle("");
+    setShowWeekAddForm(false);
+  }
+
+  async function submitTodayAddForm() {
+    if (!todayAddTitle.trim()) return;
+    await addTask(todayAddTitle, todayKey);
+    setTodayAddTitle("");
+    setShowTodayAddForm(false);
+  }
+
+  const canAddTasks = Boolean(userId) && projects.length > 0;
+  const weekRangeLabel =
+    days.length === 7 ? `${formatShort(days[0].date)} - ${formatShort(days[6].date)} ${days[6].date.getFullYear()}` : "";
+  const todayLabel = new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 
   return (
     <div className={styles.schedulePage}>
@@ -116,7 +215,7 @@ export default function DashboardSchedulePage() {
         <div className={styles.toolbar}>
           <div className={styles.toolbarTop}>
             <div className={styles.segmented} aria-label="Calendar view">
-              {["Day", "Week", "Month"].map((item) => (
+              {(["Day", "Week"] as const).map((item) => (
                 <button
                   className={item === view ? styles.segmentActive : ""}
                   key={item}
@@ -129,11 +228,11 @@ export default function DashboardSchedulePage() {
             </div>
             <div className={styles.datePicker}>
               <AppIcon name="calendar" />
-              <strong>13 - 19 May 2024</strong>
-              <button aria-label="Previous week" type="button">
+              <strong>{view === "Day" ? days.find((d) => d.dateKey === selectedDayKey)?.date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) ?? weekRangeLabel : weekRangeLabel}</strong>
+              <button aria-label="Previous week" onClick={() => setAnchorDate((current) => addDays(current, -7))} type="button">
                 <AppIcon name="arrow-left" />
               </button>
-              <button aria-label="Next week" type="button">
+              <button aria-label="Next week" onClick={() => setAnchorDate((current) => addDays(current, 7))} type="button">
                 <AppIcon name="arrow-right" />
               </button>
             </div>
@@ -141,22 +240,77 @@ export default function DashboardSchedulePage() {
               <AppIcon name="search" />
               <input
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search events..."
+                placeholder="Search tasks..."
                 type="search"
                 value={query}
               />
             </label>
           </div>
           <div className={styles.toolbarBottom}>
-            <button className={styles.filterButton} type="button">
+            {projects.length > 1 ? (
+              <select
+                aria-label="Project scope"
+                className={styles.projectSelect}
+                onChange={(event) => setProjectFilter(event.target.value)}
+                value={projectFilter}
+              >
+                <option value="all">All projects</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <button
+              className={styles.filterButton}
+              onClick={() => setHideCompleted((current) => !current)}
+              type="button"
+            >
               <AppIcon name="sliders" />
-              Filter
+              {hideCompleted ? "Show completed" : "Hide completed"}
             </button>
-            <button className={styles.primaryButton} type="button">
+            <button
+              className={styles.primaryButton}
+              disabled={!canAddTasks}
+              onClick={openWeekAddForm}
+              title={canAddTasks ? undefined : userId ? "Create a project first" : "Sign in to add tasks"}
+              type="button"
+            >
               <AppIcon name="plus" />
               Add task / checkpoint
             </button>
           </div>
+          {showWeekAddForm ? (
+            <form
+              className={styles.addForm}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitWeekAddForm();
+              }}
+            >
+              <input
+                autoFocus
+                onChange={(event) => setWeekAddTitle(event.target.value)}
+                placeholder="Task title"
+                type="text"
+                value={weekAddTitle}
+              />
+              <select onChange={(event) => setWeekAddDay(event.target.value)} value={weekAddDay}>
+                {days.map((day) => (
+                  <option key={day.dateKey} value={day.dateKey}>
+                    {day.label} {day.dayNumber}
+                  </option>
+                ))}
+              </select>
+              <button className={styles.primaryButton} type="submit">
+                Save
+              </button>
+              <button type="button" onClick={() => setShowWeekAddForm(false)}>
+                Cancel
+              </button>
+            </form>
+          ) : null}
         </div>
       </header>
 
@@ -181,57 +335,70 @@ export default function DashboardSchedulePage() {
 
       <div className={styles.contentGrid}>
         <section className={styles.weekCalendar} aria-label={`${view} schedule`}>
-          <div className={styles.dayHeaderGrid}>
-            <span aria-hidden="true" />
-            {days.map((day) => (
-              <div className={styles.dayHeader} key={day.date}>
-                <span>{day.name}</span>
-                <strong className={day.active ? styles.activeDate : ""}>{day.date}</strong>
-              </div>
+          <div className={styles.dayHeaderGrid} style={{ gridTemplateColumns: `repeat(${visibleDays.length}, minmax(0, 1fr))` }}>
+            {visibleDays.map((day) => (
+              <button
+                className={styles.dayHeader}
+                key={day.dateKey}
+                onClick={() => {
+                  setSelectedDayKey(day.dateKey);
+                  setView("Day");
+                }}
+                type="button"
+              >
+                <span>{day.label}</span>
+                <strong className={day.isToday ? styles.activeDate : ""}>{day.dayNumber}</strong>
+              </button>
             ))}
           </div>
 
           <div className={styles.calendarBody}>
-            <div className={styles.timeAxis}>
-              {Array.from({ length: 12 }, (_, index) => (
-                <span key={index}>{String(index + 7).padStart(2, "0")}:00</span>
-              ))}
-            </div>
-            <div className={styles.daysGrid}>
-              {days.map((day, dayIndex) => (
-                <div className={styles.dayColumn} key={day.date}>
-                  {dayIndex === 2 ? <span className={styles.nowLine} /> : null}
-                  {weekEvents
-                    .filter((event) => event.day === dayIndex)
-                    .map((event) => {
-                      const isHidden =
-                        normalizedQuery.length > 0 &&
-                        !`${event.title} ${event.subtitle}`.toLowerCase().includes(normalizedQuery);
-
-                      return (
-                        <article
-                          className={`${styles.eventCard} ${styles[event.tone]} ${isHidden ? styles.eventHidden : ""}`}
-                          key={`${event.day}-${event.start}-${event.title}`}
-                          style={{
-                            height: `${Math.max(62, (event.end - event.start) * hourHeight - 10)}px`,
-                            top: `${(event.start - 7) * hourHeight + 8}px`,
-                          }}
-                        >
-                          <span className={styles.eventIcon}>
-                            <AppIcon name={event.icon} />
-                          </span>
-                          <div>
-                            <span className={styles.eventTime}>
-                              {formatTime(event.start)} - {formatTime(event.end)}
-                            </span>
-                            <h3>{event.title}</h3>
-                            <p>{event.subtitle}</p>
-                          </div>
-                        </article>
-                      );
-                    })}
-                </div>
-              ))}
+            <div
+              className={styles.daysGrid}
+              style={{ gridTemplateColumns: `repeat(${visibleDays.length}, minmax(0, 1fr))` }}
+            >
+              {visibleDays.map((day) => {
+                const dayTasks = visibleTasksFor(day.dateKey);
+                return (
+                  <div className={styles.dayColumn} key={day.dateKey}>
+                    {loading ? (
+                      <p className={styles.emptyDay}>Loading...</p>
+                    ) : dayTasks.length === 0 ? (
+                      <p className={styles.emptyDay}>No tasks this week yet</p>
+                    ) : (
+                      dayTasks.map((task) => {
+                        const isHidden = !taskMatchesSearch(task);
+                        const tone = toneForTask(task);
+                        const completed = task.status === "completed";
+                        return (
+                          <article
+                            className={`${styles.eventCard} ${styles[tone]} ${isHidden ? styles.eventHidden : ""} ${
+                              completed ? styles.eventDone : ""
+                            }`}
+                            key={task.id}
+                          >
+                            <button
+                              aria-label={completed ? "Mark incomplete" : "Mark complete"}
+                              className={styles.eventIcon}
+                              onClick={() => void completeTask(task.id)}
+                              type="button"
+                            >
+                              <AppIcon name={completed ? "check-square" : iconForTask(task)} />
+                            </button>
+                            <div>
+                              <span className={styles.eventTime}>
+                                {task.scheduled_time || originLabel(task.origin)}
+                              </span>
+                              <h3>{task.title}</h3>
+                              {task.subtitle ? <p>{task.subtitle}</p> : null}
+                            </div>
+                          </article>
+                        );
+                      })
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -240,78 +407,128 @@ export default function DashboardSchedulePage() {
           <article className={`${styles.railCard} ${styles.notesCard}`}>
             <header className={styles.railHeader}>
               <h2>
-                Today <span>· Wed, 15 May</span>
+                Today <span>· {todayLabel}</span>
               </h2>
-              <button type="button">View day</button>
+              <button
+                onClick={() => {
+                  setSelectedDayKey(todayKey);
+                  setView("Day");
+                }}
+                type="button"
+              >
+                View day
+              </button>
             </header>
 
             <div className={styles.todayList}>
-              {todayItems.map((item) => (
-                <div className={styles.todayItem} key={item.time}>
-                  <span className={`${styles.todayDot} ${styles[item.tone]}`} />
-                  <span className={styles.todayTime}>{item.time}</span>
-                  <span className={styles.todayIcon}>
-                    <AppIcon name={item.icon} />
-                  </span>
-                  <div>
-                    <h3>{item.title}</h3>
-                    <p>{item.subtitle}</p>
-                  </div>
-                  <span className={`${styles.todayTag} ${styles[item.tone]}`}>{item.tag}</span>
-                </div>
-              ))}
+              {loading ? (
+                <p className={styles.emptyDay}>Loading...</p>
+              ) : (hideCompleted ? todayTasks.filter((task) => task.status !== "completed") : todayTasks).length === 0 ? (
+                <p className={styles.emptyDay}>No tasks this week yet</p>
+              ) : (
+                (hideCompleted ? todayTasks.filter((task) => task.status !== "completed") : todayTasks).map((task) => {
+                  const tone = toneForTask(task);
+                  const completed = task.status === "completed";
+                  return (
+                    <div className={styles.todayItem} key={task.id}>
+                      <button
+                        aria-label={completed ? "Mark incomplete" : "Mark complete"}
+                        className={`${styles.todayDot} ${styles[tone]} ${completed ? styles.todayDotDone : ""}`}
+                        onClick={() => void completeTask(task.id)}
+                        type="button"
+                      />
+                      <span className={styles.todayTime}>{task.scheduled_time || "--:--"}</span>
+                      <span className={styles.todayIcon}>
+                        <AppIcon name={iconForTask(task)} />
+                      </span>
+                      <div>
+                        <h3>{task.title}</h3>
+                        <p>{task.subtitle || originLabel(task.origin)}</p>
+                      </div>
+                      <span className={`${styles.todayTag} ${styles[tone]}`}>{completed ? "Done" : originLabel(task.origin)}</span>
+                    </div>
+                  );
+                })
+              )}
             </div>
 
-            <button className={styles.addTaskButton} type="button">
-              <AppIcon name="plus" />
-              Add task
-            </button>
+            {showTodayAddForm ? (
+              <form
+                className={styles.railAddForm}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void submitTodayAddForm();
+                }}
+              >
+                <input
+                  autoFocus
+                  onChange={(event) => setTodayAddTitle(event.target.value)}
+                  placeholder="Task title"
+                  type="text"
+                  value={todayAddTitle}
+                />
+                <div>
+                  <button className={styles.primaryButton} type="submit">
+                    Save
+                  </button>
+                  <button type="button" onClick={() => setShowTodayAddForm(false)}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                className={styles.addTaskButton}
+                disabled={!canAddTasks}
+                onClick={() => setShowTodayAddForm(true)}
+                title={canAddTasks ? undefined : userId ? "Create a project first" : "Sign in to add tasks"}
+                type="button"
+              >
+                <AppIcon name="plus" />
+                Add task
+              </button>
+            )}
           </article>
 
           <article className={styles.railCard}>
             <header className={styles.railHeader}>
-              <h2>Upcoming deadlines</h2>
-              <button type="button">View all</button>
+              <h2>This week</h2>
             </header>
             <div className={styles.deadlineList}>
-              {deadlines.map((deadline) => (
-                <div className={styles.deadlineItem} key={deadline.title}>
-                  <span>
-                    <AppIcon name={deadline.icon} />
-                  </span>
-                  <div>
-                    <h3>{deadline.title}</h3>
-                    <p>{deadline.subtitle}</p>
-                  </div>
-                  <strong>{deadline.date}</strong>
+              <div className={styles.deadlineItem}>
+                <span>
+                  <AppIcon name="calendar" />
+                </span>
+                <div>
+                  <h3>Planned</h3>
+                  <p>Tasks scheduled this week</p>
                 </div>
-              ))}
-            </div>
-          </article>
-
-          <article className={styles.railCard}>
-            <header className={styles.railHeader}>
-              <h2>Notes for today</h2>
-              <button type="button">
-                <AppIcon name="plus" />
-                New note
-              </button>
-            </header>
-            <div className={styles.notesList}>
-              {notes.map((note) => (
-                <div className={styles.noteItem} key={note.text}>
-                  <p>{note.text}</p>
-                  <span>
-                    {note.time}
-                    <i className={styles[note.dot]} />
-                  </span>
+                <strong>{totalWeek}</strong>
+              </div>
+              <div className={styles.deadlineItem}>
+                <span>
+                  <AppIcon name="check-square" />
+                </span>
+                <div>
+                  <h3>Completed</h3>
+                  <p>Marked done this week</p>
                 </div>
-              ))}
+                <strong>{doneWeek}</strong>
+              </div>
+              <div className={styles.deadlineItem}>
+                <span>
+                  <AppIcon name="list" />
+                </span>
+                <div>
+                  <h3>Remaining</h3>
+                  <p>Still pending this week</p>
+                </div>
+                <strong>{totalWeek - doneWeek}</strong>
+              </div>
             </div>
           </article>
         </aside>
       </div>
-
     </div>
   );
 }

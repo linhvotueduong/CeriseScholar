@@ -6,6 +6,7 @@ import { callOpenRouterChat, OpenRouterError } from "@/lib/server/openrouter";
 import { resolveAiCredentials } from "@/lib/server/aiCredentials";
 import type { AiLane } from "@/lib/server/aiCredentials";
 import { BYOK_DECLINED_MESSAGE, isByokDeclinedStatus } from "@/lib/server/aiErrors";
+import { checkAiGuardrailsBeforeRequest } from "@/lib/server/aiGuardrails";
 import { getMonthlyDefaultLaneUsage, recordAiUsage } from "@/lib/server/aiUsage";
 import { INCLUDED_MONTHLY_ALLOWANCE, allowanceExceeded } from "@/lib/ai/allowance";
 
@@ -333,6 +334,11 @@ CITATION RULES:
     const { apiKey, models } = credentials;
     lane = credentials.lane;
 
+    const guardrailCheck = await checkAiGuardrailsBeforeRequest(supabase, user.id, lane, models);
+    if (!guardrailCheck.allowed) {
+      return NextResponse.json({ error: guardrailCheck.reason }, { status: 429 });
+    }
+
     // Default-lane fairness cap (Phase 2). BYOK never enforces this — it's the
     // user's own key and bill, so `enforceAllowance` is false on that lane.
     if (credentials.enforceAllowance) {
@@ -340,7 +346,7 @@ CITATION RULES:
       if (allowanceExceeded(used, INCLUDED_MONTHLY_ALLOWANCE)) {
         return NextResponse.json(
           {
-            error: `You've used this month's included AI (${INCLUDED_MONTHLY_ALLOWANCE} requests). Connect your own key in Settings → AI for unlimited — it takes about 2 minutes.`,
+            error: `This month's Cerise test allowance has been used (${INCLUDED_MONTHLY_ALLOWANCE} requests). Connect an OpenRouter key in Settings -> AI, then add OpenRouter credit for fuller usage.`,
           },
           { status: 429 }
         );
