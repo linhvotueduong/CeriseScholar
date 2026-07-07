@@ -21,9 +21,25 @@ type KeyStatus = {
   preferredModel?: string | null;
 };
 
+// Shape of GET /api/ai/usage (docs/ai-usage-card-spec.md §Data contract) — only the
+// fields this page renders are kept; `lane` is read from the key-status fetch instead
+// since it decides which card renders (connected vs not).
+type UsageStatus = {
+  used: number;
+  usedThisMonthTotal: number;
+  allowance: number | null;
+};
+
+// Meter tone thresholds/colors (docs/ai-usage-card-spec.md): amber once usage exists,
+// red-ish once the allowance is fully used.
+const METER_AMBER = "#b6844e";
+const METER_RED = "#c85f56";
+const NEAR_LIMIT_THRESHOLD = 0.8;
+
 export default function AiSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<KeyStatus>({ connected: false });
+  const [usage, setUsage] = useState<UsageStatus | null>(null);
   const [savingModel, setSavingModel] = useState(false);
   const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -38,10 +54,31 @@ export default function AiSettingsPage() {
   // (e.g. navigating away and back). The manual button is unaffected.
   const [hasAutoOpenedGuide, setHasAutoOpenedGuide] = useState(false);
 
+  // Usage meter fetch — separate from key status since a failure here should never
+  // block the "Included"/"Your own key" view from rendering. Kept out of the
+  // try/catch below so a usage-endpoint hiccup can't mark the key-status fetch failed.
+  const loadUsage = useCallback(async () => {
+    try {
+      const res = await fetch("/api/ai/usage", { cache: "no-store" });
+      const data = (await res.json().catch(() => ({}))) as Partial<UsageStatus> & { error?: string };
+      if (res.ok) {
+        setUsage({
+          used: typeof data.used === "number" ? data.used : 0,
+          usedThisMonthTotal: typeof data.usedThisMonthTotal === "number" ? data.usedThisMonthTotal : 0,
+          allowance: typeof data.allowance === "number" ? data.allowance : null,
+        });
+      }
+    } catch {
+      // Leave usage unset — the meter just won't render until the next refresh works.
+    }
+  }, []);
+
   // Pulled out of the mount effect so a successful connect from the manual
   // setup-guide view can refresh this page's key status afterwards, without
-  // waiting for a full page reload.
+  // waiting for a full page reload. Also refreshes the usage meter (GET
+  // /api/ai/usage) on every call so the two numbers never drift apart.
   const loadKeyStatus = useCallback(async (): Promise<KeyStatus | null> => {
+    void loadUsage();
     try {
       const res = await fetch("/api/ai/key", { cache: "no-store" });
       const data = (await res.json().catch(() => ({}))) as KeyStatus & { error?: string };
@@ -54,7 +91,7 @@ export default function AiSettingsPage() {
       // Leave the "Included" view — the card below explains the default lane.
       return null;
     }
-  }, []);
+  }, [loadUsage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +167,13 @@ export default function AiSettingsPage() {
     }
   }
 
+  // Meter math for the "Included — free" card — fraction of the allowance used
+  // (capped at 1 for the bar width), and whether the near-limit CTA should show.
+  const usageFraction =
+    usage && usage.allowance ? Math.min(1, usage.used / usage.allowance) : 0;
+  const usageNearLimit = usageFraction >= NEAR_LIMIT_THRESHOLD;
+  const usageAtLimit = usageFraction >= 1;
+
   return (
     <>
       <SettingsPanel
@@ -165,6 +209,12 @@ export default function AiSettingsPage() {
                   <p className="mt-3 inline-block rounded-full bg-[#f6efe4] px-3 py-1 font-mono text-sm font-bold text-[#8f6132]">
                     sk-or-••••{status.last4}
                   </p>
+                  {usage && (
+                    <p className="mt-2 text-sm font-semibold text-[#4a4238]">
+                      <span className="font-mono font-bold text-[#17120d]">{usage.usedThisMonthTotal}</span> AI
+                      requests this month · unlimited
+                    </p>
+                  )}
 
                   <div className="mt-4 max-w-md">
                     <label className="text-sm font-bold text-[#17120d]" htmlFor="preferred-model">
@@ -239,6 +289,29 @@ export default function AiSettingsPage() {
                     AI is included with your account at no cost, with a fair-use monthly allowance so it
                     stays free for everyone. No setup needed — it&apos;s already working.
                   </p>
+                  {usage && usage.allowance !== null && (
+                    <div className="mt-4 max-w-md">
+                      <p className="text-sm font-semibold text-[#4a4238]">
+                        <span className="font-mono font-bold text-[#17120d]">{usage.used}</span> of{" "}
+                        <span className="font-mono font-bold text-[#17120d]">{usage.allowance}</span> requests
+                        this month
+                      </p>
+                      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#e8d8c6]">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${usageFraction * 100}%`,
+                            backgroundColor: usageAtLimit ? METER_RED : METER_AMBER,
+                          }}
+                        />
+                      </div>
+                      {usageNearLimit && (
+                        <p className="mt-2 text-xs font-semibold text-[#8f6132]">
+                          Connect your own key for unlimited — takes 2 minutes.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
 

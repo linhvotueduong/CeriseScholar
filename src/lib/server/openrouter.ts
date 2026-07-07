@@ -14,13 +14,31 @@ type OpenRouterChatOptions = {
 };
 
 type OpenRouterResponse = {
+  model?: string;
   choices?: Array<{
     message?: { content?: string };
   }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+  };
   error?: {
     message?: string;
     code?: string | number;
   };
+};
+
+export type OpenRouterUsage = {
+  inputTokens: number;
+  outputTokens: number;
+};
+
+export type OpenRouterChatResult = {
+  content: string;
+  // The model that actually served the request — with a `models` fallback
+  // array, this can differ from `models[0]` when the primary was busy/down.
+  servedModel: string;
+  usage: OpenRouterUsage;
 };
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -44,6 +62,13 @@ function extractOpenRouterContent(data: OpenRouterResponse | null): string {
   return data?.choices?.[0]?.message?.content || "";
 }
 
+function extractOpenRouterUsage(data: OpenRouterResponse | null): OpenRouterUsage {
+  return {
+    inputTokens: data?.usage?.prompt_tokens || 0,
+    outputTokens: data?.usage?.completion_tokens || 0,
+  };
+}
+
 export async function callOpenRouterChat({
   messages,
   models,
@@ -52,7 +77,7 @@ export async function callOpenRouterChat({
   timeoutMs = 55000,
   temperature = 0.3,
   maxTokens = 700,
-}: OpenRouterChatOptions): Promise<string> {
+}: OpenRouterChatOptions): Promise<OpenRouterChatResult> {
   if (!apiKey) {
     throw new OpenRouterError("AI not configured", 500);
   }
@@ -127,7 +152,11 @@ export async function callOpenRouterChat({
       throw new OpenRouterError("AI returned an empty response. Please try again.", 502);
     }
 
-    return content;
+    return {
+      content,
+      servedModel: data?.model || "",
+      usage: extractOpenRouterUsage(data),
+    };
   } catch (err) {
     if (err instanceof OpenRouterError) throw err;
     if (err instanceof Error && err.name === "AbortError") {

@@ -6,6 +6,8 @@ import { callOpenRouterChat, OpenRouterError } from "@/lib/server/openrouter";
 import { resolveAiCredentials } from "@/lib/server/aiCredentials";
 import { BYOK_DECLINED_MESSAGE, isByokDeclinedStatus } from "@/lib/server/aiErrors";
 import type { AiLane } from "@/lib/server/aiCredentials";
+import { getMonthlyDefaultLaneUsage, recordAiUsage } from "@/lib/server/aiUsage";
+import { INCLUDED_MONTHLY_ALLOWANCE, allowanceExceeded } from "@/lib/ai/allowance";
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -67,6 +69,20 @@ export async function POST(req: NextRequest) {
     const { apiKey, models } = credentials;
     lane = credentials.lane;
 
+    // Default-lane fairness cap (Phase 2). BYOK never enforces this — it's the
+    // user's own key and bill, so `enforceAllowance` is false on that lane.
+    if (credentials.enforceAllowance) {
+      const used = await getMonthlyDefaultLaneUsage(supabase, user.id, new Date());
+      if (allowanceExceeded(used, INCLUDED_MONTHLY_ALLOWANCE)) {
+        return NextResponse.json(
+          {
+            error: `You've used this month's included AI (${INCLUDED_MONTHLY_ALLOWANCE} requests). Connect your own key in Settings → AI for unlimited — it takes about 2 minutes.`,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     let systemPrompt = "";
 
     if (task === "paper_analysis" && paper && mainAnswer) {
@@ -87,13 +103,21 @@ Be specific about the paper's methodology and findings. Do not force a support c
       ];
 
       try {
-        const content = await callOpenRouterChat({
+        const { content, servedModel, usage } = await callOpenRouterChat({
           route: "paper_analysis",
           messages: allMessages,
           models,
           apiKey,
           timeoutMs: 25000,
           maxTokens: 500,
+        });
+        void recordAiUsage(supabase, {
+          userId: user.id,
+          projectId: null,
+          feature: "paper_analysis",
+          lane,
+          servedModel,
+          usage,
         });
         return NextResponse.json({ content });
       } catch (err) {
@@ -121,13 +145,21 @@ PDF text from first pages:
 ${(pdfText || "").slice(0, 3000)}`;
 
       try {
-        const content = await callOpenRouterChat({
+        const { content, servedModel, usage } = await callOpenRouterChat({
           route: "generate_apa",
           messages: [{ role: "system", content: "You generate APA citations. Return ONLY the citation string." }, { role: "user", content: apaPrompt }],
           models,
           apiKey,
           timeoutMs: 20000,
           maxTokens: 220,
+        });
+        void recordAiUsage(supabase, {
+          userId: user.id,
+          projectId: null,
+          feature: "generate_apa",
+          lane,
+          servedModel,
+          usage,
         });
         const apa = content.trim().replace(/^["']|["']$/g, "");
         return NextResponse.json({ apa });
@@ -146,7 +178,7 @@ ${(pdfText || "").slice(0, 3000)}`;
         "If the excerpt does not contain enough information to answer, say so plainly instead of guessing.";
 
       try {
-        const result = await callOpenRouterChat({
+        const { content: result, servedModel, usage } = await callOpenRouterChat({
           route: "pdf_chat",
           messages: [
             { role: "system", content: pdfChatSystemPrompt },
@@ -159,6 +191,14 @@ ${(pdfText || "").slice(0, 3000)}`;
           apiKey,
           timeoutMs: 30000,
           maxTokens: 700,
+        });
+        void recordAiUsage(supabase, {
+          userId: user.id,
+          projectId: null,
+          feature: "pdf_chat",
+          lane,
+          servedModel,
+          usage,
         });
         return NextResponse.json({ result });
       } catch (err) {
@@ -197,13 +237,21 @@ ${(pdfText || "").slice(0, 3000)}`;
 
     const allMessages = [{ role: "system", content: systemPrompt }, ...messages];
 
-    const content = await callOpenRouterChat({
+    const { content, servedModel, usage } = await callOpenRouterChat({
       route: task || "generic_ai",
       messages: allMessages,
       models,
       apiKey,
       timeoutMs: task === "learning_coach" ? 25000 : 22000,
       maxTokens: task === "learning_coach" ? 700 : 500,
+    });
+    void recordAiUsage(supabase, {
+      userId: user.id,
+      projectId: null,
+      feature: task || "generic",
+      lane,
+      servedModel,
+      usage,
     });
     return NextResponse.json({ content });
   } catch (err) {

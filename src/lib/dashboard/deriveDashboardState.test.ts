@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildRecentChanges, buildGreeting } from "./deriveDashboardState";
-import type { DashboardActivityEvent } from "./deriveDashboardState";
+import { buildRecentChanges, buildGreeting, deriveDashboardState } from "./deriveDashboardState";
+import type { DashboardActivityEvent, DashboardSourceData } from "./deriveDashboardState";
+import { INCLUDED_MONTHLY_ALLOWANCE } from "@/lib/ai/allowance";
+import type { Project } from "@/types/project";
 
 const ev = (event_type: string, iso: string, id = "e"): DashboardActivityEvent => ({
   id,
@@ -13,6 +15,63 @@ const ev = (event_type: string, iso: string, id = "e"): DashboardActivityEvent =
   created_at: iso,
 });
 const NOW = Date.parse("2026-06-23T12:00:00Z");
+
+// Minimal fixtures for the aiUsage derivation tests below — deriveDashboardState needs
+// a full Project + DashboardSourceData, but the aiUsage field only reads
+// aiKeyLast4/aiUsageCountThisMonth, so everything else can stay blank/neutral.
+const PROJECT: Project = {
+  id: "p1",
+  user_id: "u1",
+  name: "Test project",
+  description: "",
+  color: "#000000",
+  created_at: "2026-01-01T00:00:00.000Z",
+  updated_at: "2026-01-01T00:00:00.000Z",
+};
+const NEUTRAL_LOCAL_SETUP = { agentReady: false, ollamaReady: false, safetyReady: false };
+function blankSource(overrides: Partial<DashboardSourceData> = {}): DashboardSourceData {
+  return {
+    pdfs: [],
+    highlights: [],
+    annotations: [],
+    literatureEntries: [],
+    paperSections: [],
+    metaAnalysis: null,
+    codes: [],
+    courseModules: [],
+    courseVideos: [],
+    courseProgress: [],
+    courseNotes: [],
+    tasks: [],
+    activityEvents: [],
+    ...overrides,
+  };
+}
+
+test("aiUsage defaults to the Included lane + shared allowance when no key is connected (matches demo/fixture fallback)", () => {
+  const derived = deriveDashboardState(PROJECT, blankSource(), NEUTRAL_LOCAL_SETUP, "2026-06-23");
+  assert.deepEqual(derived.aiUsage, {
+    lane: "default",
+    usedThisMonth: 0,
+    allowance: INCLUDED_MONTHLY_ALLOWANCE,
+    keyLast4: null,
+  });
+});
+
+test("aiUsage switches to the byok lane (unlimited, no allowance) once a key is connected", () => {
+  const derived = deriveDashboardState(
+    PROJECT,
+    blankSource({ aiKeyLast4: "9f3a", aiUsageCountThisMonth: 42 }),
+    NEUTRAL_LOCAL_SETUP,
+    "2026-06-23"
+  );
+  assert.deepEqual(derived.aiUsage, {
+    lane: "byok",
+    usedThisMonth: 42,
+    allowance: null,
+    keyLast4: "9f3a",
+  });
+});
 
 test("Activity Log surfaces the real event amid 100 project_opened rows (not empty/fake)", () => {
   const events: DashboardActivityEvent[] = [

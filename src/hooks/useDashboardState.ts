@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { logDashboardActivity } from "@/lib/dashboard/activity";
+import { monthStartUtcIso } from "@/lib/ai/allowance";
 import {
   deriveDashboardState,
   type DashboardDerivedState,
@@ -160,8 +161,20 @@ export function useDashboardState({
       );
       const pdfIds = pdfs.map((pdf) => String(pdf.id)).filter(Boolean);
 
-      const [highlights, annotations, literatureEntries, paperSections, metaAnalysisRows, codes, courseModules, courseVideos, courseProgress, courseNotes] =
-        await Promise.all([
+      const [
+        highlights,
+        annotations,
+        literatureEntries,
+        paperSections,
+        metaAnalysisRows,
+        codes,
+        courseModules,
+        courseVideos,
+        courseProgress,
+        courseNotes,
+        aiKeySettingsRow,
+        aiUsageCountResult,
+      ] = await Promise.all([
           pdfIds.length
             ? safeSelect<Array<Record<string, unknown>>>(
                 supabase.from("highlights").select("id, pdf_id, code_id, created_at").in("pdf_id", pdfIds),
@@ -210,7 +223,22 @@ export function useDashboardState({
             supabase.from("course_notes").select("id, video_id, updated_at").eq("user_id", userId),
             []
           ),
+          // AI usage-meter feed (docs/ai-usage-card-spec.md §Data contract) — both
+          // RLS-owner-safe: `key_last4` only (never the ciphertext) via maybeSingle,
+          // and a head-only count of this month's usage events (no rows fetched).
+          safeSelect<{ key_last4: string | null } | null>(
+            supabase.from("user_ai_settings").select("key_last4").eq("user_id", userId).maybeSingle(),
+            null
+          ),
+          supabase
+            .from("ai_usage_events")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .gte("created_at", monthStartUtcIso(new Date())),
         ]);
+
+      const aiKeyLast4 = aiKeySettingsRow?.key_last4 ?? null;
+      const aiUsageCountThisMonth = aiUsageCountResult.error ? 0 : aiUsageCountResult.count ?? 0;
 
       const existingTasks = await safeSelect<DashboardTask[]>(
         supabase
@@ -236,6 +264,8 @@ export function useDashboardState({
         courseVideos,
         courseProgress,
         courseNotes,
+        aiKeyLast4,
+        aiUsageCountThisMonth,
       };
 
       // Load Today's Target settings first — pace drives the schedule's intensity.

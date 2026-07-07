@@ -6,6 +6,8 @@ import { callOpenRouterChat, OpenRouterError } from "@/lib/server/openrouter";
 import { resolveAiCredentials } from "@/lib/server/aiCredentials";
 import type { AiLane } from "@/lib/server/aiCredentials";
 import { BYOK_DECLINED_MESSAGE, isByokDeclinedStatus } from "@/lib/server/aiErrors";
+import { getMonthlyDefaultLaneUsage, recordAiUsage } from "@/lib/server/aiUsage";
+import { INCLUDED_MONTHLY_ALLOWANCE, allowanceExceeded } from "@/lib/ai/allowance";
 
 const OPENALEX_TIMEOUT_MS = 8000;
 const AI_TIMEOUT_MS = 25000;
@@ -331,14 +333,36 @@ CITATION RULES:
     const { apiKey, models } = credentials;
     lane = credentials.lane;
 
+    // Default-lane fairness cap (Phase 2). BYOK never enforces this — it's the
+    // user's own key and bill, so `enforceAllowance` is false on that lane.
+    if (credentials.enforceAllowance) {
+      const used = await getMonthlyDefaultLaneUsage(supabase, user.id, new Date());
+      if (allowanceExceeded(used, INCLUDED_MONTHLY_ALLOWANCE)) {
+        return NextResponse.json(
+          {
+            error: `You've used this month's included AI (${INCLUDED_MONTHLY_ALLOWANCE} requests). Connect your own key in Settings → AI for unlimited — it takes about 2 minutes.`,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     try {
-      const answer = await callOpenRouterChat({
+      const { content: answer, servedModel, usage } = await callOpenRouterChat({
         route: "research",
         messages,
         models,
         apiKey,
         timeoutMs: AI_TIMEOUT_MS,
         maxTokens: answerMode === "research_journey" ? 1700 : 2200,
+      });
+      void recordAiUsage(supabase, {
+        userId: user.id,
+        projectId: projectId ?? null,
+        feature: "research",
+        lane,
+        servedModel,
+        usage,
       });
       const cleanedAnswer = isResearchJourney ? cleanResearchJourneyAnswer(answer) : answer;
 

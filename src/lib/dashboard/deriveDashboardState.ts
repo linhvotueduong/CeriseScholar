@@ -22,6 +22,7 @@ import {
 } from "@/lib/dashboard/targetPace";
 import { computeResearchReadiness, isGenuineApa } from "@/lib/dashboard/researchReadiness";
 import { DEFAULT_CODES } from "@/types/code";
+import { INCLUDED_MONTHLY_ALLOWANCE } from "@/lib/ai/allowance";
 
 export type DashboardSectionId =
   | "meta-analysis"
@@ -95,6 +96,20 @@ export type DashboardSourceData = {
    * activityEvents when absent (e.g. demo).
    */
   activityFeed?: DashboardActivityEvent[];
+  /**
+   * Last 4 characters of the user's connected OpenRouter key (from
+   * `user_ai_settings.key_last4`), or null/undefined when no key is connected —
+   * drives `aiUsage.lane` (docs/ai-usage-card-spec.md §Data contract). Optional so
+   * demo/fixture source data (which never sets it) still derives the sane
+   * "default lane, no key" fallback.
+   */
+  aiKeyLast4?: string | null;
+  /**
+   * Count of this user's `ai_usage_events` rows since the start of the current UTC
+   * calendar month (any lane) — drives `aiUsage.usedThisMonth`. Optional for the
+   * same demo/fixture reason as `aiKeyLast4`.
+   */
+  aiUsageCountThisMonth?: number;
 };
 
 export type DashboardSectionData = {
@@ -147,6 +162,17 @@ export type DashboardDerivedState = {
     percent: number;
     summary: string;
     checks: Array<[string, boolean]>;
+  };
+  /**
+   * AI usage-meter data for the dashboard card (docs/ai-usage-card-spec.md
+   * §Data contract) — Codex repaints the card that currently reads `localSetup`
+   * to use this instead. `localSetup` stays populated during the transition.
+   */
+  aiUsage: {
+    lane: "default" | "byok";
+    usedThisMonth: number;
+    allowance: number | null;
+    keyLast4: string | null;
   };
   analytics: {
     weeklyActivity: number;
@@ -1189,6 +1215,19 @@ export function deriveDashboardState(
       at: Date.parse(event.created_at),
     })),
   });
+  // AI usage-meter data (docs/ai-usage-card-spec.md §Data contract). A connected key
+  // (aiKeyLast4 truthy) puts the user on the unlimited BYOK lane; otherwise they're on
+  // the Included/default lane with the shared monthly allowance. Both source fields are
+  // optional and absent on demo/fixture data, so this naturally falls back to
+  // { lane: "default", usedThisMonth: 0, allowance: INCLUDED_MONTHLY_ALLOWANCE, keyLast4: null }.
+  const aiUsageLane: "default" | "byok" = data.aiKeyLast4 ? "byok" : "default";
+  const aiUsage = {
+    lane: aiUsageLane,
+    usedThisMonth: data.aiUsageCountThisMonth ?? 0,
+    allowance: aiUsageLane === "default" ? INCLUDED_MONTHLY_ALLOWANCE : null,
+    keyLast4: data.aiKeyLast4 ?? null,
+  };
+
   const legacyFocus = computeResearchFocus({
     scores: sectionScores,
     codedRows,
@@ -1246,6 +1285,7 @@ export function deriveDashboardState(
       summary: readyCount === readyChecks.length ? "Local agent and folder access are connected." : "Finish local setup before private source-file workflows.",
       checks: readyChecks,
     },
+    aiUsage,
     analytics: {
       weeklyActivity,
       weeklyDelta,
