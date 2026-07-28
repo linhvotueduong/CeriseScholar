@@ -1208,6 +1208,7 @@ export default function ExperimentalStudio({ projectId, projectName }: Experimen
           }}
           onOpenChecks={() => setActiveTab("checks")}
           studio={packagedStudio}
+          studyDesign={studyDesign}
         />
       ) : null}
 

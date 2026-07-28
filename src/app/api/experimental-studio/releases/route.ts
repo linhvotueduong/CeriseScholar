@@ -14,6 +14,8 @@ import {
 } from "@/lib/research/experimentStudio";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
 import { createClient } from "@/lib/supabase/server";
+import { EMPTY_RESEARCH_PATH_DRAFT } from "@/lib/research/researchPathDraft";
+import { normalizeStudyDesignDocument } from "@/lib/research/studyDesign";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -106,7 +108,13 @@ export async function POST(request: NextRequest) {
 
   const raw: unknown = await request.json().catch(() => null);
   if (!raw || typeof raw !== "object") return noStoreJson({ error: "Invalid release request." }, { status: 400 });
-  const body = raw as { projectId?: unknown; releaseNotes?: unknown; studio?: unknown; review?: unknown };
+  const body = raw as {
+    projectId?: unknown;
+    releaseNotes?: unknown;
+    studio?: unknown;
+    review?: unknown;
+    studyDesign?: unknown;
+  };
   const projectId = typeof body.projectId === "string" ? body.projectId : "";
   if (!PROJECT_ID_PATTERN.test(projectId)) return noStoreJson({ error: "Invalid project." }, { status: 400 });
   const releaseNotes = typeof body.releaseNotes === "string"
@@ -125,6 +133,9 @@ export async function POST(request: NextRequest) {
     return noStoreJson({ error: "Complete the release review checklist first." }, { status: 400 });
   }
   const studio = normalizeExperimentStudioDocument(body.studio, projectId);
+  const studyDesign = body.studyDesign
+    ? normalizeStudyDesignDocument(body.studyDesign, projectId, EMPTY_RESEARCH_PATH_DRAFT)
+    : null;
   if (experimentStudioSpecSize(studio) > MAX_EXPERIMENT_SPEC_BYTES) {
     return noStoreJson({ error: "The study specification is too large." }, { status: 413 });
   }
@@ -156,6 +167,7 @@ export async function POST(request: NextRequest) {
         releaseNotes,
         studio,
         review,
+        studyDesign,
       });
     } catch (error) {
       return noStoreJson({ error: error instanceof Error ? error.message : "The release is invalid." }, { status: 400 });

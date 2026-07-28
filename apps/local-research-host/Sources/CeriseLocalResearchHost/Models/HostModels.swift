@@ -103,6 +103,7 @@ struct VerifiedHostBundle: Identifiable, Equatable {
     let runnerHTML: String
     let releaseJSON: Data
     let codebookJSON: Data
+    let analysisContractJSON: Data?
     let originalBundle: Data
 }
 

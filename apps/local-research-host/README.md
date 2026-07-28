@@ -12,6 +12,9 @@ stays locked until the local database and study folder pass preflight, available
 storage covers the collection plan, a pilot session is completed, and the
 researcher confirms the consent, withdrawal, recovery, device, condition, and
 data-separation rehearsals.
+Phase 8.0 adds an independently checksummed analysis contract to new immutable
+releases and exports it as `analysis-contract.json`. The contract contains
+planning and provenance metadata only, never participant responses.
 It verifies a `.cerisehost` bundle, starts a same-computer or trusted-LAN
 participant URL, stores structured checkpoints in local SQLite, and produces
 auditable research exports without uploading participant responses to Cerise

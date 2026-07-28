@@ -30,7 +30,10 @@ test("a frozen release has a reproducible SHA-256 integrity checksum", async () 
 
   assert.match(release.checksum, /^sha256:[a-f0-9]{64}$/);
   assert.equal(release.manifest.timingClaim, "browser-measured");
-  assert.equal(release.manifest.formatVersion, 4);
+  assert.equal(release.manifest.formatVersion, 5);
+  assert.equal(release.manifest.analysisContractSchemaVersion, 1);
+  assert.match(release.manifest.analysisContractChecksum ?? "", /^sha256:[a-f0-9]{64}$/);
+  assert.equal(release.manifest.analysisContract?.projectId, studio.projectId);
   assert.equal(release.manifest.timingDiagnostic, null);
   assert.equal(release.manifest.participantDataBoundary, "local-only");
   assert.equal(release.manifest.trialTableCount, 0);
@@ -71,6 +74,9 @@ test("loading Phase 6.1 releases preserves their original checksum and frozen va
   delete legacyManifest.containsSensitiveMedia;
   delete legacyManifest.audioCaptureBoundary;
   delete legacyManifest.videoCaptureBoundary;
+  delete legacyManifest.analysisContractSchemaVersion;
+  delete legacyManifest.analysisContractChecksum;
+  delete legacyManifest.analysisContract;
   const legacyPayload = {
     releaseId: current.releaseId,
     projectId: current.projectId,
@@ -111,6 +117,9 @@ test("loading Phase 6.2 releases does not add Phase 7.2 audio fields or alter th
   delete legacyManifest.containsSensitiveMedia;
   delete legacyManifest.audioCaptureBoundary;
   delete legacyManifest.videoCaptureBoundary;
+  delete legacyManifest.analysisContractSchemaVersion;
+  delete legacyManifest.analysisContractChecksum;
+  delete legacyManifest.analysisContract;
   const legacyPayload = {
     releaseId: current.releaseId,
     projectId: current.projectId,
@@ -150,6 +159,9 @@ test("loading Phase 7.2 releases does not add Phase 7.3 video fields or alter th
   legacyManifest.studySchemaVersion = 7;
   delete legacyManifest.videoResponseCount;
   delete legacyManifest.videoCaptureBoundary;
+  delete legacyManifest.analysisContractSchemaVersion;
+  delete legacyManifest.analysisContractChecksum;
+  delete legacyManifest.analysisContract;
   const legacyPayload = {
     releaseId: current.releaseId,
     projectId: current.projectId,
@@ -169,6 +181,41 @@ test("loading Phase 7.2 releases does not add Phase 7.3 video fields or alter th
   assert.equal(normalized.manifest.formatVersion, 3);
   assert.equal(normalized.manifest.videoResponseCount, undefined);
   assert.equal(normalized.manifest.videoCaptureBoundary, undefined);
+  assert.equal(await verifyExperimentRelease(normalized), true);
+});
+
+test("loading Phase 7.4 releases does not invent a Phase 8 analysis contract", async () => {
+  const current = await createExperimentRelease({
+    releaseId: "phase-7-4-release",
+    releaseNumber: 4,
+    createdAt: "2026-07-28T17:30:00.000Z",
+    releaseNotes: "Frozen before the analysis contract",
+    studio: createExperimentStudioDocument("project-1"),
+    review: createCompletedExperimentReleaseReview(),
+  });
+  const legacyManifest = { ...current.manifest } as Record<string, unknown>;
+  legacyManifest.formatVersion = 4;
+  delete legacyManifest.analysisContractSchemaVersion;
+  delete legacyManifest.analysisContractChecksum;
+  delete legacyManifest.analysisContract;
+  const legacyPayload = {
+    releaseId: current.releaseId,
+    projectId: current.projectId,
+    releaseNumber: current.releaseNumber,
+    createdAt: current.createdAt,
+    releaseNotes: current.releaseNotes,
+    manifest: legacyManifest,
+    studio: current.studio,
+  };
+  const legacyRelease = {
+    ...legacyPayload,
+    checksum: await sha256Checksum(legacyPayload),
+  };
+
+  const normalized = normalizeExperimentRelease(legacyRelease);
+  assert.ok(normalized);
+  assert.equal(normalized.manifest.formatVersion, 4);
+  assert.equal(normalized.manifest.analysisContract, undefined);
   assert.equal(await verifyExperimentRelease(normalized), true);
 });
 

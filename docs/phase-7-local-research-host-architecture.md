@@ -42,8 +42,8 @@ Tauri, a native Windows shell, or another reviewed host.
 
 ## Bundle contract
 
-- Current format: `cerise-local-research-host`, version 4.
-- Versions 1–3 remain importable.
+- Current format: `cerise-local-research-host`, version 5.
+- Versions 1–4 remain importable.
 - Maximum bundle size: 8 MB.
 - Current runner package version: 6. Versions 4 and 5 are retained only for
   compatible version 1 and 2 bundles.
@@ -53,8 +53,9 @@ Tauri, a native Windows shell, or another reviewed host.
   `/api/video`.
 - Data policy: local-only participant responses, SQLite storage, no cloud
   upload, a prepared media directory, and `localhost-only` audio/video
-  boundaries. Version 4 also freezes separate-mode exports and the native
-  preflight-and-rehearsal production gate.
+  boundaries. Versions 4 and 5 freeze separate-mode exports and the native
+  preflight-and-rehearsal production gate. Version 5 also binds the Phase 8
+  analysis-contract checksum and readiness summary into the codebook.
 - The release and codebook must agree on release ID, number, checksum, and the
   `browser-measured` timing claim.
 - The host recalculates the release checksum and then the whole-bundle checksum.
@@ -192,6 +193,7 @@ The local export package contains:
   recovery and audit, clearly separated from the analysis-ready folder;
 - immutable `release.json`;
 - `codebook.json`;
+- `analysis-contract.json` for version 5 bundles;
 - a README recording release and bundle checksums and the local-only data claim.
 
 The Storage view shows actual local database/assets/media size and a planning
@@ -241,8 +243,8 @@ research-data requirements.
 The native host provides `--self-test`, which checks:
 
 - valid bundle acceptance and tampered runner rejection;
-- version 1 structured, version 2 audio, version 3 video, and version 4 launch
-  policy contract verification;
+- version 1 structured, version 2 audio, version 3 video, version 4 launch
+  policy, and version 5 analysis-contract verification;
 - idempotent checkpoint handling;
 - bounded, same-origin audio-chunk ingestion;
 - bounded, same-origin video-chunk ingestion and finalization;

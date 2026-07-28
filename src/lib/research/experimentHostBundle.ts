@@ -12,7 +12,7 @@ import {
 import { collectExperimentVariables } from "./experimentStudio";
 
 export const EXPERIMENT_HOST_BUNDLE_FORMAT = "cerise-local-research-host" as const;
-export const EXPERIMENT_HOST_BUNDLE_VERSION = 4 as const;
+export const EXPERIMENT_HOST_BUNDLE_VERSION = 5 as const;
 export const MAX_EXPERIMENT_HOST_BUNDLE_BYTES = 8 * 1024 * 1024;
 export const MAX_EXPERIMENT_AUDIO_CHUNK_BYTES = 1024 * 1024;
 export const MAX_EXPERIMENT_VIDEO_CHUNK_BYTES = 2 * 1024 * 1024;
@@ -24,6 +24,13 @@ export interface ExperimentHostCodebook {
   releaseNumber: number;
   releaseChecksum: string;
   timingClaim: "browser-measured";
+  analysisContract: {
+    schemaVersion: number;
+    checksum: string;
+    readinessStatus: "ready" | "needs-planning";
+    warningCount: number;
+    researchQuestionIds: string[];
+  };
   variables: ReturnType<typeof collectExperimentVariables>;
   trialTables: Array<{
     id: string;
@@ -103,11 +110,23 @@ function bundleFilename(title: string, releaseNumber: number): string {
 }
 
 function hostCodebook(release: ExperimentRelease): ExperimentHostCodebook {
+  const analysisContract = release.manifest.analysisContract;
+  const analysisContractChecksum = release.manifest.analysisContractChecksum;
+  if (!analysisContract || !analysisContractChecksum) {
+    throw new Error("A Phase 8 analysis contract is required for new Local Research Host bundles.");
+  }
   return {
     releaseId: release.releaseId,
     releaseNumber: release.releaseNumber,
     releaseChecksum: release.checksum,
     timingClaim: "browser-measured",
+    analysisContract: {
+      schemaVersion: analysisContract.schemaVersion,
+      checksum: analysisContractChecksum,
+      readinessStatus: analysisContract.readiness.status,
+      warningCount: analysisContract.readiness.warningCount,
+      researchQuestionIds: analysisContract.researchQuestions.map((question) => question.id),
+    },
     variables: collectExperimentVariables(release.studio),
     trialTables: release.studio.trialTables.map((table) => ({
       id: table.id,
@@ -257,10 +276,25 @@ export async function verifyExperimentHostBundle(value: unknown): Promise<Experi
     || value.codebook.releaseNumber !== release.releaseNumber
     || value.codebook.releaseChecksum !== release.checksum
     || value.codebook.timingClaim !== "browser-measured"
+    || !isRecord(value.codebook.analysisContract)
     || !Array.isArray(value.codebook.variables)
     || !Array.isArray(value.codebook.trialTables)
     || !Array.isArray(value.codebook.audioResponses)
     || !Array.isArray(value.codebook.videoResponses)
+  ) return null;
+  const analysisContract = release.manifest.analysisContract;
+  if (
+    !analysisContract
+    || value.codebook.analysisContract.schemaVersion !== analysisContract.schemaVersion
+    || value.codebook.analysisContract.checksum !== release.manifest.analysisContractChecksum
+    || value.codebook.analysisContract.readinessStatus !== analysisContract.readiness.status
+    || value.codebook.analysisContract.warningCount !== analysisContract.readiness.warningCount
+    || !Array.isArray(value.codebook.analysisContract.researchQuestionIds)
+    || value.codebook.analysisContract.researchQuestionIds.length !== analysisContract.researchQuestions.length
+    || value.codebook.analysisContract.researchQuestionIds.some((
+      id: unknown,
+      index: number,
+    ) => id !== analysisContract.researchQuestions[index]?.id)
   ) return null;
   const audioResponseCount = release.manifest.audioResponseCount ?? 0;
   const containsAudio = audioResponseCount > 0;

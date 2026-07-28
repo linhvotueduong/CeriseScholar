@@ -143,24 +143,80 @@ enum HostSelfTest {
 
     private static func verifyCurrentBundleContract() throws {
         let nonce = "fedcba9876543210"
+        let analysisContract: [String: Any] = [
+            "schemaVersion": 1,
+            "projectId": "project_phase_8_0",
+            "frozenAt": "2026-07-28T12:00:00Z",
+            "provenance": [
+                "studyDesignSchemaVersion": NSNull(),
+                "studyDesignUpdatedAt": NSNull(),
+                "experimentStudioSchemaVersion": 8,
+                "experimentStudioUpdatedAt": "2026-07-28T11:55:00Z",
+            ],
+            "design": [
+                "kind": "",
+                "goal": "",
+                "setting": "",
+                "targetPopulation": "",
+                "plannedSampleSize": "",
+                "alpha": "0.05",
+                "power": "0.80",
+            ],
+            "researchQuestions": [],
+            "variables": [],
+            "globalPlan": [
+                "unitOfAnalysis": "unspecified",
+                "missingDataStrategy": "",
+                "exclusionRules": [],
+                "transformations": [],
+                "multiplicityStrategy": "",
+                "sensitivityAnalyses": [],
+            ],
+            "dataAccessDeclaration": "not-declared",
+            "readiness": [
+                "status": "needs-planning",
+                "warningCount": 2,
+                "issues": [
+                    [
+                        "id": "analysis-no-research-questions",
+                        "severity": "warning",
+                        "scope": "contract",
+                        "message": "No research question was frozen into this release.",
+                    ],
+                    [
+                        "id": "analysis-no-variables",
+                        "severity": "warning",
+                        "scope": "contract",
+                        "message": "No participant-response variable was frozen into this release.",
+                    ],
+                ],
+            ],
+        ]
+        guard let analysisContractChecksum = HostBundleVerifier.checksum(for: analysisContract) else {
+            throw Failure(message: "The Phase 8 analysis-contract checksum could not be created.")
+        }
         var release: [String: Any] = [
-            "releaseId": "release_phase_7_4",
-            "projectId": "project_phase_7_4",
-            "releaseNumber": 4,
+            "releaseId": "release_phase_8_0",
+            "projectId": "project_phase_8_0",
+            "releaseNumber": 5,
             "studio": [
-                "title": "Phase 7.4 launch gate",
+                "title": "Phase 8 analysis contract",
                 "blocks": [],
             ],
             "manifest": [
+                "formatVersion": 5,
                 "audioResponseCount": 0,
                 "audioCaptureBoundary": NSNull(),
                 "videoResponseCount": 0,
                 "videoCaptureBoundary": NSNull(),
                 "containsSensitiveMedia": false,
+                "analysisContractSchemaVersion": 1,
+                "analysisContractChecksum": analysisContractChecksum,
+                "analysisContract": analysisContract,
             ],
         ]
         guard let releaseChecksum = HostBundleVerifier.checksum(for: release) else {
-            throw Failure(message: "The Phase 7.4 self-test release checksum could not be created.")
+            throw Failure(message: "The Phase 8 self-test release checksum could not be created.")
         }
         release["checksum"] = releaseChecksum
         let runnerHTML = """
@@ -172,16 +228,23 @@ enum HostSelfTest {
         <script nonce="\(nonce)">fetch('/api/checkpoints')</script>
         """
         let codebook: [String: Any] = [
-            "releaseId": "release_phase_7_4",
-            "releaseNumber": 4,
+            "releaseId": "release_phase_8_0",
+            "releaseNumber": 5,
             "releaseChecksum": releaseChecksum,
             "timingClaim": "browser-measured",
+            "analysisContract": [
+                "schemaVersion": 1,
+                "checksum": analysisContractChecksum,
+                "readinessStatus": "needs-planning",
+                "warningCount": 2,
+                "researchQuestionIds": [],
+            ],
             "audioResponses": [],
             "videoResponses": [],
         ]
         var bundle: [String: Any] = [
             "bundleFormat": "cerise-local-research-host",
-            "bundleVersion": 4,
+            "bundleVersion": 5,
             "createdAt": "2026-07-28T12:00:00Z",
             "executionMode": "production",
             "participantResponsesIncluded": false,
@@ -215,11 +278,12 @@ enum HostSelfTest {
         bundle["bundleChecksum"] = bundleChecksum
         let data = try JSONSerialization.data(withJSONObject: bundle, options: [.sortedKeys])
         let verified = try HostBundleVerifier.verify(data: data)
-        guard verified.id == "release_phase_7_4",
+        guard verified.id == "release_phase_8_0",
               verified.authoringMode == "production",
-              verified.releaseChecksum == releaseChecksum
+              verified.releaseChecksum == releaseChecksum,
+              verified.analysisContractJSON != nil
         else {
-            throw Failure(message: "The native host did not accept the Phase 7.4 bundle contract.")
+            throw Failure(message: "The native host did not accept the Phase 8 analysis contract.")
         }
     }
 
@@ -433,6 +497,7 @@ enum HostSelfTest {
         }
         let releaseJSON = Data(#"{"releaseId":"release_test_1"}"#.utf8)
         let codebookJSON = Data(#"{"variables":[]}"#.utf8)
+        let analysisContractJSON = Data(#"{"schemaVersion":1}"#.utf8)
         let bundle = VerifiedHostBundle(
             id: releaseId,
             projectId: "project_test_1",
@@ -452,6 +517,7 @@ enum HostSelfTest {
             runnerHTML: "<!doctype html>",
             releaseJSON: releaseJSON,
             codebookJSON: codebookJSON,
+            analysisContractJSON: analysisContractJSON,
             originalBundle: Data()
         )
         let workspace = ImportedStudyWorkspace(
@@ -485,11 +551,13 @@ enum HostSelfTest {
         let auditDatabase = package
             .appendingPathComponent("audit", isDirectory: true)
             .appendingPathComponent("all-responses.sqlite")
+        let analysisContract = package.appendingPathComponent("analysis-contract.json")
         guard productionCSV.contains("participant_production"),
               !productionCSV.contains("participant_1"),
               pilotCSV.contains("participant_1"),
               !pilotCSV.contains("participant_production"),
-              FileManager.default.fileExists(atPath: auditDatabase.path)
+              FileManager.default.fileExists(atPath: auditDatabase.path),
+              FileManager.default.fileExists(atPath: analysisContract.path)
         else {
             throw Failure(message: "The research package mixed pilot and production data.")
         }

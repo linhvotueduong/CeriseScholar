@@ -12,10 +12,17 @@ import {
   validateExperimentStudio,
   type ExperimentStudioDocument,
 } from "./experimentStudio";
+import {
+  ANALYSIS_CONTRACT_SCHEMA_VERSION,
+  createAnalysisContract,
+  normalizeAnalysisContract,
+  type AnalysisContract,
+} from "./analysisContract";
+import type { StudyDesignDocument } from "./studyDesign";
 
-export const EXPERIMENT_RELEASE_FORMAT_VERSION = 4 as const;
+export const EXPERIMENT_RELEASE_FORMAT_VERSION = 5 as const;
 export const MAX_EXPERIMENT_RELEASE_NOTES_LENGTH = 2_000;
-export type ExperimentReleaseFormatVersion = 1 | 2 | 3 | typeof EXPERIMENT_RELEASE_FORMAT_VERSION;
+export type ExperimentReleaseFormatVersion = 1 | 2 | 3 | 4 | typeof EXPERIMENT_RELEASE_FORMAT_VERSION;
 
 export type ExperimentReleaseValidationLevel = "blocking" | "warning" | "advisory";
 
@@ -65,6 +72,9 @@ export interface ExperimentReleaseManifest {
   containsSensitiveMedia?: boolean;
   audioCaptureBoundary?: "localhost-only" | null;
   videoCaptureBoundary?: "localhost-only" | null;
+  analysisContractSchemaVersion?: typeof ANALYSIS_CONTRACT_SCHEMA_VERSION;
+  analysisContractChecksum?: string;
+  analysisContract?: AnalysisContract;
   review: ExperimentReleaseReview;
   validationSummary: ExperimentReleaseValidationSummary;
   validationIssues: ExperimentReleaseValidationIssue[];
@@ -88,6 +98,7 @@ export interface CreateExperimentReleaseInput {
   releaseNotes: string;
   studio: ExperimentStudioDocument;
   review: ExperimentReleaseReviewAttestations;
+  studyDesign?: StudyDesignDocument | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -426,7 +437,11 @@ export async function sha256Checksum(value: unknown): Promise<string> {
   return `sha256:${hex}`;
 }
 
-export function experimentReleasePayload(input: CreateExperimentReleaseInput) {
+export function experimentReleasePayload(
+  input: CreateExperimentReleaseInput,
+  analysisContract: AnalysisContract,
+  analysisContractChecksum: string,
+) {
   const issues = collectExperimentReleaseValidation(input.studio);
   const audioResponseCount = input.studio.blocks.filter((block) => block.type === "audio-response").length;
   const videoResponseCount = input.studio.blocks.filter((block) => block.type === "video-response").length;
@@ -457,6 +472,9 @@ export function experimentReleasePayload(input: CreateExperimentReleaseInput) {
       containsSensitiveMedia: audioResponseCount > 0 || videoResponseCount > 0,
       audioCaptureBoundary: audioResponseCount > 0 ? "localhost-only" as const : null,
       videoCaptureBoundary: videoResponseCount > 0 ? "localhost-only" as const : null,
+      analysisContractSchemaVersion: ANALYSIS_CONTRACT_SCHEMA_VERSION,
+      analysisContractChecksum,
+      analysisContract,
       review: { ...input.review, reviewedAt: input.createdAt },
       validationSummary: summarizeExperimentReleaseValidation(issues),
       validationIssues: issues,
@@ -478,13 +496,30 @@ export async function createExperimentRelease(
   if (!experimentReleaseReviewComplete(input.review)) {
     throw new Error("Complete the release review checklist before creating a release.");
   }
-  const payload = experimentReleasePayload({ ...input, studio });
+  const analysisContract = createAnalysisContract(studio, input.studyDesign, input.createdAt);
+  const analysisContractChecksum = await sha256Checksum(analysisContract);
+  const payload = experimentReleasePayload(
+    { ...input, studio },
+    analysisContract,
+    analysisContractChecksum,
+  );
   return { ...payload, checksum: await sha256Checksum(payload) };
 }
 
 export async function verifyExperimentRelease(release: ExperimentRelease): Promise<boolean> {
   const { checksum, ...payload } = release;
-  return /^sha256:[a-f0-9]{64}$/.test(checksum) && await sha256Checksum(payload) === checksum;
+  if (!/^sha256:[a-f0-9]{64}$/.test(checksum) || await sha256Checksum(payload) !== checksum) return false;
+  if (release.manifest.formatVersion >= 5) {
+    const contract = release.manifest.analysisContract;
+    const contractChecksum = release.manifest.analysisContractChecksum;
+    if (
+      !contract
+      || typeof contractChecksum !== "string"
+      || !/^sha256:[a-f0-9]{64}$/.test(contractChecksum)
+      || await sha256Checksum(contract) !== contractChecksum
+    ) return false;
+  }
+  return true;
 }
 
 export function normalizeExperimentRelease(value: unknown): ExperimentRelease | null {
@@ -509,9 +544,11 @@ export function normalizeExperimentRelease(value: unknown): ExperimentRelease | 
       ? 2
       : value.manifest.formatVersion === 3
         ? 3
-        : value.manifest.formatVersion === EXPERIMENT_RELEASE_FORMAT_VERSION
-          ? EXPERIMENT_RELEASE_FORMAT_VERSION
-          : null;
+        : value.manifest.formatVersion === 4
+          ? 4
+          : value.manifest.formatVersion === EXPERIMENT_RELEASE_FORMAT_VERSION
+            ? EXPERIMENT_RELEASE_FORMAT_VERSION
+            : null;
   if (!formatVersion) return null;
 
   const nonNegativeInteger = (candidate: unknown): candidate is number => (
@@ -574,6 +611,19 @@ export function normalizeExperimentRelease(value: unknown): ExperimentRelease | 
       || containsSensitiveMedia !== (audioResponseCount > 0 || videoResponseCount > 0)
       || videoCaptureBoundary !== (videoResponseCount > 0 ? "localhost-only" : null)
     ) return null;
+  }
+
+  let analysisContract: AnalysisContract | undefined;
+  let analysisContractChecksum: string | undefined;
+  if (formatVersion >= 5) {
+    if (
+      value.manifest.analysisContractSchemaVersion !== ANALYSIS_CONTRACT_SCHEMA_VERSION
+      || typeof value.manifest.analysisContractChecksum !== "string"
+      || !/^sha256:[a-f0-9]{64}$/.test(value.manifest.analysisContractChecksum)
+    ) return null;
+    analysisContract = normalizeAnalysisContract(value.manifest.analysisContract, projectId) ?? undefined;
+    if (!analysisContract) return null;
+    analysisContractChecksum = value.manifest.analysisContractChecksum;
   }
 
   const reviewValue = isRecord(value.manifest.review) ? value.manifest.review : {};
@@ -695,6 +745,13 @@ export function normalizeExperimentRelease(value: unknown): ExperimentRelease | 
         ? {
             videoResponseCount,
             videoCaptureBoundary,
+          }
+        : {}),
+      ...(formatVersion >= 5 && analysisContract && analysisContractChecksum
+        ? {
+            analysisContractSchemaVersion: ANALYSIS_CONTRACT_SCHEMA_VERSION,
+            analysisContractChecksum,
+            analysisContract,
           }
         : {}),
       review,

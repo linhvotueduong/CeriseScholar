@@ -4,6 +4,7 @@ import {
   type ExperimentRelease,
   type ExperimentReleaseReviewAttestations,
 } from "./experimentRelease";
+import type { StudyDesignDocument } from "./studyDesign";
 
 const EXPERIMENT_RELEASE_STORAGE_VERSION = 1;
 const MAX_LOCAL_RELEASES = 20;
@@ -79,12 +80,13 @@ export async function persistExperimentRelease(
   releaseNotes: string,
   studio: ExperimentRelease["studio"],
   review: ExperimentReleaseReviewAttestations,
+  studyDesign?: StudyDesignDocument | null,
 ): Promise<ExperimentRelease> {
   const response = await fetch("/api/experimental-studio/releases", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ projectId, releaseNotes, studio, review }),
+    body: JSON.stringify({ projectId, releaseNotes, studio, review, studyDesign }),
   });
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {

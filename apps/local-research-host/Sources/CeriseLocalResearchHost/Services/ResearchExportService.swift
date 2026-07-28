@@ -50,6 +50,12 @@ enum ResearchExportService {
                 bundle.codebookJSON,
                 to: directory.appendingPathComponent("codebook.json")
             )
+            if let analysisContract = bundle.analysisContractJSON {
+                try StudyWorkspaceService.atomicWrite(
+                    analysisContract,
+                    to: directory.appendingPathComponent("analysis-contract.json")
+                )
+            }
             let backup = audit.appendingPathComponent("all-responses.sqlite")
             try database.backup(to: backup)
             let readme = """
@@ -75,6 +81,7 @@ enum ResearchExportService {
                 - audit/all-responses.sqlite: consistent local database backup containing both modes for recovery and audit—not the analysis-ready production dataset.
                 - release.json: immutable frozen release.
                 - codebook.json: variable and trial-table definitions.
+                - analysis-contract.json: the independently checksummed Phase 8 analysis-planning contract frozen with the release.
                 - Each mode folder contains responses.csv, trials.csv, responses.json,
                   audio/video manifests, and only that mode's media. Raw media may
                   identify participants, surroundings, or bystanders.

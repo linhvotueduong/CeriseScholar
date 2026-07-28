@@ -19,7 +19,7 @@ enum HostBundleVerifier {
         }
         guard root["bundleFormat"] as? String == "cerise-local-research-host",
               let bundleVersion = number(root["bundleVersion"]),
-              [1, 2, 3, 4].contains(bundleVersion),
+              [1, 2, 3, 4, 5].contains(bundleVersion),
               root["participantResponsesIncluded"] as? Bool == false,
               let createdAtText = root["createdAt"] as? String,
               createdAtText.utf8.count <= 40,
@@ -66,7 +66,15 @@ enum HostBundleVerifier {
         else {
             throw HostError.invalidBundle("The Local Host bundle is incomplete or uses an unsupported format.")
         }
+        let manifest = release["manifest"] as? [String: Any] ?? [:]
         if bundleVersion == 4 {
+            guard dataPolicy["pilotDataIsolation"] as? String == "separate-mode-exports",
+                  dataPolicy["productionLaunchGate"] as? String == "local-preflight-and-rehearsal"
+            else {
+                throw HostError.invalidBundle("The Local Host launch-readiness policy is missing or unsupported.")
+            }
+        }
+        if bundleVersion >= 5 {
             guard dataPolicy["pilotDataIsolation"] as? String == "separate-mode-exports",
                   dataPolicy["productionLaunchGate"] as? String == "local-preflight-and-rehearsal"
             else {
@@ -82,7 +90,6 @@ enum HostBundleVerifier {
             guard dataPolicy["audioResponses"] as? String == "local-only",
                   dataPolicy["audioExecutionBoundary"] as? String == "localhost-only",
                   number(dataPolicy["audioMaxChunkBytes"]) == 1_048_576,
-                  let manifest = release["manifest"] as? [String: Any],
                   number(manifest["audioResponseCount"]) == audioBlockCount,
                   let containsSensitiveMedia = manifest["containsSensitiveMedia"] as? Bool,
                   (containsAudioResponses
@@ -143,7 +150,6 @@ enum HostBundleVerifier {
             guard dataPolicy["videoResponses"] as? String == "local-only",
                   dataPolicy["videoExecutionBoundary"] as? String == "localhost-only",
                   number(dataPolicy["videoMaxChunkBytes"]) == 2_097_152,
-                  let manifest = release["manifest"] as? [String: Any],
                   number(manifest["videoResponseCount"]) == videoBlockCount,
                   manifest["containsSensitiveMedia"] as? Bool == (containsAudioResponses || containsVideoResponses),
                   (containsVideoResponses
@@ -215,6 +221,38 @@ enum HostBundleVerifier {
             throw HostError.invalidBundle("The participant runner is missing its local video endpoint.")
         }
 
+        var analysisContractData: Data?
+        if bundleVersion >= 5 {
+            guard number(manifest["formatVersion"]) == 5,
+                  number(manifest["analysisContractSchemaVersion"]) == 1,
+                  let analysisContractChecksum = manifest["analysisContractChecksum"] as? String,
+                  isValidChecksum(analysisContractChecksum),
+                  let analysisContract = manifest["analysisContract"] as? [String: Any],
+                  number(analysisContract["schemaVersion"]) == 1,
+                  analysisContract["projectId"] as? String == projectId,
+                  checksum(for: analysisContract) == analysisContractChecksum,
+                  let readiness = analysisContract["readiness"] as? [String: Any],
+                  let readinessStatus = readiness["status"] as? String,
+                  ["ready", "needs-planning"].contains(readinessStatus),
+                  let warningCount = number(readiness["warningCount"]),
+                  warningCount >= 0,
+                  let researchQuestions = analysisContract["researchQuestions"] as? [[String: Any]],
+                  let analysisCodebook = codebook["analysisContract"] as? [String: Any],
+                  number(analysisCodebook["schemaVersion"]) == 1,
+                  analysisCodebook["checksum"] as? String == analysisContractChecksum,
+                  analysisCodebook["readinessStatus"] as? String == readinessStatus,
+                  number(analysisCodebook["warningCount"]) == warningCount,
+                  let researchQuestionIds = analysisCodebook["researchQuestionIds"] as? [String],
+                  researchQuestionIds == researchQuestions.compactMap({ $0["id"] as? String })
+            else {
+                throw HostError.invalidBundle("The Phase 8 analysis contract is missing, altered, or inconsistent with the codebook.")
+            }
+            analysisContractData = try JSONSerialization.data(
+                withJSONObject: analysisContract,
+                options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+            )
+        }
+
         var releasePayload = release
         releasePayload.removeValue(forKey: "checksum")
         guard checksum(for: releasePayload) == releaseChecksum else {
@@ -254,6 +292,7 @@ enum HostBundleVerifier {
             runnerHTML: runnerHTML,
             releaseJSON: releaseData,
             codebookJSON: codebookData,
+            analysisContractJSON: analysisContractData,
             originalBundle: data
         )
     }

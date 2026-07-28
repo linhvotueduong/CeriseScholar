@@ -26,12 +26,14 @@ import {
   normalizeExperimentRunnerFilename,
 } from "@/lib/research/experimentRunnerPackage";
 import type { ExperimentStudioDocument } from "@/lib/research/experimentStudio";
+import type { StudyDesignDocument } from "@/lib/research/studyDesign";
 import styles from "./ExperimentalStudio.module.css";
 
 interface ExperimentPackagePanelProps {
   onDuplicateRelease: (release: ExperimentRelease) => void;
   onOpenChecks: () => void;
   studio: ExperimentStudioDocument;
+  studyDesign: StudyDesignDocument | null;
 }
 
 function downloadText(filename: string, content: string, type: string) {
@@ -50,6 +52,7 @@ export default function ExperimentPackagePanel({
   onDuplicateRelease,
   onOpenChecks,
   studio,
+  studyDesign,
 }: ExperimentPackagePanelProps) {
   const suggestedFilename = useMemo(() => experimentRunnerFilename(studio.title), [studio.title]);
   const [customFilename, setCustomFilename] = useState<string | null>(null);
@@ -110,7 +113,13 @@ export default function ExperimentPackagePanel({
     try {
       let release: ExperimentRelease;
       try {
-        release = await persistExperimentRelease(studio.projectId, releaseNotes, studio, releaseReview);
+        release = await persistExperimentRelease(
+          studio.projectId,
+          releaseNotes,
+          studio,
+          releaseReview,
+          studyDesign,
+        );
         setReleaseLocation("cloud");
       } catch {
         const local = readLocalExperimentReleases(window.localStorage, studio.projectId);
@@ -122,6 +131,7 @@ export default function ExperimentPackagePanel({
           releaseNotes,
           studio,
           review: releaseReview,
+          studyDesign,
         });
         writeLocalExperimentRelease(window.localStorage, release);
         setReleaseLocation("device");

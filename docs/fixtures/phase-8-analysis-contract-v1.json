@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "projectId": "project-example",
+  "frozenAt": "2026-07-28T19:00:00.000Z",
+  "provenance": {
+    "studyDesignSchemaVersion": null,
+    "studyDesignUpdatedAt": null,
+    "experimentStudioSchemaVersion": 8,
+    "experimentStudioUpdatedAt": "2026-07-28T18:55:00.000Z"
+  },
+  "design": {
+    "kind": "",
+    "goal": "",
+    "setting": "",
+    "targetPopulation": "",
+    "plannedSampleSize": "",
+    "alpha": "0.05",
+    "power": "0.80"
+  },
+  "researchQuestions": [],
+  "variables": [],
+  "globalPlan": {
+    "unitOfAnalysis": "unspecified",
+    "missingDataStrategy": "",
+    "exclusionRules": [],
+    "transformations": [],
+    "multiplicityStrategy": "",
+    "sensitivityAnalyses": []
+  },
+  "dataAccessDeclaration": "not-declared",
+  "readiness": {
+    "status": "needs-planning",
+    "warningCount": 2,
+    "issues": [
+      {
+        "id": "analysis-no-research-questions",
+        "severity": "warning",
+        "scope": "contract",
+        "message": "No research question was frozen into this release."
+      },
+      {
+        "id": "analysis-no-variables",
+        "severity": "warning",
+        "scope": "contract",
+        "message": "No participant-response variable was frozen into this release."
+      }
+    ]
+  }
+}

@@ -32,6 +32,11 @@ test("builds a verified local-only host bundle around a frozen release", async (
   assert.equal(built.filename, "untitled-experimental-study-release-4-local-host.cerisehost");
   assert.equal(built.bundle.bundleFormat, EXPERIMENT_HOST_BUNDLE_FORMAT);
   assert.equal(built.bundle.release.checksum, release.checksum);
+  assert.equal(built.bundle.bundleVersion, 5);
+  assert.equal(
+    built.bundle.codebook.analysisContract.checksum,
+    release.manifest.analysisContractChecksum,
+  );
   assert.equal(built.bundle.dataPolicy.participantResponses, "local-only");
   assert.equal(built.bundle.dataPolicy.cloudUpload, false);
   assert.equal(built.bundle.dataPolicy.audioResponses, "local-only");
@@ -64,7 +69,7 @@ test("freezes bounded same-Mac audio settings into the codebook and runner", asy
     createdAt: "2026-07-28T12:30:00.000Z",
   });
 
-  assert.equal(built.bundle.bundleVersion, 4);
+  assert.equal(built.bundle.bundleVersion, 5);
   assert.equal(built.bundle.runner.packageVersion, 6);
   assert.equal(built.bundle.runner.audioEndpoint, "/api/audio");
   assert.equal(built.bundle.codebook.audioResponses.length, 1);
