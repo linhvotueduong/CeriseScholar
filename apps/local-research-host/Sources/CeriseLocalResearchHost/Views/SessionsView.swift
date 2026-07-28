@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SessionsView: View {
     @ObservedObject var store: HostStore
+    @State private var modeFilter = "all"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -14,17 +15,24 @@ struct SessionsView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+                Picker("Response mode", selection: $modeFilter) {
+                    Text("All").tag("all")
+                    Text("Pilot").tag("pilot")
+                    Text("Production").tag("production")
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 280)
                 Button("Refresh") { store.refresh() }
             }
-            if store.sessions.isEmpty {
+            if filteredSessions.isEmpty {
                 ContentUnavailableView(
-                    "No sessions yet",
+                    modeFilter == "all" ? "No sessions yet" : "No \(modeFilter) sessions yet",
                     systemImage: "person.2.slash",
                     description: Text("Start collection and open the participant URL to create a local session.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                Table(store.sessions) {
+                Table(filteredSessions) {
                     TableColumn("Session") { session in
                         Text(session.id)
                             .font(.system(.caption, design: .monospaced))
@@ -47,5 +55,11 @@ struct SessionsView: View {
             }
         }
         .padding(24)
+    }
+
+    private var filteredSessions: [HostSession] {
+        modeFilter == "all"
+            ? store.sessions
+            : store.sessions.filter { $0.executionMode == modeFilter }
     }
 }

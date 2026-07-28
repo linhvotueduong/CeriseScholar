@@ -7,6 +7,11 @@ Supabase, OpenRouter, or an automatic transcription service.
 Phase 7.3 adds bounded, consent-linked video responses with a participant-owned
 camera check and start/stop controls. Video is also same-Mac only; optional
 microphone audio is off by default and requires separate audio consent.
+Phase 7.4 adds a release-bound launch-readiness review. Production collection
+stays locked until the local database and study folder pass preflight, available
+storage covers the collection plan, a pilot session is completed, and the
+researcher confirms the consent, withdrawal, recovery, device, condition, and
+data-separation rehearsals.
 It verifies a `.cerisehost` bundle, starts a same-computer or trusted-LAN
 participant URL, stores structured checkpoints in local SQLite, and produces
 auditable research exports without uploading participant responses to Cerise
@@ -37,6 +42,13 @@ confirm the process is active.
   are bounded again by the native host.
 - Participant responses, trial records, backups, and exports remain in local
   Application Support or in the researcher-selected export directory.
+- The imported bundle fixes each session as `pilot` or `production`; participant
+  requests cannot change that verified mode.
+- Research exports place analysis-ready production data under `production/` and
+  rehearsal data under `pilot/`. The combined SQLite recovery copy is clearly
+  isolated under `audit/`.
+- Launch-readiness confirmations are stored only in the private study workspace
+  and reset when the immutable release checksum changes.
 - Withdrawn sessions have their structured payloads, media metadata, and local
   media files deleted before a scrubbed withdrawal record is retained.
 - Timing is browser-measured and is not represented as certified millisecond
@@ -45,3 +57,8 @@ confirm the process is active.
   eye tracking, or AI processing of recordings.
 - The current bundle is ad-hoc signed for local testing. Distribution signing,
   notarization, Windows packaging, and automatic updates are later boundaries.
+
+The Phase 7.4 checklist is a collection safeguard, not institutional approval,
+an ethics determination, or a guarantee that a browser/device combination is
+scientifically valid. Researchers remain responsible for the approved protocol
+and for documenting the actual rehearsal devices and findings.

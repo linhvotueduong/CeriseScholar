@@ -56,6 +56,7 @@ enum HostRunState: Equatable {
 
 enum HostSection: String, CaseIterable, Identifiable {
     case overview
+    case readiness
     case sessions
     case storage
     case safety
@@ -65,6 +66,7 @@ enum HostSection: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .overview: "Collection"
+        case .readiness: "Launch readiness"
         case .sessions: "Sessions"
         case .storage: "Storage & exports"
         case .safety: "Safety boundary"
@@ -74,6 +76,7 @@ enum HostSection: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .overview: "play.rectangle"
+        case .readiness: "checklist.checked"
         case .sessions: "person.2"
         case .storage: "externaldrive"
         case .safety: "lock.shield"
@@ -120,6 +123,50 @@ struct HostSessionCounts: Equatable {
     var total: Int { started + completed + withdrawn }
 }
 
+struct HostLaunchReadiness: Codable, Equatable {
+    var releaseChecksum = ""
+    var expectedProductionSessions = 100
+    var representativeDevicesRehearsed = false
+    var consentAndRefusalRehearsed = false
+    var withdrawalDeletionRehearsed = false
+    var failureRecoveryRehearsed = false
+    var conditionAndVariablesReviewed = false
+    var pilotExclusionConfirmed = false
+    var updatedAt = ""
+
+    var manualReviewComplete: Bool {
+        representativeDevicesRehearsed
+            && consentAndRefusalRehearsed
+            && withdrawalDeletionRehearsed
+            && failureRecoveryRehearsed
+            && conditionAndVariablesReviewed
+            && pilotExclusionConfirmed
+    }
+
+    static func empty(for releaseChecksum: String) -> HostLaunchReadiness {
+        var readiness = HostLaunchReadiness()
+        readiness.releaseChecksum = releaseChecksum
+        return readiness
+    }
+}
+
+struct HostPreflightCheck: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let detail: String
+    let passed: Bool
+}
+
+struct HostPreflightReport: Equatable {
+    var checks: [HostPreflightCheck] = []
+    var estimatedCollectionBytes: Int64 = 0
+    var availableBytes: Int64 = 0
+
+    var automatedChecksPass: Bool {
+        !checks.isEmpty && checks.allSatisfy(\.passed)
+    }
+}
+
 struct HostStorageSnapshot: Equatable {
     var databaseBytes: Int64 = 0
     var assetBytes: Int64 = 0
@@ -133,6 +180,7 @@ struct ImportedStudyWorkspace {
     let databaseURL: URL
     let assetsURL: URL
     let mediaURL: URL
+    let readinessURL: URL
     let exportsURL: URL
     let backupsURL: URL
 }

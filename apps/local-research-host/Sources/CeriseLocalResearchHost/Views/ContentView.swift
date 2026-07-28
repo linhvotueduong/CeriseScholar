@@ -38,6 +38,8 @@ struct ContentView: View {
         switch store.selectedSection {
         case .overview:
             HostOverviewView(store: store)
+        case .readiness:
+            ReadinessView(store: store)
         case .sessions:
             SessionsView(store: store)
         case .storage:

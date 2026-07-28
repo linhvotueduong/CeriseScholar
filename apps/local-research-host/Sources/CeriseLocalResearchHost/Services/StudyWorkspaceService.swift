@@ -27,9 +27,13 @@ enum StudyWorkspaceService {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         }
 
+        let releaseURL = root.appendingPathComponent("release.json")
+        try validateExistingReleaseIdentity(
+            at: releaseURL,
+            expectedChecksum: bundle.releaseChecksum
+        )
         let bundleURL = root.appendingPathComponent("study.cerisehost")
         try atomicWrite(bundle.originalBundle, to: bundleURL)
-        let releaseURL = root.appendingPathComponent("release.json")
         try atomicWrite(bundle.releaseJSON, to: releaseURL)
         let codebookURL = root.appendingPathComponent("codebook.json")
         try atomicWrite(bundle.codebookJSON, to: codebookURL)
@@ -40,6 +44,7 @@ enum StudyWorkspaceService {
             databaseURL: root.appendingPathComponent("responses.sqlite"),
             assetsURL: assets,
             mediaURL: media,
+            readinessURL: root.appendingPathComponent("launch-readiness.json"),
             exportsURL: exports,
             backupsURL: backups
         )
@@ -72,6 +77,85 @@ enum StudyWorkspaceService {
             mediaBytes: mediaBytes,
             totalBytes: databaseBytes + assetBytes + mediaBytes
         )
+    }
+
+    static func validateExistingReleaseIdentity(
+        at releaseURL: URL,
+        expectedChecksum: String
+    ) throws {
+        guard FileManager.default.fileExists(atPath: releaseURL.path) else { return }
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: releaseURL.path),
+              let size = attributes[.size] as? NSNumber,
+              size.intValue <= HostBundleVerifier.maximumBundleBytes,
+              let data = try? Data(contentsOf: releaseURL, options: [.mappedIfSafe]),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let existingChecksum = object["checksum"] as? String,
+              existingChecksum == expectedChecksum
+        else {
+            throw HostError.storage(
+                "This release ID already has a different or unreadable frozen release. "
+                + "Cerise refused to mix its responses with the imported study."
+            )
+        }
+    }
+
+    static func loadReadiness(
+        for workspace: ImportedStudyWorkspace,
+        releaseChecksum: String
+    ) -> HostLaunchReadiness {
+        guard let attributes = try? FileManager.default.attributesOfItem(
+            atPath: workspace.readinessURL.path
+        ),
+        let size = attributes[.size] as? NSNumber,
+        size.intValue <= 64 * 1_024,
+        let data = try? Data(contentsOf: workspace.readinessURL),
+        var readiness = try? JSONDecoder().decode(HostLaunchReadiness.self, from: data),
+        readiness.releaseChecksum == releaseChecksum
+        else {
+            return .empty(for: releaseChecksum)
+        }
+        readiness.expectedProductionSessions = min(
+            100_000,
+            max(1, readiness.expectedProductionSessions)
+        )
+        return readiness
+    }
+
+    static func saveReadiness(
+        _ readiness: HostLaunchReadiness,
+        for workspace: ImportedStudyWorkspace
+    ) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        let data = try encoder.encode(readiness)
+        guard data.count <= 64 * 1_024 else {
+            throw HostError.storage("The local launch-readiness record exceeded its size limit.")
+        }
+        try atomicWrite(data, to: workspace.readinessURL)
+    }
+
+    static func workspaceIsWritable(_ workspace: ImportedStudyWorkspace) -> Bool {
+        let probe = workspace.rootURL.appendingPathComponent(
+            ".preflight-\(UUID().uuidString).tmp"
+        )
+        do {
+            try Data("cerise-preflight".utf8).write(to: probe, options: [.atomic])
+            try FileManager.default.removeItem(at: probe)
+            return true
+        } catch {
+            try? FileManager.default.removeItem(at: probe)
+            return false
+        }
+    }
+
+    static func availableCapacity(for workspace: ImportedStudyWorkspace) -> Int64 {
+        let values = try? workspace.rootURL.resourceValues(
+            forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey]
+        )
+        if let important = values?.volumeAvailableCapacityForImportantUsage {
+            return important
+        }
+        return Int64(values?.volumeAvailableCapacity ?? 0)
     }
 
     static func atomicWrite(_ data: Data, to destination: URL) throws {

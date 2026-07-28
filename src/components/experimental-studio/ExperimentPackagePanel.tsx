@@ -379,6 +379,12 @@ export default function ExperimentPackagePanel({
           </button>
         </div>
         <p className={styles.packageResponseNote}>Pilot rows are tagged. No participant responses are included in downloads created here.</p>
+        {executionMode === "production" ? (
+          <p className={styles.packageResponseNote}>
+            Production remains locked in the native host until local storage/database checks,
+            a completed pilot, and the researcher rehearsal checklist all pass.
+          </p>
+        ) : null}
         {message ? <p aria-live="polite" className={styles.packageMessage}>{message}</p> : null}
       </section>
 
@@ -387,7 +393,7 @@ export default function ExperimentPackagePanel({
         <ul className={styles.privacyRows}>
           <li><AppIcon name="globe" /><div><strong>Offline by default</strong><span>No fetch, analytics, or external scripts</span></div></li>
           <li><AppIcon name="lock" /><div><strong>Local-only responses</strong><span>Verified host bundle and recoverable SQLite checkpoints</span></div></li>
-          <li><AppIcon name="file" /><div><strong>Reproducible exports</strong><span>Release, codebook, validation, JSON and formula-safe CSV</span></div></li>
+          <li><AppIcon name="file" /><div><strong>Analysis-safe exports</strong><span>Production and pilot CSV, JSON, manifests, and media stay in separate folders</span></div></li>
           <li><AppIcon name="clock" /><div><strong>Browser-measured timing</strong><span>Never presented as certified laboratory timing</span></div></li>
         </ul>
         <section className={styles.runInstructions}>

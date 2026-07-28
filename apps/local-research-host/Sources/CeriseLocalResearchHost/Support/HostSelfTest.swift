@@ -8,10 +8,59 @@ enum HostSelfTest {
 
     static func run() throws {
         try verifyBundleIntegrity()
+        try verifyCurrentBundleContract()
+        try verifyWorkspaceReleaseIdentity()
+        try verifyLaunchReadinessPersistence()
         try verifyLocalDatabaseRecoveryAndExports()
         try verifyLocalAudioLifecycle()
         try verifyLocalVideoLifecycle()
         try verifyLocalServerBoundary()
+    }
+
+    private static func verifyLaunchReadinessPersistence() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cerise-readiness-self-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let assets = root.appendingPathComponent("assets", isDirectory: true)
+        let media = root.appendingPathComponent("media", isDirectory: true)
+        let exports = root.appendingPathComponent("exports", isDirectory: true)
+        let backups = root.appendingPathComponent("backups", isDirectory: true)
+        for directory in [assets, media, exports, backups] {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        }
+        let workspace = ImportedStudyWorkspace(
+            rootURL: root,
+            bundleURL: root.appendingPathComponent("study.cerisehost"),
+            databaseURL: root.appendingPathComponent("responses.sqlite"),
+            assetsURL: assets,
+            mediaURL: media,
+            readinessURL: root.appendingPathComponent("launch-readiness.json"),
+            exportsURL: exports,
+            backupsURL: backups
+        )
+        let checksum = "sha256:" + String(repeating: "e", count: 64)
+        var readiness = HostLaunchReadiness.empty(for: checksum)
+        readiness.expectedProductionSessions = 250
+        readiness.representativeDevicesRehearsed = true
+        try StudyWorkspaceService.saveReadiness(readiness, for: workspace)
+        let loaded = StudyWorkspaceService.loadReadiness(
+            for: workspace,
+            releaseChecksum: checksum
+        )
+        guard loaded.expectedProductionSessions == 250,
+              loaded.representativeDevicesRehearsed,
+              StudyWorkspaceService.workspaceIsWritable(workspace)
+        else {
+            throw Failure(message: "Launch-readiness state did not persist inside the study workspace.")
+        }
+        let changedRelease = StudyWorkspaceService.loadReadiness(
+            for: workspace,
+            releaseChecksum: "sha256:" + String(repeating: "f", count: 64)
+        )
+        guard !changedRelease.representativeDevicesRehearsed else {
+            throw Failure(message: "Launch readiness was reused across different release checksums.")
+        }
     }
 
     private static func verifyBundleIntegrity() throws {
@@ -92,6 +141,116 @@ enum HostSelfTest {
         }
     }
 
+    private static func verifyCurrentBundleContract() throws {
+        let nonce = "fedcba9876543210"
+        var release: [String: Any] = [
+            "releaseId": "release_phase_7_4",
+            "projectId": "project_phase_7_4",
+            "releaseNumber": 4,
+            "studio": [
+                "title": "Phase 7.4 launch gate",
+                "blocks": [],
+            ],
+            "manifest": [
+                "audioResponseCount": 0,
+                "audioCaptureBoundary": NSNull(),
+                "videoResponseCount": 0,
+                "videoCaptureBoundary": NSNull(),
+                "containsSensitiveMedia": false,
+            ],
+        ]
+        guard let releaseChecksum = HostBundleVerifier.checksum(for: release) else {
+            throw Failure(message: "The Phase 7.4 self-test release checksum could not be created.")
+        }
+        release["checksum"] = releaseChecksum
+        let runnerHTML = """
+        <!doctype html>
+        <meta http-equiv="Content-Security-Policy" content="script-src 'nonce-\(nonce)'; style-src 'nonce-\(nonce)'; connect-src 'self'">
+        <main>\(releaseChecksum)</main>
+        <style nonce="\(nonce)">main{display:block}</style>
+        <script id="study-spec" nonce="\(nonce)" type="application/json">{}</script>
+        <script nonce="\(nonce)">fetch('/api/checkpoints')</script>
+        """
+        let codebook: [String: Any] = [
+            "releaseId": "release_phase_7_4",
+            "releaseNumber": 4,
+            "releaseChecksum": releaseChecksum,
+            "timingClaim": "browser-measured",
+            "audioResponses": [],
+            "videoResponses": [],
+        ]
+        var bundle: [String: Any] = [
+            "bundleFormat": "cerise-local-research-host",
+            "bundleVersion": 4,
+            "createdAt": "2026-07-28T12:00:00Z",
+            "executionMode": "production",
+            "participantResponsesIncluded": false,
+            "release": release,
+            "runner": [
+                "packageVersion": 6,
+                "checkpointEndpoint": "/api/checkpoints",
+                "audioEndpoint": NSNull(),
+                "videoEndpoint": NSNull(),
+                "html": runnerHTML,
+            ],
+            "codebook": codebook,
+            "dataPolicy": [
+                "participantResponses": "local-only",
+                "localDatabase": "sqlite",
+                "cloudUpload": false,
+                "mediaDirectoryPrepared": true,
+                "audioResponses": "local-only",
+                "audioExecutionBoundary": "localhost-only",
+                "audioMaxChunkBytes": 1_048_576,
+                "videoResponses": "local-only",
+                "videoExecutionBoundary": "localhost-only",
+                "videoMaxChunkBytes": 2_097_152,
+                "pilotDataIsolation": "separate-mode-exports",
+                "productionLaunchGate": "local-preflight-and-rehearsal",
+            ],
+        ]
+        guard let bundleChecksum = HostBundleVerifier.checksum(for: bundle) else {
+            throw Failure(message: "The Phase 7.4 self-test bundle checksum could not be created.")
+        }
+        bundle["bundleChecksum"] = bundleChecksum
+        let data = try JSONSerialization.data(withJSONObject: bundle, options: [.sortedKeys])
+        let verified = try HostBundleVerifier.verify(data: data)
+        guard verified.id == "release_phase_7_4",
+              verified.authoringMode == "production",
+              verified.releaseChecksum == releaseChecksum
+        else {
+            throw Failure(message: "The native host did not accept the Phase 7.4 bundle contract.")
+        }
+    }
+
+    private static func verifyWorkspaceReleaseIdentity() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cerise-release-identity-self-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let releaseURL = root.appendingPathComponent("release.json")
+        let checksum = "sha256:" + String(repeating: "1", count: 64)
+        try StudyWorkspaceService.atomicWrite(
+            Data(#"{"checksum":"\#(checksum)"}"#.utf8),
+            to: releaseURL
+        )
+        try StudyWorkspaceService.validateExistingReleaseIdentity(
+            at: releaseURL,
+            expectedChecksum: checksum
+        )
+        do {
+            try StudyWorkspaceService.validateExistingReleaseIdentity(
+                at: releaseURL,
+                expectedChecksum: "sha256:" + String(repeating: "2", count: 64)
+            )
+            throw Failure(message: "A different release checksum reused an existing study workspace.")
+        } catch let failure as Failure {
+            throw failure
+        } catch {
+            // Expected: an existing release ID cannot silently switch immutable checksums.
+        }
+    }
+
     private static func verifyLocalDatabaseRecoveryAndExports() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("cerise-local-host-self-test-\(UUID().uuidString)", isDirectory: true)
@@ -117,7 +276,8 @@ enum HostSelfTest {
             completed,
             releaseId: releaseId,
             releaseNumber: 1,
-            releaseChecksum: releaseChecksum
+            releaseChecksum: releaseChecksum,
+            expectedExecutionMode: "pilot"
         ) else {
             throw Failure(message: "The first checkpoint was not inserted.")
         }
@@ -125,7 +285,8 @@ enum HostSelfTest {
             completed,
             releaseId: releaseId,
             releaseNumber: 1,
-            releaseChecksum: releaseChecksum
+            releaseChecksum: releaseChecksum,
+            expectedExecutionMode: "pilot"
         ) else {
             throw Failure(message: "An idempotent checkpoint was inserted twice.")
         }
@@ -142,21 +303,87 @@ enum HostSelfTest {
             stale,
             releaseId: releaseId,
             releaseNumber: 1,
-            releaseChecksum: releaseChecksum
+            releaseChecksum: releaseChecksum,
+            expectedExecutionMode: "pilot"
         )
         guard try database.sessions().first?.status == "completed" else {
             throw Failure(message: "An older checkpoint replaced the newest session state.")
         }
 
+        let spoofedProduction = checkpoint(
+            idempotencyKey: "spoofed-production-1",
+            sequence: 1,
+            status: "completed",
+            releaseId: releaseId,
+            releaseChecksum: releaseChecksum,
+            response: "must be rejected",
+            sessionId: "participant_spoofed",
+            executionMode: "production"
+        )
+        do {
+            _ = try database.saveCheckpoint(
+                spoofedProduction,
+                releaseId: releaseId,
+                releaseNumber: 1,
+                releaseChecksum: releaseChecksum,
+                expectedExecutionMode: "pilot"
+            )
+            throw Failure(message: "A checkpoint changed the frozen pilot/production mode.")
+        } catch let failure as Failure {
+            throw failure
+        } catch {
+            // Expected: checkpoint mode must match the verified bundle mode.
+        }
+
+        let production = checkpoint(
+            idempotencyKey: "production-1",
+            sequence: 1,
+            status: "completed",
+            releaseId: releaseId,
+            releaseChecksum: releaseChecksum,
+            response: "production-only",
+            sessionId: "participant_production",
+            executionMode: "production"
+        )
+        _ = try database.saveCheckpoint(
+            production,
+            releaseId: releaseId,
+            releaseNumber: 1,
+            releaseChecksum: releaseChecksum,
+            expectedExecutionMode: "production"
+        )
+
         let csv = String(decoding: try database.responseExportCSV(), as: UTF8.self)
         guard csv.contains("'=unsafe") else {
             throw Failure(message: "CSV formula injection protection was not applied.")
+        }
+        let pilotCSV = String(
+            decoding: try database.responseExportCSV(executionMode: "pilot"),
+            as: UTF8.self
+        )
+        let productionCSV = String(
+            decoding: try database.responseExportCSV(executionMode: "production"),
+            as: UTF8.self
+        )
+        guard pilotCSV.contains("participant_1"),
+              !pilotCSV.contains("participant_production"),
+              productionCSV.contains("participant_production"),
+              !productionCSV.contains("participant_1"),
+              try database.quickCheck()
+        else {
+            throw Failure(message: "Pilot and production export separation failed.")
         }
         let backupURL = root.appendingPathComponent("backup.sqlite")
         try database.backup(to: backupURL)
         guard FileManager.default.fileExists(atPath: backupURL.path) else {
             throw Failure(message: "The consistent SQLite backup was not created.")
         }
+        try verifySeparatedResearchPackage(
+            root: root,
+            database: database,
+            releaseId: releaseId,
+            releaseChecksum: releaseChecksum
+        )
 
         let withdrawn = checkpoint(
             idempotencyKey: "withdrawn-3",
@@ -170,7 +397,8 @@ enum HostSelfTest {
             withdrawn,
             releaseId: releaseId,
             releaseNumber: 1,
-            releaseChecksum: releaseChecksum
+            releaseChecksum: releaseChecksum,
+            expectedExecutionMode: "pilot"
         )
         let export = try JSONSerialization.jsonObject(
             with: database.responseExportJSON(
@@ -184,6 +412,86 @@ enum HostSelfTest {
               responses?.isEmpty == true
         else {
             throw Failure(message: "Withdrawn participant payloads were not scrubbed.")
+        }
+    }
+
+    private static func verifySeparatedResearchPackage(
+        root: URL,
+        database: LocalResponseDatabase,
+        releaseId: String,
+        releaseChecksum: String
+    ) throws {
+        let assets = root.appendingPathComponent("assets", isDirectory: true)
+        let media = root.appendingPathComponent("media", isDirectory: true)
+        let exports = root.appendingPathComponent("research-exports", isDirectory: true)
+        let backups = root.appendingPathComponent("backups", isDirectory: true)
+        for directory in [assets, media, exports, backups] {
+            try FileManager.default.createDirectory(
+                at: directory,
+                withIntermediateDirectories: true
+            )
+        }
+        let releaseJSON = Data(#"{"releaseId":"release_test_1"}"#.utf8)
+        let codebookJSON = Data(#"{"variables":[]}"#.utf8)
+        let bundle = VerifiedHostBundle(
+            id: releaseId,
+            projectId: "project_test_1",
+            releaseNumber: 1,
+            releaseChecksum: releaseChecksum,
+            bundleChecksum: "sha256:" + String(repeating: "b", count: 64),
+            title: "Phase 7.4 export test",
+            createdAt: Date(),
+            authoringMode: "production",
+            containsAudioResponses: false,
+            audioMaxChunkBytes: 0,
+            audioLimits: [:],
+            containsVideoResponses: false,
+            videoMaxChunkBytes: 0,
+            videoLimits: [:],
+            runnerNonce: "0123456789abcdef",
+            runnerHTML: "<!doctype html>",
+            releaseJSON: releaseJSON,
+            codebookJSON: codebookJSON,
+            originalBundle: Data()
+        )
+        let workspace = ImportedStudyWorkspace(
+            rootURL: root,
+            bundleURL: root.appendingPathComponent("study.cerisehost"),
+            databaseURL: database.databaseURL,
+            assetsURL: assets,
+            mediaURL: media,
+            readinessURL: root.appendingPathComponent("launch-readiness.json"),
+            exportsURL: exports,
+            backupsURL: backups
+        )
+        let package = try ResearchExportService.exportPackage(
+            bundle: bundle,
+            workspace: workspace,
+            database: database,
+            to: exports
+        )
+        let productionCSV = try String(
+            contentsOf: package
+                .appendingPathComponent("production", isDirectory: true)
+                .appendingPathComponent("responses.csv"),
+            encoding: .utf8
+        )
+        let pilotCSV = try String(
+            contentsOf: package
+                .appendingPathComponent("pilot", isDirectory: true)
+                .appendingPathComponent("responses.csv"),
+            encoding: .utf8
+        )
+        let auditDatabase = package
+            .appendingPathComponent("audit", isDirectory: true)
+            .appendingPathComponent("all-responses.sqlite")
+        guard productionCSV.contains("participant_production"),
+              !productionCSV.contains("participant_1"),
+              pilotCSV.contains("participant_1"),
+              !pilotCSV.contains("participant_production"),
+              FileManager.default.fileExists(atPath: auditDatabase.path)
+        else {
+            throw Failure(message: "The research package mixed pilot and production data.")
         }
     }
 
@@ -221,7 +529,8 @@ enum HostSelfTest {
             ),
             releaseId: releaseId,
             releaseNumber: 1,
-            releaseChecksum: releaseChecksum
+            releaseChecksum: releaseChecksum,
+            expectedExecutionMode: "pilot"
         )
 
         let first = Data("first-audio-chunk".utf8)
@@ -317,7 +626,8 @@ enum HostSelfTest {
             ),
             releaseId: releaseId,
             releaseNumber: 1,
-            releaseChecksum: releaseChecksum
+            releaseChecksum: releaseChecksum,
+            expectedExecutionMode: "pilot"
         )
         guard !FileManager.default.fileExists(atPath: recordingURL.path),
               !String(decoding: try database.audioManifestJSON(), as: UTF8.self)
@@ -362,7 +672,8 @@ enum HostSelfTest {
             ),
             releaseId: releaseId,
             releaseNumber: 1,
-            releaseChecksum: releaseChecksum
+            releaseChecksum: releaseChecksum,
+            expectedExecutionMode: "pilot"
         )
 
         let first = Data("first-video-chunk".utf8)
@@ -442,7 +753,8 @@ enum HostSelfTest {
             ),
             releaseId: releaseId,
             releaseNumber: 1,
-            releaseChecksum: releaseChecksum
+            releaseChecksum: releaseChecksum,
+            expectedExecutionMode: "pilot"
         )
         guard !FileManager.default.fileExists(atPath: recordingURL.path),
               !String(decoding: try database.videoManifestJSON(), as: UTF8.self)
@@ -475,6 +787,7 @@ enum HostSelfTest {
             releaseId: releaseId,
             releaseNumber: 1,
             releaseChecksum: releaseChecksum,
+            studyExecutionMode: "pilot",
             audioLimits: [:],
             audioMaxChunkBytes: 0,
             videoLimits: [:],
@@ -557,7 +870,8 @@ enum HostSelfTest {
         releaseId: String,
         releaseChecksum: String,
         response: String,
-        sessionId: String = "participant_1"
+        sessionId: String = "participant_1",
+        executionMode: String = "pilot"
     ) -> Data {
         let payload: [String: Any] = [
             "idempotencyKey": idempotencyKey,
@@ -567,7 +881,7 @@ enum HostSelfTest {
             "releaseNumber": 1,
             "releaseChecksum": releaseChecksum,
             "status": status,
-            "executionMode": "pilot",
+            "executionMode": executionMode,
             "condition": ["id": "condition_a", "name": "Condition A"],
             "startedAt": "2026-07-27T12:00:00Z",
             "updatedAt": "2026-07-27T12:01:00Z",

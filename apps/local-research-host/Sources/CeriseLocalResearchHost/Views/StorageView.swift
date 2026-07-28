@@ -83,7 +83,7 @@ struct StorageView: View {
                 }
                 GroupBox("Research package") {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("The export contains formula-safe CSV, structured JSON, trial-level CSV, local audio/video files and manifests when present, a consistent SQLite backup, the immutable release, codebook, and README.")
+                        Text("The export keeps production and pilot responses in separate folders. Each has formula-safe CSV, structured JSON, trial data, and only its own local media. A combined SQLite backup is retained under audit/ for recovery.")
                             .foregroundStyle(.secondary)
                         HStack {
                             Button("Export research package…") {

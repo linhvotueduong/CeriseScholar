@@ -5,6 +5,8 @@ Status:
 - Phase 7.1 structured local collection implemented on 2026-07-27.
 - Phase 7.2 bounded local audio responses implemented on 2026-07-28.
 - Phase 7.3 bounded local video responses implemented on 2026-07-28.
+- Phase 7.4 pilot validation, production launch gating, and analysis-safe
+  pilot/production separation implemented on 2026-07-28.
 
 Phase 7.1 turns a verified immutable Experimental Studio release into a
 researcher-operated local collection service. Participant response data stays on
@@ -40,21 +42,25 @@ Tauri, a native Windows shell, or another reviewed host.
 
 ## Bundle contract
 
-- Current format: `cerise-local-research-host`, version 3.
-- Version 1 structured-response and version 2 audio bundles remain importable.
+- Current format: `cerise-local-research-host`, version 4.
+- Versions 1–3 remain importable.
 - Maximum bundle size: 8 MB.
 - Current runner package version: 6. Versions 4 and 5 are retained only for
   compatible version 1 and 2 bundles.
 - Checkpoint endpoint: exactly `/api/checkpoints`.
 - Audio endpoint for bundles containing audio: exactly `/api/audio`.
-- Video endpoint for version 3 bundles containing video: exactly `/api/video`.
+- Video endpoint for version 3 and newer bundles containing video: exactly
+  `/api/video`.
 - Data policy: local-only participant responses, SQLite storage, no cloud
   upload, a prepared media directory, and `localhost-only` audio/video
-  boundaries.
+  boundaries. Version 4 also freezes separate-mode exports and the native
+  preflight-and-rehearsal production gate.
 - The release and codebook must agree on release ID, number, checksum, and the
   `browser-measured` timing claim.
 - The host recalculates the release checksum and then the whole-bundle checksum.
   Any altered study, codebook, execution label, or runner is refused.
+- If an imported release ID already has a local workspace, its immutable
+  checksum must match before Cerise reuses that response database.
 
 ## Local data layout
 
@@ -179,10 +185,11 @@ process on representative hardware before production collection.
 
 The local export package contains:
 
-- formula-safe participant CSV;
-- long-format trial CSV;
-- structured response JSON;
-- a consistent SQLite backup;
+- a `production/` folder containing only production formula-safe CSV,
+  long-format trial CSV, structured JSON, media manifests, and media;
+- a separate `pilot/` folder containing the same artifacts for pilot sessions;
+- an `audit/all-responses.sqlite` consistent backup containing both modes for
+  recovery and audit, clearly separated from the analysis-ready folder;
 - immutable `release.json`;
 - `codebook.json`;
 - a README recording release and bundle checksums and the local-only data claim.
@@ -191,20 +198,63 @@ The Storage view shows actual local database/assets/media size and a planning
 estimate based on expected sessions, structured-data size, and the frozen
 audio/video limits contained in the release.
 
+## Phase 7.4 launch-readiness boundary
+
+The imported study workspace now contains a bounded `launch-readiness.json`
+record tied to the immutable release checksum. It is local researcher state,
+not participant data, and is reset automatically when the release checksum
+changes.
+
+Pilot bundles remain easy to run. A production bundle cannot start until:
+
+- the release and Local Host bundle were verified at import;
+- the private workspace passes a real write probe;
+- SQLite passes `quick_check`;
+- planned collection capacity plus a 100 MB operational reserve is available;
+- at least one completed pilot session exists for the same release;
+- the researcher confirms representative-device/browser rehearsal;
+- consent and refusal paths were rehearsed;
+- withdrawal deletion was verified;
+- interruption and checkpoint recovery were rehearsed;
+- condition allocation, variables, and missing-data behavior were reviewed;
+- the researcher confirms pilot data will be excluded from production analysis.
+
+The expected workflow is to export and run the release in pilot mode first,
+finish the rehearsals, and then import the production-mode bundle for that same
+immutable release. Both modes resolve to the same private release workspace so
+the completed pilot and checksum-bound readiness record can unlock production,
+while their response rows and media remain mode-separated.
+
+The participant checkpoint endpoint now enforces the pilot/production mode
+frozen into the verified bundle. A modified request cannot relabel a pilot
+session as production or vice versa. The Sessions view can filter by mode, and
+research exports physically separate both modes, including local media.
+
+These checks are operational safeguards, not an ethics approval, scientific
+validity certification, device certification, or guarantee that every target
+browser will behave identically. The researcher still owns the approved
+protocol, representative-device test plan, monitoring, and institutional
+research-data requirements.
+
 ## Verification
 
 The native host provides `--self-test`, which checks:
 
 - valid bundle acceptance and tampered runner rejection;
-- version 1 structured, version 2 audio, and version 3 video contract
-  verification;
+- version 1 structured, version 2 audio, version 3 video, and version 4 launch
+  policy contract verification;
 - idempotent checkpoint handling;
 - bounded, same-origin audio-chunk ingestion;
 - bounded, same-origin video-chunk ingestion and finalization;
 - newest-sequence-wins recovery;
 - spreadsheet-formula-safe CSV export;
 - consistent SQLite backup;
-- withdrawal payload and all session-media deletion.
+- withdrawal payload and all session-media deletion;
+- release-bound launch-readiness persistence;
+- rejection of a reused release ID with a different immutable checksum;
+- server-side rejection of pilot/production mode relabeling;
+- mode-filtered CSV export and SQLite health checks;
+- package-level separation of production, pilot, and combined audit data.
 
 The TypeScript bundle tests independently check creation, size/data-policy
 claims, and tampering. A cross-runtime check generates a real bundle in the web

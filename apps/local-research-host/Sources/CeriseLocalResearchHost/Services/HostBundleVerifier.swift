@@ -19,7 +19,7 @@ enum HostBundleVerifier {
         }
         guard root["bundleFormat"] as? String == "cerise-local-research-host",
               let bundleVersion = number(root["bundleVersion"]),
-              [1, 2, 3].contains(bundleVersion),
+              [1, 2, 3, 4].contains(bundleVersion),
               root["participantResponsesIncluded"] as? Bool == false,
               let createdAtText = root["createdAt"] as? String,
               createdAtText.utf8.count <= 40,
@@ -65,6 +65,13 @@ enum HostBundleVerifier {
               codebook["timingClaim"] as? String == "browser-measured"
         else {
             throw HostError.invalidBundle("The Local Host bundle is incomplete or uses an unsupported format.")
+        }
+        if bundleVersion == 4 {
+            guard dataPolicy["pilotDataIsolation"] as? String == "separate-mode-exports",
+                  dataPolicy["productionLaunchGate"] as? String == "local-preflight-and-rehearsal"
+            else {
+                throw HostError.invalidBundle("The Local Host launch-readiness policy is missing or unsupported.")
+            }
         }
 
         let audioBlockCount = blocks.filter { $0["type"] as? String == "audio-response" }.count
@@ -132,7 +139,7 @@ enum HostBundleVerifier {
         let containsVideoResponses = videoBlockCount > 0
         let videoMaxChunkBytes: Int
         var videoLimits: [String: HostVideoBlockLimit] = [:]
-        if bundleVersion == 3 {
+        if bundleVersion >= 3 {
             guard dataPolicy["videoResponses"] as? String == "local-only",
                   dataPolicy["videoExecutionBoundary"] as? String == "localhost-only",
                   number(dataPolicy["videoMaxChunkBytes"]) == 2_097_152,
@@ -185,7 +192,7 @@ enum HostBundleVerifier {
             videoMaxChunkBytes = 2_097_152
         } else {
             guard !containsVideoResponses else {
-                throw HostError.invalidBundle("Video responses require a version 3 Local Host bundle.")
+                throw HostError.invalidBundle("Video responses require a version 3 or newer Local Host bundle.")
             }
             videoMaxChunkBytes = 0
         }

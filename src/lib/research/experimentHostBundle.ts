@@ -12,7 +12,7 @@ import {
 import { collectExperimentVariables } from "./experimentStudio";
 
 export const EXPERIMENT_HOST_BUNDLE_FORMAT = "cerise-local-research-host" as const;
-export const EXPERIMENT_HOST_BUNDLE_VERSION = 3 as const;
+export const EXPERIMENT_HOST_BUNDLE_VERSION = 4 as const;
 export const MAX_EXPERIMENT_HOST_BUNDLE_BYTES = 8 * 1024 * 1024;
 export const MAX_EXPERIMENT_AUDIO_CHUNK_BYTES = 1024 * 1024;
 export const MAX_EXPERIMENT_VIDEO_CHUNK_BYTES = 2 * 1024 * 1024;
@@ -77,6 +77,8 @@ export interface ExperimentHostBundlePayload {
     videoResponses: "local-only";
     videoExecutionBoundary: "localhost-only";
     videoMaxChunkBytes: typeof MAX_EXPERIMENT_VIDEO_CHUNK_BYTES;
+    pilotDataIsolation: "separate-mode-exports";
+    productionLaunchGate: "local-preflight-and-rehearsal";
   };
 }
 
@@ -186,6 +188,8 @@ export async function buildExperimentHostBundle(
       videoResponses: "local-only",
       videoExecutionBoundary: "localhost-only",
       videoMaxChunkBytes: MAX_EXPERIMENT_VIDEO_CHUNK_BYTES,
+      pilotDataIsolation: "separate-mode-exports",
+      productionLaunchGate: "local-preflight-and-rehearsal",
     },
   };
   const bundle: ExperimentHostBundle = {
@@ -234,6 +238,8 @@ export async function verifyExperimentHostBundle(value: unknown): Promise<Experi
     || value.dataPolicy.videoResponses !== "local-only"
     || value.dataPolicy.videoExecutionBoundary !== "localhost-only"
     || value.dataPolicy.videoMaxChunkBytes !== MAX_EXPERIMENT_VIDEO_CHUNK_BYTES
+    || value.dataPolicy.pilotDataIsolation !== "separate-mode-exports"
+    || value.dataPolicy.productionLaunchGate !== "local-preflight-and-rehearsal"
   ) return null;
 
   let encodedBytes: number;

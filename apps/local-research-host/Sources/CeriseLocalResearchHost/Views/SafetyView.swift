@@ -10,7 +10,7 @@ struct SafetyView: View {
                     Text("Safety boundary")
                         .font(.largeTitle)
                         .fontWeight(.semibold)
-                    Text("What Phase 7.1–7.3 does—and deliberately does not do.")
+                    Text("What Phase 7.1–7.4 does—and deliberately does not do.")
                         .foregroundStyle(.secondary)
                 }
                 safetyCard(
@@ -27,6 +27,16 @@ struct SafetyView: View {
                     "Crash-aware collection",
                     icon: "arrow.triangle.2.circlepath",
                     detail: "SQLite uses write-ahead logging, full synchronous writes, idempotent checkpoints, and newest-sequence wins. A stopped app recovers the last verified study without automatically reopening collection."
+                )
+                safetyCard(
+                    "Production requires a local launch gate",
+                    icon: "checklist.checked",
+                    detail: "A production bundle cannot start until the private workspace, SQLite database, storage plan, completed pilot, representative-device rehearsal, consent/refusal, withdrawal deletion, recovery, variables, and pilot-exclusion checks are complete."
+                )
+                safetyCard(
+                    "Pilot data is analysis-separated",
+                    icon: "rectangle.split.2x1",
+                    detail: "The host enforces the frozen pilot/production mode at checkpoint ingestion. Exports place production and pilot CSV, JSON, manifests, and media in separate folders so pilot rows are not silently included in production analysis."
                 )
                 safetyCard(
                     "Withdrawal is scrubbed",

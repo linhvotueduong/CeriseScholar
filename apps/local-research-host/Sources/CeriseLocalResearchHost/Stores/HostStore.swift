@@ -12,7 +12,11 @@ final class HostStore: ObservableObject {
     @Published var participantURL: URL?
     @Published var sessions: [HostSession] = []
     @Published var counts = HostSessionCounts()
+    @Published var pilotCounts = HostSessionCounts()
+    @Published var productionCounts = HostSessionCounts()
     @Published var storage = HostStorageSnapshot()
+    @Published var readiness = HostLaunchReadiness()
+    @Published var preflight = HostPreflightReport()
     @Published var message = ""
     @Published var selectedSection: HostSection = .overview
 
@@ -27,6 +31,11 @@ final class HostStore: ObservableObject {
 
     var isHosting: Bool {
         runState == .active || runState == .paused || runState == .starting
+    }
+
+    var productionLaunchReady: Bool {
+        guard bundle?.authoringMode == "production" else { return true }
+        return readiness.manualReviewComplete && preflight.automatedChecksPass
     }
 
     func chooseAndImportBundle() {
@@ -58,6 +67,10 @@ final class HostStore: ObservableObject {
             bundle = verified
             workspace = importedWorkspace
             database = localDatabase
+            readiness = StudyWorkspaceService.loadReadiness(
+                for: importedWorkspace,
+                releaseChecksum: verified.releaseChecksum
+            )
             if verified.containsAudioResponses || verified.containsVideoResponses {
                 executionMode = .sameComputer
             }
@@ -77,6 +90,12 @@ final class HostStore: ObservableObject {
             message = "Import a verified .cerisehost study before starting collection."
             return
         }
+        refreshPreflight()
+        guard productionLaunchReady else {
+            selectedSection = .readiness
+            message = "Production collection is locked until the local preflight and rehearsal checklist are complete."
+            return
+        }
         guard (!bundle.containsAudioResponses && !bundle.containsVideoResponses)
             || executionMode == .sameComputer
         else {
@@ -94,6 +113,7 @@ final class HostStore: ObservableObject {
             releaseId: bundle.id,
             releaseNumber: bundle.releaseNumber,
             releaseChecksum: bundle.releaseChecksum,
+            studyExecutionMode: bundle.authoringMode,
             audioLimits: bundle.audioLimits,
             audioMaxChunkBytes: bundle.audioMaxChunkBytes,
             videoLimits: bundle.videoLimits,
@@ -218,16 +238,37 @@ final class HostStore: ObservableObject {
         guard let workspace else {
             sessions = []
             counts = HostSessionCounts()
+            pilotCounts = HostSessionCounts()
+            productionCounts = HostSessionCounts()
             storage = HostStorageSnapshot()
+            preflight = HostPreflightReport()
             return
         }
         do {
             sessions = try database?.sessions() ?? []
             counts = try database?.counts() ?? HostSessionCounts()
+            pilotCounts = try database?.counts(executionMode: "pilot") ?? HostSessionCounts()
+            productionCounts = try database?.counts(executionMode: "production") ?? HostSessionCounts()
         } catch {
             message = "Local session summaries could not be refreshed."
         }
         storage = StudyWorkspaceService.storageSnapshot(for: workspace)
+        refreshPreflight()
+    }
+
+    func setReadiness(
+        _ keyPath: WritableKeyPath<HostLaunchReadiness, Bool>,
+        to value: Bool
+    ) {
+        readiness[keyPath: keyPath] = value
+        persistReadiness()
+        refreshPreflight()
+    }
+
+    func setExpectedProductionSessions(_ value: Int) {
+        readiness.expectedProductionSessions = min(100_000, max(1, value))
+        persistReadiness()
+        refreshPreflight()
     }
 
     func shutdown() {
@@ -246,10 +287,99 @@ final class HostStore: ObservableObject {
                 databaseURL: recoveredWorkspace.databaseURL,
                 mediaURL: recoveredWorkspace.mediaURL
             )
+            readiness = StudyWorkspaceService.loadReadiness(
+                for: recoveredWorkspace,
+                releaseChecksum: recoveredBundle.releaseChecksum
+            )
             message = "Recovered the last verified study. Collection is stopped for safety."
             refresh()
         } catch {
             message = "The previous local study could not be recovered: \(error.localizedDescription)"
         }
+    }
+
+    private func persistReadiness() {
+        guard let workspace, let bundle else { return }
+        readiness.releaseChecksum = bundle.releaseChecksum
+        readiness.updatedAt = ISO8601DateFormatter().string(from: Date())
+        do {
+            try StudyWorkspaceService.saveReadiness(readiness, for: workspace)
+        } catch {
+            message = "Launch-readiness changes could not be saved locally."
+        }
+    }
+
+    private func refreshPreflight() {
+        guard let bundle, let workspace, let database else {
+            preflight = HostPreflightReport()
+            return
+        }
+        let estimatedBytes = estimatedCollectionBytes(
+            bundle: bundle,
+            sessions: readiness.expectedProductionSessions
+        )
+        let availableBytes = StudyWorkspaceService.availableCapacity(for: workspace)
+        let databaseHealthy = (try? database.quickCheck()) == true
+        let requiredWithReserve = boundedAdd(
+            estimatedBytes,
+            100 * 1_024 * 1_024
+        )
+        preflight = HostPreflightReport(
+            checks: [
+                HostPreflightCheck(
+                    id: "verified-release",
+                    title: "Immutable release verified",
+                    detail: "Release and Local Host checksums matched at import.",
+                    passed: true
+                ),
+                HostPreflightCheck(
+                    id: "workspace-writable",
+                    title: "Private study folder writable",
+                    detail: "The host can write checkpoints, readiness state, media, and exports locally.",
+                    passed: StudyWorkspaceService.workspaceIsWritable(workspace)
+                ),
+                HostPreflightCheck(
+                    id: "sqlite-healthy",
+                    title: "SQLite recovery database healthy",
+                    detail: "The local database passed SQLite quick_check.",
+                    passed: databaseHealthy
+                ),
+                HostPreflightCheck(
+                    id: "storage-capacity",
+                    title: "Collection storage available",
+                    detail: "Capacity covers the plan plus a 100 MB safety reserve.",
+                    passed: availableBytes >= requiredWithReserve
+                ),
+                HostPreflightCheck(
+                    id: "completed-pilot",
+                    title: "Completed pilot session recorded",
+                    detail: "At least one full pilot run is required before production.",
+                    passed: pilotCounts.completed > 0
+                ),
+            ],
+            estimatedCollectionBytes: estimatedBytes,
+            availableBytes: availableBytes
+        )
+    }
+
+    private func estimatedCollectionBytes(
+        bundle: VerifiedHostBundle,
+        sessions: Int
+    ) -> Int64 {
+        let structuredBytes: Int64 = 50 * 1_024
+        let audioBytes = bundle.audioLimits.values.reduce(Int64(0)) {
+            boundedAdd($0, Int64($1.maxBytes))
+        }
+        let videoBytes = bundle.videoLimits.values.reduce(Int64(0)) {
+            boundedAdd($0, Int64($1.maxBytes))
+        }
+        let perSession = boundedAdd(structuredBytes, boundedAdd(audioBytes, videoBytes))
+        let (total, overflow) = perSession.multipliedReportingOverflow(by: Int64(sessions))
+        return overflow ? Int64.max : total
+    }
+
+    private func boundedAdd(_ left: Int64, _ right: Int64) -> Int64 {
+        let (total, overflow) = left.addingReportingOverflow(right)
+        return overflow ? Int64.max : total
     }
 }

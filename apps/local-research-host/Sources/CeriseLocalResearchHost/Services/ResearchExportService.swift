@@ -17,20 +17,30 @@ enum ResearchExportService {
         }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         do {
-            try StudyWorkspaceService.atomicWrite(
-                try database.responseExportCSV(),
-                to: directory.appendingPathComponent("responses.csv")
+            let production = directory.appendingPathComponent("production", isDirectory: true)
+            let pilot = directory.appendingPathComponent("pilot", isDirectory: true)
+            let audit = directory.appendingPathComponent("audit", isDirectory: true)
+            for modeDirectory in [production, pilot, audit] {
+                try FileManager.default.createDirectory(
+                    at: modeDirectory,
+                    withIntermediateDirectories: false
+                )
+            }
+            try exportMode(
+                "production",
+                to: production,
+                workspace: workspace,
+                database: database,
+                releaseId: bundle.id,
+                releaseChecksum: bundle.releaseChecksum
             )
-            try StudyWorkspaceService.atomicWrite(
-                try database.trialExportCSV(),
-                to: directory.appendingPathComponent("trials.csv")
-            )
-            try StudyWorkspaceService.atomicWrite(
-                try database.responseExportJSON(
-                    releaseId: bundle.id,
-                    releaseChecksum: bundle.releaseChecksum
-                ),
-                to: directory.appendingPathComponent("responses.json")
+            try exportMode(
+                "pilot",
+                to: pilot,
+                workspace: workspace,
+                database: database,
+                releaseId: bundle.id,
+                releaseChecksum: bundle.releaseChecksum
             )
             try StudyWorkspaceService.atomicWrite(
                 bundle.releaseJSON,
@@ -40,29 +50,7 @@ enum ResearchExportService {
                 bundle.codebookJSON,
                 to: directory.appendingPathComponent("codebook.json")
             )
-            try StudyWorkspaceService.atomicWrite(
-                try database.audioManifestJSON(),
-                to: directory.appendingPathComponent("audio-manifest.json")
-            )
-            try StudyWorkspaceService.atomicWrite(
-                try database.audioManifestCSV(),
-                to: directory.appendingPathComponent("audio-manifest.csv")
-            )
-            try StudyWorkspaceService.atomicWrite(
-                try database.videoManifestJSON(),
-                to: directory.appendingPathComponent("video-manifest.json")
-            )
-            try StudyWorkspaceService.atomicWrite(
-                try database.videoManifestCSV(),
-                to: directory.appendingPathComponent("video-manifest.csv")
-            )
-            if StudyWorkspaceService.directoryContainsRegularFiles(workspace.mediaURL) {
-                try FileManager.default.copyItem(
-                    at: workspace.mediaURL,
-                    to: directory.appendingPathComponent("media", isDirectory: true)
-                )
-            }
-            let backup = directory.appendingPathComponent("responses.sqlite")
+            let backup = audit.appendingPathComponent("all-responses.sqlite")
             try database.backup(to: backup)
             let readme = """
                 Cerise Scholar Local Research Host export
@@ -77,19 +65,19 @@ enum ResearchExportService {
                 Data boundary
                 - Participant responses were collected into local SQLite on the researcher's Mac.
                 - This package was created locally. Cerise Scholar, Supabase, Azure, OpenRouter, and OpenAI did not receive participant responses.
-                - Pilot and production rows remain explicitly tagged in every response.
+                - Production and pilot responses are exported into separate folders.
+                - Use production/ for analysis. Pilot rows are excluded from every production CSV, JSON, manifest, and media folder.
                 - Timing values are browser-measured, not certified millisecond timing.
 
                 Files
-                - responses.csv: one row per participant session; spreadsheet-formula-safe cells.
-                - trials.csv: long-format trial data when the release contains trial loops.
-                - responses.json: full structured session records.
-                - responses.sqlite: consistent local database backup.
+                - production/: production-only CSV, JSON, manifests, and media.
+                - pilot/: pilot-only CSV, JSON, manifests, and media.
+                - audit/all-responses.sqlite: consistent local database backup containing both modes for recovery and audit—not the analysis-ready production dataset.
                 - release.json: immutable frozen release.
                 - codebook.json: variable and trial-table definitions.
-                - audio-manifest.json / audio-manifest.csv: anonymous local recording/chunk references, sizes, MIME types, and checksums.
-                - video-manifest.json / video-manifest.csv: local camera-recording references, sizes, MIME types, audio inclusion, and checksums.
-                - media/: finalized local recordings plus transport chunks when this release collected audio or video. Raw media may identify participants, surroundings, or bystanders.
+                - Each mode folder contains responses.csv, trials.csv, responses.json,
+                  audio/video manifests, and only that mode's media. Raw media may
+                  identify participants, surroundings, or bystanders.
 
                 Audio boundary
                 - Audio was captured only through the same-Mac Local Research Host.
@@ -113,6 +101,60 @@ enum ResearchExportService {
         } catch {
             try? FileManager.default.removeItem(at: directory)
             throw error
+        }
+    }
+
+    private static func exportMode(
+        _ executionMode: String,
+        to directory: URL,
+        workspace: ImportedStudyWorkspace,
+        database: LocalResponseDatabase,
+        releaseId: String,
+        releaseChecksum: String
+    ) throws {
+        try StudyWorkspaceService.atomicWrite(
+            try database.responseExportCSV(executionMode: executionMode),
+            to: directory.appendingPathComponent("responses.csv")
+        )
+        try StudyWorkspaceService.atomicWrite(
+            try database.trialExportCSV(executionMode: executionMode),
+            to: directory.appendingPathComponent("trials.csv")
+        )
+        try StudyWorkspaceService.atomicWrite(
+            try database.responseExportJSON(
+                releaseId: releaseId,
+                releaseChecksum: releaseChecksum,
+                executionMode: executionMode
+            ),
+            to: directory.appendingPathComponent("responses.json")
+        )
+        try StudyWorkspaceService.atomicWrite(
+            try database.audioManifestJSON(executionMode: executionMode),
+            to: directory.appendingPathComponent("audio-manifest.json")
+        )
+        try StudyWorkspaceService.atomicWrite(
+            try database.audioManifestCSV(executionMode: executionMode),
+            to: directory.appendingPathComponent("audio-manifest.csv")
+        )
+        try StudyWorkspaceService.atomicWrite(
+            try database.videoManifestJSON(executionMode: executionMode),
+            to: directory.appendingPathComponent("video-manifest.json")
+        )
+        try StudyWorkspaceService.atomicWrite(
+            try database.videoManifestCSV(executionMode: executionMode),
+            to: directory.appendingPathComponent("video-manifest.csv")
+        )
+
+        let modeMedia = directory.appendingPathComponent("media", isDirectory: true)
+        try FileManager.default.createDirectory(at: modeMedia, withIntermediateDirectories: false)
+        for session in try database.sessions(executionMode: executionMode) {
+            guard HostBundleVerifier.isValidIdentifier(session.id) else { continue }
+            let source = workspace.mediaURL.appendingPathComponent(session.id, isDirectory: true)
+            guard FileManager.default.fileExists(atPath: source.path) else { continue }
+            try FileManager.default.copyItem(
+                at: source,
+                to: modeMedia.appendingPathComponent(session.id, isDirectory: true)
+            )
         }
     }
 

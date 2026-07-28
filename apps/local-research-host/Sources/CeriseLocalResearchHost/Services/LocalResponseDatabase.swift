@@ -171,7 +171,8 @@ final class LocalResponseDatabase: @unchecked Sendable {
         _ data: Data,
         releaseId: String,
         releaseNumber: Int,
-        releaseChecksum: String
+        releaseChecksum: String,
+        expectedExecutionMode: String
     ) throws -> Bool {
         guard data.count <= 4 * 1024 * 1024 else {
             throw HostError.storage("The participant checkpoint exceeded the 4 MB request limit.")
@@ -192,6 +193,7 @@ final class LocalResponseDatabase: @unchecked Sendable {
               ["started", "completed", "withdrawn"].contains(status),
               let executionMode = payload["executionMode"] as? String,
               ["pilot", "production"].contains(executionMode),
+              executionMode == expectedExecutionMode,
               let condition = payload["condition"] as? [String: Any],
               let conditionId = condition["id"] as? String,
               HostBundleVerifier.isValidIdentifier(conditionId)
@@ -493,11 +495,12 @@ final class LocalResponseDatabase: @unchecked Sendable {
         }
     }
 
-    func audioManifestJSON() throws -> Data {
-        let rows = try audioManifestRows()
+    func audioManifestJSON(executionMode: String? = nil) throws -> Data {
+        let rows = try audioManifestRows(executionMode: executionMode)
         return try JSONSerialization.data(
             withJSONObject: [
                 "exportedAt": ISO8601DateFormatter().string(from: Date()),
+                "executionMode": executionMode ?? "all",
                 "storageBoundary": "local-only",
                 "containsRawVoice": !rows.isEmpty,
                 "chunks": rows,
@@ -506,12 +509,12 @@ final class LocalResponseDatabase: @unchecked Sendable {
         )
     }
 
-    func audioManifestCSV() throws -> Data {
+    func audioManifestCSV(executionMode: String? = nil) throws -> Data {
         let fields = [
             "session_id", "block_id", "upload_id", "upload_status", "duration_ms",
             "recording_path", "chunk_index", "relative_path", "mime_type", "byte_count", "checksum",
         ]
-        let rows = try audioManifestRows().map { row in
+        let rows = try audioManifestRows(executionMode: executionMode).map { row in
             [
                 row["sessionId"], row["blockId"], row["uploadId"], row["uploadStatus"],
                 row["durationMs"], row["recordingPath"], row["chunkIndex"],
@@ -737,11 +740,12 @@ final class LocalResponseDatabase: @unchecked Sendable {
         }
     }
 
-    func videoManifestJSON() throws -> Data {
-        let rows = try videoManifestRows()
+    func videoManifestJSON(executionMode: String? = nil) throws -> Data {
+        let rows = try videoManifestRows(executionMode: executionMode)
         return try JSONSerialization.data(
             withJSONObject: [
                 "exportedAt": ISO8601DateFormatter().string(from: Date()),
+                "executionMode": executionMode ?? "all",
                 "storageBoundary": "local-only",
                 "containsIdentifyingVideo": !rows.isEmpty,
                 "chunks": rows,
@@ -750,13 +754,13 @@ final class LocalResponseDatabase: @unchecked Sendable {
         )
     }
 
-    func videoManifestCSV() throws -> Data {
+    func videoManifestCSV(executionMode: String? = nil) throws -> Data {
         let fields = [
             "session_id", "block_id", "upload_id", "upload_status", "duration_ms",
             "includes_audio", "recording_path", "chunk_index", "relative_path",
             "mime_type", "byte_count", "checksum",
         ]
-        let rows = try videoManifestRows().map { row in
+        let rows = try videoManifestRows(executionMode: executionMode).map { row in
             [
                 row["sessionId"], row["blockId"], row["uploadId"], row["uploadStatus"],
                 row["durationMs"], row["includesAudio"], row["recordingPath"],
@@ -770,18 +774,27 @@ final class LocalResponseDatabase: @unchecked Sendable {
         return Data(csv.utf8)
     }
 
-    func sessions() throws -> [HostSession] {
+    func sessions(executionMode: String? = nil) throws -> [HostSession] {
         try locked {
             guard let handle else { return [] }
             var statement: OpaquePointer?
-            let sql = """
+            let sql = executionMode == nil ? """
                 SELECT session_id, status, execution_mode, condition_name, started_at, updated_at
                 FROM sessions ORDER BY updated_at DESC
+                """ : """
+                SELECT session_id, status, execution_mode, condition_name, started_at, updated_at
+                FROM sessions WHERE execution_mode = ? ORDER BY updated_at DESC
                 """
             guard sqlite3_prepare_v2(handle, sql, -1, &statement, nil) == SQLITE_OK,
                   let statement
             else { throw sqliteError() }
             defer { sqlite3_finalize(statement) }
+            if let executionMode {
+                guard ["pilot", "production"].contains(executionMode) else {
+                    throw HostError.storage("The requested response mode is invalid.")
+                }
+                try bind([.text(executionMode)], to: statement)
+            }
             var output: [HostSession] = []
             while sqlite3_step(statement) == SQLITE_ROW {
                 output.append(HostSession(
@@ -797,8 +810,8 @@ final class LocalResponseDatabase: @unchecked Sendable {
         }
     }
 
-    func counts() throws -> HostSessionCounts {
-        let sessions = try sessions()
+    func counts(executionMode: String? = nil) throws -> HostSessionCounts {
+        let sessions = try sessions(executionMode: executionMode)
         return sessions.reduce(into: HostSessionCounts()) { counts, session in
             switch session.status {
             case "completed": counts.completed += 1
@@ -808,11 +821,16 @@ final class LocalResponseDatabase: @unchecked Sendable {
         }
     }
 
-    func responseExportJSON(releaseId: String, releaseChecksum: String) throws -> Data {
-        let payloads = try sessionPayloads()
+    func responseExportJSON(
+        releaseId: String,
+        releaseChecksum: String,
+        executionMode: String? = nil
+    ) throws -> Data {
+        let payloads = try sessionPayloads(executionMode: executionMode)
         let export: [String: Any] = [
             "releaseId": releaseId,
             "releaseChecksum": releaseChecksum,
+            "executionMode": executionMode ?? "all",
             "exportedAt": ISO8601DateFormatter().string(from: Date()),
             "sessions": payloads,
         ]
@@ -822,8 +840,8 @@ final class LocalResponseDatabase: @unchecked Sendable {
         )
     }
 
-    func responseExportCSV() throws -> Data {
-        let payloads = try sessionPayloads()
+    func responseExportCSV(executionMode: String? = nil) throws -> Data {
+        let payloads = try sessionPayloads(executionMode: executionMode)
         let responseKeys = Set(payloads.flatMap { payload in
             Array((payload["responses"] as? [String: Any])?.keys ?? [:].keys)
         }).sorted()
@@ -845,8 +863,8 @@ final class LocalResponseDatabase: @unchecked Sendable {
         return Data(csv.utf8)
     }
 
-    func trialExportCSV() throws -> Data {
-        let payloads = try sessionPayloads()
+    func trialExportCSV(executionMode: String? = nil) throws -> Data {
+        let payloads = try sessionPayloads(executionMode: executionMode)
         let fields = [
             "session_id", "execution_mode", "condition_id", "condition_name",
             "order_index", "table_id", "loop_block_id", "trial_id", "source_row",
@@ -916,6 +934,12 @@ final class LocalResponseDatabase: @unchecked Sendable {
         }
     }
 
+    func quickCheck() throws -> Bool {
+        try locked {
+            try queryText("PRAGMA quick_check(1)", bindings: []) == "ok"
+        }
+    }
+
     func close() {
         lock.lock()
         defer { lock.unlock() }
@@ -925,18 +949,27 @@ final class LocalResponseDatabase: @unchecked Sendable {
         self.handle = nil
     }
 
-    private func sessionPayloads() throws -> [[String: Any]] {
+    private func sessionPayloads(executionMode: String? = nil) throws -> [[String: Any]] {
         try locked {
             guard let handle else { return [] }
             var statement: OpaquePointer?
+            let sql = executionMode == nil
+                ? "SELECT payload_json FROM sessions ORDER BY started_at, session_id"
+                : "SELECT payload_json FROM sessions WHERE execution_mode = ? ORDER BY started_at, session_id"
             guard sqlite3_prepare_v2(
                 handle,
-                "SELECT payload_json FROM sessions ORDER BY started_at, session_id",
+                sql,
                 -1,
                 &statement,
                 nil
             ) == SQLITE_OK, let statement else { throw sqliteError() }
             defer { sqlite3_finalize(statement) }
+            if let executionMode {
+                guard ["pilot", "production"].contains(executionMode) else {
+                    throw HostError.storage("The requested response mode is invalid.")
+                }
+                try bind([.text(executionMode)], to: statement)
+            }
             var payloads: [[String: Any]] = []
             while sqlite3_step(statement) == SQLITE_ROW {
                 let text = columnText(statement, 0)
@@ -1063,10 +1096,11 @@ final class LocalResponseDatabase: @unchecked Sendable {
         )
     }
 
-    private func audioManifestRows() throws -> [[String: Any]] {
+    private func audioManifestRows(executionMode: String? = nil) throws -> [[String: Any]] {
         try locked {
             guard let handle else { return [] }
             var statement: OpaquePointer?
+            let modeClause = executionMode == nil ? "" : "WHERE s.execution_mode = ?"
             let sql = """
                 SELECT c.session_id, c.block_id, c.upload_id, u.status, u.duration_ms,
                        c.chunk_index, c.relative_path, c.mime_type, c.byte_count, c.checksum
@@ -1075,11 +1109,19 @@ final class LocalResponseDatabase: @unchecked Sendable {
                   ON u.session_id = c.session_id
                  AND u.block_id = c.block_id
                  AND u.upload_id = c.upload_id
+                INNER JOIN sessions s ON s.session_id = c.session_id
+                \(modeClause)
                 ORDER BY c.session_id, c.block_id, c.upload_id, c.chunk_index
                 """
             guard sqlite3_prepare_v2(handle, sql, -1, &statement, nil) == SQLITE_OK,
                   let statement else { throw sqliteError() }
             defer { sqlite3_finalize(statement) }
+            if let executionMode {
+                guard ["pilot", "production"].contains(executionMode) else {
+                    throw HostError.storage("The requested response mode is invalid.")
+                }
+                try bind([.text(executionMode)], to: statement)
+            }
             var rows: [[String: Any]] = []
             while sqlite3_step(statement) == SQLITE_ROW {
                 let sessionId = columnText(statement, 0)
@@ -1107,10 +1149,11 @@ final class LocalResponseDatabase: @unchecked Sendable {
         }
     }
 
-    private func videoManifestRows() throws -> [[String: Any]] {
+    private func videoManifestRows(executionMode: String? = nil) throws -> [[String: Any]] {
         try locked {
             guard let handle else { return [] }
             var statement: OpaquePointer?
+            let modeClause = executionMode == nil ? "" : "WHERE s.execution_mode = ?"
             let sql = """
                 SELECT c.session_id, c.block_id, c.upload_id, u.status, u.duration_ms,
                        u.includes_audio, c.chunk_index, c.relative_path, c.mime_type,
@@ -1120,11 +1163,19 @@ final class LocalResponseDatabase: @unchecked Sendable {
                   ON u.session_id = c.session_id
                  AND u.block_id = c.block_id
                  AND u.upload_id = c.upload_id
+                INNER JOIN sessions s ON s.session_id = c.session_id
+                \(modeClause)
                 ORDER BY c.session_id, c.block_id, c.upload_id, c.chunk_index
                 """
             guard sqlite3_prepare_v2(handle, sql, -1, &statement, nil) == SQLITE_OK,
                   let statement else { throw sqliteError() }
             defer { sqlite3_finalize(statement) }
+            if let executionMode {
+                guard ["pilot", "production"].contains(executionMode) else {
+                    throw HostError.storage("The requested response mode is invalid.")
+                }
+                try bind([.text(executionMode)], to: statement)
+            }
             var rows: [[String: Any]] = []
             while sqlite3_step(statement) == SQLITE_ROW {
                 let sessionId = columnText(statement, 0)

@@ -64,12 +64,14 @@ test("freezes bounded same-Mac audio settings into the codebook and runner", asy
     createdAt: "2026-07-28T12:30:00.000Z",
   });
 
-  assert.equal(built.bundle.bundleVersion, 3);
+  assert.equal(built.bundle.bundleVersion, 4);
   assert.equal(built.bundle.runner.packageVersion, 6);
   assert.equal(built.bundle.runner.audioEndpoint, "/api/audio");
   assert.equal(built.bundle.codebook.audioResponses.length, 1);
   assert.equal(built.bundle.codebook.audioResponses[0].consentBlockId, audioConsent.id);
   assert.equal(built.bundle.dataPolicy.audioExecutionBoundary, "localhost-only");
+  assert.equal(built.bundle.dataPolicy.pilotDataIsolation, "separate-mode-exports");
+  assert.equal(built.bundle.dataPolicy.productionLaunchGate, "local-preflight-and-rehearsal");
   assert.match(built.bundle.runner.html, /microphone/);
   assert.ok(await verifyExperimentHostBundle(JSON.parse(built.content)));
 });

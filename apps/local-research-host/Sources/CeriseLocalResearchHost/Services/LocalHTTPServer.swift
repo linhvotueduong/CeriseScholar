@@ -14,6 +14,7 @@ final class LocalHTTPServer: @unchecked Sendable {
     private var releaseId = ""
     private var releaseNumber = 0
     private var releaseChecksum = ""
+    private var studyExecutionMode = "pilot"
     private var audioLimits: [String: HostAudioBlockLimit] = [:]
     private var audioMaxChunkBytes = 0
     private var videoLimits: [String: HostVideoBlockLimit] = [:]
@@ -31,6 +32,7 @@ final class LocalHTTPServer: @unchecked Sendable {
         releaseId: String,
         releaseNumber: Int,
         releaseChecksum: String,
+        studyExecutionMode: String,
         audioLimits: [String: HostAudioBlockLimit],
         audioMaxChunkBytes: Int,
         videoLimits: [String: HostVideoBlockLimit],
@@ -47,6 +49,7 @@ final class LocalHTTPServer: @unchecked Sendable {
             self.releaseId = releaseId
             self.releaseNumber = releaseNumber
             self.releaseChecksum = releaseChecksum
+            self.studyExecutionMode = studyExecutionMode
             self.audioLimits = audioLimits
             self.audioMaxChunkBytes = audioMaxChunkBytes
             self.videoLimits = videoLimits
@@ -212,7 +215,8 @@ final class LocalHTTPServer: @unchecked Sendable {
                     request.body,
                     releaseId: releaseId,
                     releaseNumber: releaseNumber,
-                    releaseChecksum: releaseChecksum
+                    releaseChecksum: releaseChecksum,
+                    expectedExecutionMode: studyExecutionMode
                 ) ?? false
                 checkpointHandler?()
                 send(.json(200, ["saved": true, "duplicate": !inserted]), to: connection)

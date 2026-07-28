@@ -53,6 +53,14 @@ struct HostOverviewView: View {
                         Text("v\(bundle.releaseNumber) · \(HostFormatters.date.string(from: bundle.createdAt))")
                     }
                     GridRow {
+                        Text("Response mode").foregroundStyle(.secondary)
+                        Text(bundle.authoringMode == "production" ? "Production" : "Pilot")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(bundle.authoringMode == "production"
+                                ? Color.primary
+                                : Color.orange)
+                    }
+                    GridRow {
                         Text("Release checksum").foregroundStyle(.secondary)
                         Text(bundle.releaseChecksum)
                             .font(.system(.caption, design: .monospaced))
@@ -109,9 +117,19 @@ struct HostOverviewView: View {
                     .foregroundStyle(.secondary)
                 }
                 HStack {
-                    Button("Start collection") { store.startHosting() }
+                    Button(store.bundle?.authoringMode == "production"
+                           ? "Start production"
+                           : "Start pilot") {
+                        store.startHosting()
+                    }
                         .buttonStyle(.borderedProminent)
-                        .disabled(store.isHosting)
+                        .disabled(store.isHosting || !store.productionLaunchReady)
+                    if store.bundle?.authoringMode == "production"
+                        && !store.productionLaunchReady {
+                        Button("Complete launch review") {
+                            store.selectedSection = .readiness
+                        }
+                    }
                     Button(store.runState == .paused ? "Resume" : "Pause") {
                         store.pauseOrResume()
                     }
