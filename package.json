@@ -8,7 +8,7 @@
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test \"src/lib/dashboard/*.test.ts\" \"src/lib/ai/*.test.ts\"",
+    "test": "tsx --test \"src/lib/research/*.test.ts\" \"src/lib/ai/*.test.ts\"",
     "check:legacy": "node scripts/check-legacy-references.mjs",
     "check:storage-strategy": "node scripts/check-storage-strategy.mjs",
     "postinstall": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs"

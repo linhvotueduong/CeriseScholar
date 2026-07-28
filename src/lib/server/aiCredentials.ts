@@ -31,6 +31,16 @@ const BYOK_FREE_MODEL_CHAIN = [
   "google/gemma-4-31b-it:free",
 ];
 
+export class ByokCredentialsError extends Error {
+  status: number;
+
+  constructor(message: string, status = 409) {
+    super(message);
+    this.name = "ByokCredentialsError";
+    this.status = status;
+  }
+}
+
 function getDefaultModelChain(): string[] {
   const raw = process.env.OPENROUTER_MODEL_CHAIN;
   if (raw && raw.trim()) {
@@ -102,4 +112,52 @@ export async function resolveAiCredentials(
     models: getDefaultModelChain(),
     enforceAllowance: true,
   };
+}
+
+/**
+ * Strict BYOK-only resolver for features whose cost must never reach the
+ * founder lane. Unlike `resolveAiCredentials`, this function fails closed when
+ * the user has no key or the encrypted value cannot be read.
+ */
+export async function requireByokAiCredentials(
+  userId: string,
+  supabase: SupabaseClient,
+): Promise<AiCredentials> {
+  const { data, error } = await supabase
+    .from("user_ai_settings")
+    .select("provider, encrypted_key, preferred_model")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("BYOK-only credential lookup failed", { userId, message: error.message });
+    throw new ByokCredentialsError("Your OpenRouter key could not be checked. Please try again.", 503);
+  }
+  if (!data?.encrypted_key) {
+    throw new ByokCredentialsError(
+      "Connect your OpenRouter key in Settings → API key before using the Experimental Studio assistant.",
+      409,
+    );
+  }
+  if ((data.provider ?? "openrouter") !== "openrouter") {
+    throw new ByokCredentialsError("The Experimental Studio assistant currently requires an OpenRouter key.", 409);
+  }
+
+  try {
+    return {
+      lane: "byok",
+      apiKey: decryptSecret(data.encrypted_key),
+      models: data.preferred_model ? [data.preferred_model] : BYOK_FREE_MODEL_CHAIN,
+      enforceAllowance: false,
+    };
+  } catch (error) {
+    console.warn("BYOK-only key decrypt failed", {
+      userId,
+      reason: error instanceof Error ? error.message : "unknown error",
+    });
+    throw new ByokCredentialsError(
+      "Your stored OpenRouter key can no longer be read. Reconnect it in Settings → API key.",
+      409,
+    );
+  }
 }

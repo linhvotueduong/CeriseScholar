@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CERISE_COMMUNITY_URL } from "@/lib/community";
 
 type PublicMarketingNavbarProps = {
   fixed?: boolean;
@@ -7,9 +8,8 @@ type PublicMarketingNavbarProps = {
 const navLinks = [
   { href: "/about", label: "About" },
   { href: "/research-guidance", label: "Guidance" },
-  { href: "/projects-preview", label: "Projects" },
-  { href: "/courses", label: "Course" },
-  { href: "/dashboard/space", label: "Cerise Space" },
+  { href: "/projects", label: "Projects" },
+  { href: CERISE_COMMUNITY_URL, label: "Cerise Community ↗", external: true },
 ];
 
 export default function PublicMarketingNavbar({ fixed = false }: PublicMarketingNavbarProps) {
@@ -28,15 +28,27 @@ export default function PublicMarketingNavbar({ fixed = false }: PublicMarketing
         </Link>
 
         <div className="hidden items-center gap-6 text-[13px] font-medium text-[#1a1208] md:flex lg:gap-7">
-          {navLinks.map((item) => (
-            <Link
-              className="text-[#1a1208] no-underline hover:opacity-70"
-              href={item.href}
-              key={item.href}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navLinks.map((item) =>
+            "external" in item && item.external ? (
+              <a
+                className="text-[#1a1208] no-underline hover:opacity-70"
+                href={item.href}
+                key={item.href}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                className="text-[#1a1208] no-underline hover:opacity-70"
+                href={item.href}
+                key={item.href}
+              >
+                {item.label}
+              </Link>
+            )
+          )}
         </div>
 
         <div className="flex items-center gap-5 text-[13px] font-medium">

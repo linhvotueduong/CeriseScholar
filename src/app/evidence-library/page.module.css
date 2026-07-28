@@ -1,0 +1,621 @@
+.evidenceLibraryMain {
+  height: calc(100dvh - 64px);
+  overflow: auto;
+  padding: 0;
+  background: #fff;
+}
+
+.evidenceLibraryViewport {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  overflow: visible;
+  background: #fff;
+}
+
+.evidenceLibraryStage {
+  position: relative;
+  min-height: 100%;
+  background: #fff;
+}
+
+.embeddedLibrary {
+  min-height: 620px;
+  overflow: auto;
+  background: #fff;
+}
+
+.libraryCanvas {
+  box-sizing: border-box;
+  width: min(1200px, calc(100% - 42px));
+  margin: 0 auto;
+  padding: 24px 0 48px;
+  color: #121212;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+
+.libraryHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee9e4;
+}
+
+.headerEyebrow {
+  margin: 0 0 8px;
+  color: #a87f4f;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.libraryHeader h1 {
+  margin: 0;
+  color: #121212;
+  font-size: 26px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.headerSubtitle {
+  margin: 10px 0 0;
+  max-width: 520px;
+  color: #625d56;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.viewSynthesisButton {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #e2ddd8;
+  border-radius: 7px;
+  background: #030303;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.infoNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  color: #625d56;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.statTile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid #e7e2dc;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.statTile span {
+  color: #625d56;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.statTile strong {
+  color: #121212;
+  font-size: 24px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.statTile small {
+  color: #8a8178;
+  font-size: 9.5px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.controlsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.searchInput {
+  flex: 1 1 220px;
+  min-width: 180px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #e2ddd8;
+  border-radius: 7px;
+  background: #fff;
+  color: #121212;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.searchInput::placeholder {
+  color: #a39a90;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 3px;
+  border: 1px solid #e2ddd8;
+  border-radius: 8px;
+  background: #f7f4f1;
+}
+
+.tabs button {
+  appearance: none;
+  height: 100%;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #625d56;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tabs .activeTab {
+  background: #fff;
+  color: #121212;
+  box-shadow: 0 1px 2px rgba(18, 18, 18, 0.12);
+}
+
+.sortControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #e2ddd8;
+  border-radius: 7px;
+  background: #fff;
+  color: #625d56;
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sortControl select {
+  border: 0;
+  background: transparent;
+  color: #121212;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.exportButton {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #e2ddd8;
+  border-radius: 7px;
+  background: #fff;
+  color: #121212;
+  font-size: 11px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.exportButton:disabled {
+  opacity: 0.45;
+}
+
+.emptyBody {
+  margin: 24px 0 0;
+  padding: 32px;
+  border: 1px dashed #e2ddd8;
+  border-radius: 10px;
+  color: #625d56;
+  font-size: 12px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.tableWrap {
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid #e7e2dc;
+  border-radius: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #625d56;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.table th,
+.table td {
+  height: 40px;
+  padding: 0 12px;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table th {
+  background: #f7f4f1;
+  color: #625d56;
+  font-size: 10.5px;
+  font-weight: 850;
+}
+
+.table tbody tr + tr {
+  border-top: 1px solid #eee9e4;
+}
+
+.table th:nth-child(1),
+.table td:nth-child(1) {
+  width: 30%;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2) {
+  width: 12%;
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3) {
+  width: 24%;
+}
+
+.table th:nth-child(4),
+.table td:nth-child(4) {
+  width: 16%;
+}
+
+.table th:nth-child(5),
+.table td:nth-child(5) {
+  width: 10%;
+}
+
+.table th:nth-child(6),
+.table td:nth-child(6) {
+  width: 8%;
+  text-align: right;
+}
+
+.titleCell {
+  color: #121212;
+  font-weight: 800;
+}
+
+.titleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.titleLink:hover {
+  text-decoration: underline;
+}
+
+.scholarSource {
+  color: #1c80ff;
+  font-weight: 850;
+}
+
+.uploadSource {
+  color: #5f5a53;
+  font-weight: 850;
+}
+
+.pendingCell {
+  color: #a87f4f;
+  font-style: italic;
+}
+
+.failedCell {
+  color: #b3463f;
+  font-weight: 750;
+}
+
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+}
+
+.retryButton {
+  height: 22px;
+  padding: 0 9px;
+  border: 1px solid #e6e2dd;
+  border-radius: 999px;
+  background: #fff;
+  color: #5f5a53;
+  font-size: 9.5px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.retryButton:disabled {
+  opacity: 0.55;
+}
+
+.deleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #e6e2dd;
+  border-radius: 999px;
+  background: #fff;
+  color: #8a8178;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.deleteButton:hover {
+  border-color: #e0a8a3;
+  color: #b3463f;
+}
+
+.libraryFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.rowsPerPageControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #625d56;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.rowsPerPageControl select {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #e2ddd8;
+  border-radius: 6px;
+  background: #fff;
+  color: #121212;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pagination button {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #e2ddd8;
+  border-radius: 6px;
+  background: #fff;
+  color: #625d56;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+}
+
+.pagination .activePage {
+  border-color: #121212;
+  background: #121212;
+  color: #fff;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 40px;
+  padding: 32px;
+  border: 1px solid #e7e2dc;
+  border-radius: 12px;
+  background: #fdfcfa;
+}
+
+.emptyState h2 {
+  margin: 0;
+  color: #121212;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.emptyState p {
+  margin: 0;
+  color: #625d56;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.emptyStateAction {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 7px;
+  background: #121212;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="light"] .evidenceLibraryMain,
+  :root[data-theme="light"] .evidenceLibraryViewport,
+  :root[data-theme="light"] .evidenceLibraryStage {
+    background: #fff;
+  }
+}
+
+:global(html.cerise-night-mode) .evidenceLibraryMain,
+:global(html.cerise-night-mode) .evidenceLibraryViewport,
+:global(html.cerise-night-mode) .evidenceLibraryStage {
+  background: #0a0b0b !important;
+}
+
+:global(html.cerise-night-mode) .libraryCanvas {
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .libraryHeader {
+  border-color: #2b3030 !important;
+}
+
+:global(html.cerise-night-mode) .headerEyebrow {
+  color: #d8a05d !important;
+}
+
+:global(html.cerise-night-mode) .libraryHeader h1 {
+  color: #f3f0ea !important;
+}
+
+:global(html.cerise-night-mode) .headerSubtitle,
+:global(html.cerise-night-mode) .infoNote,
+:global(html.cerise-night-mode) .statTile span,
+:global(html.cerise-night-mode) .statTile small,
+:global(html.cerise-night-mode) .emptyBody,
+:global(html.cerise-night-mode) .emptyState p,
+:global(html.cerise-night-mode) .rowsPerPageControl,
+:global(html.cerise-night-mode) .sortControl {
+  color: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .viewSynthesisButton {
+  background: #f0ece5 !important;
+  color: #171817 !important;
+  border-color: #2f3434 !important;
+}
+
+:global(html.cerise-night-mode) .statTile,
+:global(html.cerise-night-mode) .tableWrap,
+:global(html.cerise-night-mode) .emptyState {
+  border-color: #2b3030 !important;
+  background: #0f1111 !important;
+}
+
+:global(html.cerise-night-mode) .statTile strong,
+:global(html.cerise-night-mode) .titleCell,
+:global(html.cerise-night-mode) .emptyState h2 {
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .searchInput,
+:global(html.cerise-night-mode) .tabs,
+:global(html.cerise-night-mode) .sortControl,
+:global(html.cerise-night-mode) .exportButton,
+:global(html.cerise-night-mode) .retryButton,
+:global(html.cerise-night-mode) .deleteButton,
+:global(html.cerise-night-mode) .rowsPerPageControl select,
+:global(html.cerise-night-mode) .pagination button {
+  border-color: #2f3434 !important;
+  background: #0b0d0d !important;
+  color: #f0ece5 !important;
+}
+
+:global(html.cerise-night-mode) .tabs .activeTab {
+  background: #171a1a !important;
+  color: #f1eee8 !important;
+}
+
+:global(html.cerise-night-mode) .pagination .activePage {
+  border-color: #f0ece5 !important;
+  background: #f0ece5 !important;
+  color: #171817 !important;
+}
+
+:global(html.cerise-night-mode) .table {
+  color: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .table th {
+  background: #171a1a !important;
+  color: #b8b2aa !important;
+}
+
+:global(html.cerise-night-mode) .table tbody tr + tr {
+  border-color: #2b3030 !important;
+}
+
+:global(html.cerise-night-mode) .scholarSource {
+  color: #4e9bff !important;
+}
+
+:global(html.cerise-night-mode) .uploadSource {
+  color: #b9b2aa !important;
+}
+
+:global(html.cerise-night-mode) .pendingCell {
+  color: #d8a05d !important;
+}
+
+:global(html.cerise-night-mode) .failedCell {
+  color: #e08079 !important;
+}
+
+:global(html.cerise-night-mode) .emptyStateAction {
+  background: #f0ece5 !important;
+  color: #171817 !important;
+}
+
+@media (max-width: 860px) {
+  .statRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .libraryHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .controlsRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tabs {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

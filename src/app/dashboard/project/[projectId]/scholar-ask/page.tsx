@@ -248,9 +248,15 @@ const ResponseContent = React.memo(function ResponseContent({
 // ============================================================
 // Main Page
 // ============================================================
-export default function ScholarAskPage() {
+function ScholarAskWorkspace({
+  embedded = false,
+  projectId: providedProjectId,
+}: {
+  embedded?: boolean;
+  projectId?: string;
+}) {
   const params = useParams();
-  const projectId = params.projectId as string;
+  const projectId = providedProjectId ?? (params.projectId as string);
   const { user } = useUser();
 
   const storageKey = `cerise_ask_${projectId}`;
@@ -272,6 +278,17 @@ export default function ScholarAskPage() {
   const [paperAnalysisError, setPaperAnalysisError] = useState<Record<number, string>>({});
   const [analyzingPaper, setAnalyzingPaper] = useState<number | null>(null);
   const [savedEvidenceIds, setSavedEvidenceIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!embedded) return;
+    const narrowViewport = window.matchMedia("(max-width: 639px)");
+    const closeSidebarOnNarrowViewport = () => {
+      if (narrowViewport.matches) setSidebarOpen(false);
+    };
+    closeSidebarOnNarrowViewport();
+    narrowViewport.addEventListener("change", closeSidebarOnNarrowViewport);
+    return () => narrowViewport.removeEventListener("change", closeSidebarOnNarrowViewport);
+  }, [embedded]);
 
   // AI-ready badge — reflects the real usage/lane state from /api/ai/usage
   // instead of a hardcoded "AI ready". Never shows green until we've confirmed it.
@@ -611,10 +628,10 @@ export default function ScholarAskPage() {
 
   return (
     <ErrorBoundary>
-      <div className="-mx-8 -my-8 flex flex-col h-[calc(100vh-57px)]">
+      <div className={embedded ? "flex h-full min-h-[620px] flex-col" : "-mx-8 -my-8 flex h-[calc(100vh-57px)] flex-col"}>
         {/* Sub-nav tabs */}
-        <div style={{ height: "40px", flexShrink: 0, display: "flex", alignItems: "center", padding: "0 24px", gap: "24px", borderBottom: "1px solid #e0d8d0", background: "#fff", fontFamily: "var(--font-noto), 'Noto Sans', sans-serif", fontSize: "11px" }}>
-          <Link href="/dashboard" style={{ color: "#7a6a5a", textDecoration: "none", fontSize: "11px" }}>← Projects</Link>
+        {!embedded ? <div style={{ height: "40px", flexShrink: 0, display: "flex", alignItems: "center", padding: "0 24px", gap: "24px", borderBottom: "1px solid #e0d8d0", background: "#fff", fontFamily: "var(--font-noto), 'Noto Sans', sans-serif", fontSize: "11px" }}>
+          <Link href="/projects" style={{ color: "#7a6a5a", textDecoration: "none", fontSize: "11px" }}>← Projects</Link>
           <div style={{ flex: 1 }} />
           {[
             { n: "Workspace", h: `/dashboard/project/${projectId}` },
@@ -625,14 +642,24 @@ export default function ScholarAskPage() {
           ].map((tab) => (
             <Link key={tab.n} href={tab.h} style={{ color: tab.active ? "#c0392b" : "#7a6a5a", fontWeight: tab.active ? 700 : 400, borderBottom: tab.active ? "2px solid #c0392b" : "2px solid transparent", paddingBottom: "8px", marginBottom: "-1px", fontSize: "11px", textDecoration: "none" }}>{tab.n}</Link>
           ))}
-        </div>
+        </div> : null}
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
         {sidebarOpen && (
-          <div className="w-52 bg-[#fdfcfa] border-r border-[#e0d8d0] flex flex-col shrink-0">
-            <div className="p-3 border-b border-[#e0d8d0]">
+          <div className={`w-52 bg-[#fdfcfa] border-r border-[#e0d8d0] flex flex-col shrink-0 ${embedded ? "max-sm:absolute max-sm:inset-y-0 max-sm:left-0 max-sm:z-20 max-sm:shadow-xl" : ""}`}>
+            <div className="flex items-center gap-2 p-3 border-b border-[#e0d8d0]">
               <button onClick={newConversation} className="w-full flex items-center gap-2 px-3 py-2 text-xs bg-white border border-[#e0d8d0] rounded-lg hover:bg-[#fdfcfa] text-[#5a4a3a] font-medium">+ New research</button>
+              {embedded ? (
+                <button
+                  aria-label="Close conversations"
+                  className="hidden shrink-0 rounded-lg border border-[#e0d8d0] bg-white px-2 py-2 text-[10px] font-semibold text-[#5a4a3a] max-sm:inline-flex"
+                  onClick={() => setSidebarOpen(false)}
+                  type="button"
+                >
+                  Close
+                </button>
+              ) : null}
             </div>
             <div className="flex-1 overflow-y-auto py-1">
               {conversations.map((conv) => (
@@ -667,11 +694,13 @@ export default function ScholarAskPage() {
             </button>
             {activeConv && <span className="text-sm text-[#5a4a3a] font-medium truncate">{activeConv.title}</span>}
             <div className="ml-auto" />
-            {aiStatus.kind === "byok" && (
-              <span className="hidden sm:inline-flex rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-[10px] font-semibold text-green-700">
-                AI ready — your key
-              </span>
-            )}
+            {!embedded ? <Link
+              aria-label="Open Evidence Library"
+              className="inline-flex shrink-0 items-center rounded-lg bg-[#1a1208] px-3 py-1.5 text-[10px] font-semibold text-white shadow-sm transition-colors hover:bg-black"
+              href="/evidence-library"
+            >
+              Evidence Library <span aria-hidden="true">→</span>
+            </Link> : null}
             {aiStatus.kind === "included" && (
               <span className="hidden sm:inline-flex rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-[10px] font-semibold text-green-700">
                 AI ready — included ({aiStatus.used} of {aiStatus.allowance} used)
@@ -916,4 +945,19 @@ export default function ScholarAskPage() {
       </div>
     </ErrorBoundary>
   );
+}
+
+export default function ScholarAskPage(props: unknown) {
+  const embedded = Boolean(
+    props && typeof props === "object" && "embedded" in props && props.embedded,
+  );
+  const projectId =
+    props &&
+    typeof props === "object" &&
+    "projectId" in props &&
+    typeof props.projectId === "string"
+      ? props.projectId
+      : undefined;
+
+  return <ScholarAskWorkspace embedded={embedded} projectId={projectId} />;
 }

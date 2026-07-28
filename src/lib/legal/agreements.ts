@@ -1,5 +1,10 @@
 export type AgreementKey = "terms" | "privacy";
 
+export const AGREEMENT_VERSIONS: Record<AgreementKey, string> = {
+  terms: "2026-07-07",
+  privacy: "2026-07-07",
+};
+
 export type AgreementDocument = {
   title: string;
   shortTitle: string;

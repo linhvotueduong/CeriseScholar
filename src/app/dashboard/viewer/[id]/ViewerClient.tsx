@@ -17,7 +17,7 @@ export default function ViewerClient({ pdfId, pdfName, pdfUrl, pdfAuthor, pdfTit
       {/* File name bar with back button */}
       <div className="flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-2">
         <Link
-          href="/dashboard"
+          href="/projects"
           className="text-sm text-gray-500 hover:text-[#111111] transition-colors"
         >
           &larr; Back

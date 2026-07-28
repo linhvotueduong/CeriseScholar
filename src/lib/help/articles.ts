@@ -26,7 +26,7 @@ export const helpCategories = [
   {
     slug: "research-workflow",
     title: "Research Workflow",
-    body: "Work with projects, sources, notes, citations, and course materials effectively.",
+    body: "Work with projects, ScholarAsk, saved evidence, sources, notes, and citations effectively.",
     tone: "amber" as const,
   },
 ];
@@ -36,7 +36,7 @@ export const popularQuestions = [
     category: "Getting Started",
     question: "How do I start using Cerise Scholar?",
     answer:
-      "Create an account, then use Dashboard or Research Desk to create a project and add materials. AI is included by default, and you can connect your own OpenRouter key in Settings > AI.",
+      "Create an account, open Projects, and start one focused research question in ScholarAsk. AI is included by default, and you can connect your own OpenRouter key in Settings > AI.",
   },
   {
     category: "AI Setup",
@@ -66,19 +66,13 @@ export const popularQuestions = [
     category: "Beta Access",
     question: "What features are available during public beta?",
     answer:
-      "Dashboard, Research Desk, Course Library, help, support, included AI, own-key AI, and usage metering are available. Some analytics and settings persistence may continue to evolve during beta.",
+      "Projects, ScholarAsk, Evidence Library, project workspaces, help, support, included AI, own-key AI, and usage metering are available during beta.",
   },
   {
     category: "Research Workflow",
     question: "How do I keep notes, citations, and evidence connected?",
     answer:
       "Start from a project, then keep papers, evidence rows, source notes, citations, and draft sections tied to that project. This helps Cerise Scholar preserve the path from reading to synthesis and writing.",
-  },
-  {
-    category: "Course Library",
-    question: "Can course materials support my research projects?",
-    answer:
-      "Yes. Course materials can help you practice literature review, source verification, citation mapping, and methods work before you apply those skills inside active research projects.",
   },
 ];
 
@@ -88,7 +82,7 @@ export const allHelpQuestions = [
     category: "Getting Started",
     question: "What should I do first after signing in?",
     answer:
-      "Open Dashboard, check the current project, then create one research project if you are starting fresh. Add only the sources that belong to that topic so your evidence stays clean.",
+      "Open Projects, create one focused project if you are starting fresh, then begin in ScholarAsk. Add only sources that belong to that topic so your evidence stays clean.",
   },
   {
     category: "AI Setup",
@@ -98,9 +92,9 @@ export const allHelpQuestions = [
   },
   {
     category: "Research Workflow",
-    question: "When should I use Research Desk instead of Dashboard?",
+    question: "When should I use ScholarAsk instead of Workspace?",
     answer:
-      "Use Dashboard to see your current status and next move. Use Research Desk when you are actively working with projects, papers, evidence rows, synthesis steps, citations, and draft preparation.",
+      "Use ScholarAsk to explore a research question and find source-backed articles. Use Workspace when you are reading uploaded papers, highlighting passages, adding notes, and preparing synthesis or writing.",
   },
   {
     category: "Research Workflow",
@@ -113,12 +107,6 @@ export const allHelpQuestions = [
     question: "Can Cerise Scholar help me prepare citation-ready notes?",
     answer:
       "Yes. Keep each claim connected to its source, evidence row, and context. Cerise Scholar can help organize citation-ready notes so draft sections do not become detached from the papers behind them.",
-  },
-  {
-    category: "Course Library",
-    question: "What is the Course Library for?",
-    answer:
-      "Course Library helps you practice research skills such as evidence synthesis, source verification, citation mapping, methods review, and meta-analysis preparation alongside your active projects.",
   },
   {
     category: "Account",
@@ -342,7 +330,7 @@ export const helpArticles = {
       },
       {
         heading: "Account profile and preferences",
-        body: "Use Settings > Account to update your profile, display name, email, language, timezone, connected accounts, and account preferences.",
+        body: "Use Settings > Account for your profile, author name, email, and connected accounts. Language and timezone live under Preferences, while optional email choices live under Notifications.",
       },
       {
         heading: "Connected accounts",
@@ -410,8 +398,8 @@ export const helpArticles = {
         body: "Move from synthesis into draft sections. Review evidence, citations, gaps, and unclear claims before exporting or submitting work.",
       },
       {
-        heading: "Use Course Library alongside research",
-        body: "Course Library supports skill-building, such as evidence synthesis, citation mapping, and methods review. Course progress should support research work without replacing project-level evidence tracking.",
+        heading: "Use Evidence Library alongside ScholarAsk",
+        body: "Save useful ScholarAsk articles to Evidence Library so you can reopen, compare, export, or remove them without mixing in uploaded workspace documents.",
       },
       {
         heading: "Workflow best practices",
@@ -419,7 +407,7 @@ export const helpArticles = {
       },
       {
         heading: "Where to go next",
-        body: "Use Research Desk for project work, Course Library for skill support, Getting Started for setup, and Contact Us if something in the workflow is confusing.",
+        body: "Use Projects to choose your research, ScholarAsk to explore sources, Evidence Library to manage saved articles, and Contact Us if something in the workflow is confusing.",
       },
     ],
     related: ["getting-started", "privacy-protection", "ai-setup"],

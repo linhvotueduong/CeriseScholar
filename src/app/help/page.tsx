@@ -8,6 +8,7 @@ import { AppIcon } from "@/components/app-shell/AppIcons";
 import HelpCategoryCard from "@/components/app-ui/HelpCategoryCard";
 import { AppPageFrame, HelpCenterLayoutGrid } from "@/components/app-ui/LayoutGrids";
 import { allHelpQuestions, helpCategories } from "@/lib/help/articles";
+import { CERISE_COMMUNITY_URL } from "@/lib/community";
 import HEDGEHOG from "@/lib/hedgehog";
 import styles from "./page.module.css";
 
@@ -33,10 +34,10 @@ const supportOptions: Array<{
     tone: "blue",
   },
   {
-    title: "Ask Cerise Space",
-    body: "Bring research workflow questions, setup notes, and study ideas to Cerise Space.",
-    cta: "Open Cerise Space",
-    href: "/dashboard/space",
+    title: "Ask the Cerise Community",
+    body: "Bring research workflow questions, setup notes, and study ideas to our community on Reddit.",
+    cta: "Open community ↗",
+    href: CERISE_COMMUNITY_URL,
     tone: "green",
   },
 ];
@@ -173,9 +174,14 @@ export default function HelpPage() {
                 <a className="rounded-[7px] border border-[#d8d3ce] px-4 py-2 text-center text-[12px] font-[850] text-[#111111] no-underline" href="mailto:cerisescholar@gmail.com">
                   Email Cerise
                 </a>
-                <Link className="rounded-[7px] border border-[#d8d3ce] bg-white px-4 py-2 text-center text-[12px] font-[850] text-[#111111] no-underline" href="/dashboard/space">
-                  Chat with Cerise
-                </Link>
+                <a
+                  className="rounded-[7px] border border-[#d8d3ce] bg-white px-4 py-2 text-center text-[12px] font-[850] text-[#111111] no-underline"
+                  href={CERISE_COMMUNITY_URL}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Open Cerise Community ↗
+                </a>
               </div>
             </article>
 
@@ -350,12 +356,23 @@ function SupportOptionCard({
       <div className="min-w-0">
         <h3 className="text-[12.5px] font-[850] leading-tight text-[#111111]">{title}</h3>
         <p className="mt-1.5 text-[10.5px] font-semibold leading-[18px] text-[#6f6760]">{body}</p>
-        <Link
-          className="mt-2.5 inline-flex h-7 items-center rounded-[7px] border border-[#d8d3ce] bg-white px-3 text-[10.5px] font-[850] text-[#111111] no-underline"
-          href={href}
-        >
-          {cta}
-        </Link>
+        {href.startsWith("http") ? (
+          <a
+            className="mt-2.5 inline-flex h-7 items-center rounded-[7px] border border-[#d8d3ce] bg-white px-3 text-[10.5px] font-[850] text-[#111111] no-underline"
+            href={href}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {cta}
+          </a>
+        ) : (
+          <Link
+            className="mt-2.5 inline-flex h-7 items-center rounded-[7px] border border-[#d8d3ce] bg-white px-3 text-[10.5px] font-[850] text-[#111111] no-underline"
+            href={href}
+          >
+            {cta}
+          </Link>
+        )}
       </div>
     </article>
   );

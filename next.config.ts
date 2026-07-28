@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Lets validation builds use an isolated directory while another local dev
+  // server owns `.next`; production remains on the standard path.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   output: "standalone",
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   turbopack: {},
@@ -15,6 +18,22 @@ const nextConfig: NextConfig = {
       config.resolve.alias.canvas = false;
     }
     return config;
+  },
+  async redirects() {
+    return [
+      { source: "/dashboard", destination: "/projects", permanent: true },
+      { source: "/research-desk", destination: "/projects", permanent: true },
+      { source: "/research-desk/evidence-library", destination: "/evidence-library", permanent: true },
+      { source: "/dashboard/schedule", destination: "/projects", permanent: true },
+      { source: "/dashboard/literature-review", destination: "/projects", permanent: true },
+      { source: "/dashboard/account", destination: "/settings/account", permanent: true },
+      { source: "/settings/danger-zone", destination: "/settings/account", permanent: true },
+      { source: "/dashboard/space/:path*", destination: "https://www.reddit.com/r/CeriseScholar/", permanent: false },
+      { source: "/cerise-space/:path*", destination: "https://www.reddit.com/r/CeriseScholar/", permanent: false },
+      { source: "/courses/:path*", destination: "/projects", permanent: true },
+      { source: "/my-learning/:path*", destination: "/projects", permanent: true },
+      { source: "/admin/courses", destination: "/projects", permanent: true },
+    ];
   },
   async headers() {
     return [

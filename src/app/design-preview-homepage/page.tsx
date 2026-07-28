@@ -335,7 +335,7 @@ export default function DesignPreviewHomepage() {
             </Link>
             <span style={{ fontFamily: "var(--font-fredoka), 'Fredoka', sans-serif", fontSize: "12px", fontWeight: 500, color: palette.ink, textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 12px" }}>OR</span>
             <Link
-              href="/projects-preview"
+              href="/projects"
               className="transition-colors hover:bg-[#1a1208] hover:text-white"
               style={{
                 display: "inline-flex", alignItems: "center", justifyContent: "center",

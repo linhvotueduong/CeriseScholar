@@ -178,7 +178,7 @@ export default function AiSettingsPage() {
           status: "Connect key first",
         },
         {
-          product: "Research Desk",
+          product: "ScholarAsk",
           source: "Own API",
           model: "Not configured",
           freeRouting: "Not applicable",
@@ -214,19 +214,11 @@ export default function AiSettingsPage() {
         status: status.connected ? "Active" : "Key pending",
       },
       {
-        product: "Course",
+        product: "ScholarAsk",
         source: "OpenRouter",
         model: modelLabel(selectedPremiumModel),
         freeRouting: "Auto by Cerise",
-        style: "Low-cost explanation",
-        status: status.connected ? "Active" : "Key pending",
-      },
-      {
-        product: "Research Desk",
-        source: "OpenRouter",
-        model: modelLabel(selectedPremiumModel),
-        freeRouting: "Auto by Cerise",
-        style: "Deeper analysis when credit is available",
+        style: "Source-backed research support",
         status: status.connected ? "Active" : "Key pending",
       },
     ];
@@ -337,7 +329,7 @@ export default function AiSettingsPage() {
       <SettingsPanel
         className="overflow-hidden px-4 pb-4 pt-4"
         description="Choose how Cerise Scholar accesses AI models and manages routing."
-        title="AI Setup"
+        title="API key"
       >
         {loading ? (
           <div className="flex items-center justify-center py-16">

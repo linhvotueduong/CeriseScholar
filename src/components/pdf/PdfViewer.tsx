@@ -19,6 +19,7 @@ import CodeSystemPanel from "@/components/codes/CodeSystemPanel";
 import DocumentPanel from "@/components/pdf/DocumentPanel";
 import NoteModal from "@/components/annotations/NoteModal";
 import Spinner from "@/components/ui/Spinner";
+import type { Pdf } from "@/types/pdf";
 
 interface PdfViewerProps {
   url: string;
@@ -27,6 +28,7 @@ interface PdfViewerProps {
   pdfAuthor?: string;
   pdfTitle?: string;
   projectId?: string;
+  onSelectPdf?: (pdf: Pdf | null) => void | Promise<void>;
 }
 
 type SpeechRecognitionEventLike = {
@@ -66,6 +68,7 @@ function LeftPanels({
   onCreateCode,
   onUpdateCode,
   onDeleteCode,
+  onSelectPdf,
 }: {
   pdfId: string;
   projectId?: string;
@@ -74,6 +77,7 @@ function LeftPanels({
   onCreateCode: (name: string, color: string) => void;
   onUpdateCode: (id: string, fields: Partial<Pick<import("@/types/code").Code, "name" | "color">>) => void;
   onDeleteCode: (id: string) => void;
+  onSelectPdf?: (pdf: Pdf | null) => void | Promise<void>;
 }) {
   const [docsOpen, setDocsOpen] = useState(true);
   const [codesOpen, setCodesOpen] = useState(true);
@@ -116,7 +120,7 @@ function LeftPanels({
             <span className="text-[10px] text-[#9a8a7a]">{totalPages}p</span>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <DocumentPanel currentPdfId={pdfId} projectId={projectId} />
+            <DocumentPanel currentPdfId={pdfId} onSelectPdf={onSelectPdf} projectId={projectId} />
           </div>
         </div>
       ) : (
@@ -218,7 +222,7 @@ interface PendingHighlight {
   rects: { x: number; y: number; width: number; height: number }[];
 }
 
-export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTitle, projectId }: PdfViewerProps) {
+export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTitle, projectId, onSelectPdf }: PdfViewerProps) {
   const {
     document,
     currentPage,
@@ -592,6 +596,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         onCreateCode={createCode}
         onUpdateCode={updateCode}
         onDeleteCode={deleteCode}
+        onSelectPdf={onSelectPdf}
       />
 
       {/* CENTER: PDF Viewer */}

@@ -13,9 +13,10 @@ import type { Pdf } from "@/types/pdf";
 interface DocumentPanelProps {
   currentPdfId: string;
   projectId?: string;
+  onSelectPdf?: (pdf: Pdf | null) => void | Promise<void>;
 }
 
-export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanelProps) {
+export default function DocumentPanel({ currentPdfId, projectId, onSelectPdf }: DocumentPanelProps) {
   const [pdfs, setPdfs] = useState<Pdf[]>([]);
   const [uploading, setUploading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -96,6 +97,7 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
         label: "Uploaded source content",
       });
       void runOcr(fileId);
+      if (onSelectPdf) void onSelectPdf(newPdf as Pdf);
     }
     setUploading(false);
   }
@@ -120,11 +122,18 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
         await supabase.storage.from("pdfs").remove([pdf.storage_path]);
       }
 
-      setPdfs((prev) => prev.filter((p) => p.id !== pdfId));
+      const remainingPdfs = pdfs.filter((p) => p.id !== pdfId);
+      setPdfs(remainingPdfs);
 
-      if (pdfId === currentPdfId) router.push("/dashboard");
+      if (pdfId === currentPdfId) {
+        if (onSelectPdf) {
+          void onSelectPdf(remainingPdfs[0] ?? null);
+        } else {
+          router.push("/projects");
+        }
+      }
     },
-    [pdfs, currentPdfId, router]
+    [pdfs, currentPdfId, onSelectPdf, router]
   );
 
   const handleToggleFinish = useCallback(
@@ -217,7 +226,13 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
               className={`group relative ${isDragging ? "opacity-40" : ""} ${isDragOver ? "border-t-2 border-t-[#1a1208]" : ""}`}
             >
               <button
-                onClick={() => router.push(projectId ? `/dashboard/project/${projectId}/viewer/${pdf.id}` : `/dashboard/viewer/${pdf.id}`)}
+                onClick={() => {
+                  if (onSelectPdf) {
+                    void onSelectPdf(pdf);
+                    return;
+                  }
+                  router.push(projectId ? `/dashboard/project/${projectId}/viewer/${pdf.id}` : `/dashboard/viewer/${pdf.id}`);
+                }}
                 className={`w-full text-left px-3 py-2 border-b border-gray-50 transition-colors ${
                   isActive ? "bg-pink-50 border-l-2 border-l-[#1a1208]" : "hover:bg-[#fdfcfa] border-l-2 border-l-transparent"
                 }`}

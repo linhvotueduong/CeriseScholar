@@ -7,12 +7,11 @@ import { cn } from "@/lib/utils/cn";
 
 export const settingsLinks = [
   { href: "/settings/account", label: "Account" },
-  { href: "/settings/ai", label: "AI" },
+  { href: "/settings/ai", label: "API key" },
   { href: "/settings/preferences", label: "Preferences" },
   { href: "/settings/notifications", label: "Notifications" },
   { href: "/settings/privacy-security", label: "Privacy & Security" },
   { href: "/settings/help-support", label: "Help & Support" },
-  { href: "/settings/danger-zone", label: "Danger Zone" },
 ];
 
 export default function SettingsSubnav() {

@@ -21,7 +21,7 @@ export default function DashboardError({
           Try again
         </button>
         <a
-          href="/dashboard"
+          href="/projects"
           className="px-5 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
         >
           Back to Dashboard

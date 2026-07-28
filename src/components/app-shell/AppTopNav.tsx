@@ -4,21 +4,21 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
 import { createClient } from "@/lib/supabase/client";
+import { CERISE_COMMUNITY_URL } from "@/lib/community";
 import { cn } from "@/lib/utils/cn";
 import { AppIcon } from "./AppIcons";
 
 const centerLinks = [
   { href: "/about", label: "About" },
   { href: "/research-guidance", label: "Guidance" },
-  { href: "/research-desk", label: "Projects" },
-  { href: "/courses", label: "Course" },
-  { href: "/dashboard/space", label: "Cerise Space" },
+  { href: "/projects", label: "Projects" },
+  { href: "/evidence-library", label: "Evidence Library" },
+  { href: CERISE_COMMUNITY_URL, label: "Cerise Community ↗", external: true },
 ];
 
 function isTopActive(pathname: string, href: string) {
   if (href === "/about") return pathname === "/about" || pathname.startsWith("/about/");
-  if (href === "/research-desk") return pathname === "/research-desk" || pathname.startsWith("/dashboard/project");
-  if (href === "/courses") return pathname === "/courses" || pathname.startsWith("/courses/");
+  if (href === "/projects") return pathname === "/projects" || pathname.startsWith("/dashboard/project");
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -39,22 +39,39 @@ export default function AppTopNav() {
       <div className="grid h-16 grid-cols-[1fr_auto] items-center gap-4 px-5 sm:px-6 lg:grid-cols-[260px_minmax(0,1fr)_190px] lg:px-6">
         <Link
           className="cerise-wordmark text-[22px] leading-none text-[#17120d] no-underline"
-          href="/dashboard"
+          href="/projects"
         >
           Cerise Scholar
         </Link>
 
         <nav className="hidden h-16 items-center justify-center gap-8 lg:flex">
           {centerLinks.map((item) => {
-            const active = isTopActive(pathname, item.href);
+            const external = "external" in item && item.external;
+            const active = !external && isTopActive(pathname, item.href);
+            const className = cn(
+              "flex h-16 items-center border-b-2 px-1 text-[12px] font-bold no-underline transition",
+              active
+                ? "border-[#9a7b55] text-[#17120d]"
+                : "border-transparent text-[#17120d] hover:border-[#ddd6ce]"
+            );
+
+            if (external) {
+              return (
+                <a
+                  className={className}
+                  href={item.href}
+                  key={item.href}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {item.label}
+                </a>
+              );
+            }
+
             return (
               <Link
-                className={cn(
-                  "flex h-16 items-center border-b-2 px-1 text-[12px] font-bold no-underline transition",
-                  active
-                    ? "border-[#9a7b55] text-[#17120d]"
-                    : "border-transparent text-[#17120d] hover:border-[#ddd6ce]"
-                )}
+                className={className}
                 href={item.href}
                 key={item.href}
               >
@@ -103,10 +120,12 @@ export default function AppTopNav() {
                 <div className="py-2">
                   {[
                     { href: "/settings/account", label: "Account" },
-                    { href: "/dashboard", label: "Dashboard" },
                     { href: "/settings", label: "Settings" },
                     { href: "/help", label: "Help Center" },
                     { href: "/help/contact", label: "Contact support" },
+                    ...(user.email?.toLowerCase() === "cerisescholar@gmail.com"
+                      ? [{ href: "/admin/name-change-requests", label: "Admin review" }]
+                      : []),
                   ].map((item) => (
                     <Link
                       className="block rounded-[10px] px-3 py-2 text-xs font-semibold text-[#111111] no-underline hover:bg-[#f7f5f2]"

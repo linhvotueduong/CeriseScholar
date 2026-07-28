@@ -1,0 +1,194 @@
+.workspace {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 280px minmax(460px, 1fr) 320px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 18px 22px;
+}
+
+.library,
+.preview,
+.configuration {
+  background: #fff;
+  border: 1px solid #dedbd5;
+  border-radius: 10px;
+  min-height: 0;
+}
+
+.library,
+.configuration {
+  overflow-y: auto;
+  padding: 18px;
+}
+
+.library > header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.library > header span,
+.configuration header > span,
+.previewHeader > div:first-child > span {
+  color: #6d6963;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.library > header strong {
+  align-items: center;
+  background: #f4efe8;
+  border-radius: 999px;
+  color: #86591c;
+  display: inline-flex;
+  font-size: 10px;
+  height: 24px;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.hiddenInput { display: none; }
+
+.importButton,
+.sampleButton,
+.emptyState button,
+.openBlock,
+.removeButton {
+  align-items: center;
+  border-radius: 7px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 800;
+  gap: 7px;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.importButton {
+  background: #231a10;
+  border: 1px solid #231a10;
+  color: #fff;
+  width: 100%;
+}
+
+.importButton:disabled { cursor: wait; opacity: .6; }
+
+.sampleButton {
+  background: #fff;
+  border: 0;
+  color: #86591c;
+  margin-top: 3px;
+  width: 100%;
+}
+
+.importButton svg,
+.openBlock svg,
+.removeButton svg { height: 15px; width: 15px; }
+
+.importState {
+  background: #f7f6f3;
+  border: 1px solid #e6e2dc;
+  color: #6d6963;
+  font-size: 10px;
+  line-height: 1.5;
+  margin: 10px 0 14px;
+  padding: 9px;
+}
+
+.library nav { display: grid; gap: 7px; }
+
+.library nav button {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dedbd5;
+  border-radius: 7px;
+  cursor: pointer;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  padding: 10px;
+  text-align: left;
+}
+
+.library nav button > span:first-child {
+  align-items: center;
+  background: #f7f4ef;
+  border-radius: 5px;
+  display: flex;
+  height: 28px;
+  justify-content: center;
+}
+
+.library nav button svg { height: 14px; width: 14px; }
+.library nav button strong,
+.library nav button small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.library nav button strong { font-size: 11px; }
+.library nav button small { color: #6d6963; font-size: 9px; margin-top: 3px; }
+.library nav .tableActive { background: #fffaf3; border-color: #a87f4f; box-shadow: inset 3px 0 #a87f4f; }
+
+.limitNote {
+  color: #77716a;
+  display: block;
+  font-size: 9px;
+  line-height: 1.5;
+  margin-top: 14px;
+}
+
+.preview { overflow: auto; padding: 20px; }
+.previewHeader { align-items: flex-start; display: flex; gap: 20px; justify-content: space-between; }
+.previewHeader h1 { font-family: var(--font-display), serif; font-size: 26px; margin: 5px 0; }
+.previewHeader p { color: #6d6963; font-size: 10px; margin: 0; }
+.metrics { display: flex; gap: 8px; }
+.metrics span { background: #f7f5f1; border: 1px solid #e3dfd8; border-radius: 7px; color: #6d6963; font-size: 9px; padding: 9px; white-space: nowrap; }
+.metrics strong { color: #17130f; display: block; font-size: 14px; margin-bottom: 2px; }
+
+.tableScroller { border: 1px solid #dedbd5; margin-top: 18px; max-height: calc(100dvh - 300px); overflow: auto; }
+.tableScroller table { border-collapse: collapse; font-size: 10px; min-width: 100%; width: max-content; }
+.tableScroller th,
+.tableScroller td { border-bottom: 1px solid #e6e2dc; border-right: 1px solid #ece9e4; max-width: 300px; overflow: hidden; padding: 10px; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.tableScroller th { background: #f5f4f2; color: #514c46; font-size: 9px; letter-spacing: .04em; position: sticky; text-transform: uppercase; top: 0; z-index: 1; }
+.tableScroller th:first-child,
+.tableScroller td:first-child { background: #faf9f7; color: #77716a; min-width: 42px; text-align: center; }
+.previewNote { color: #6d6963; font-size: 9px; margin: 9px 0 0; }
+
+.emptyState { align-items: center; display: flex; flex-direction: column; height: 100%; justify-content: center; margin: auto; max-width: 490px; text-align: center; }
+.emptyState > svg { color: #a87f4f; height: 36px; width: 36px; }
+.emptyState h1 { font-family: var(--font-display), serif; font-size: 28px; margin: 14px 0 8px; }
+.emptyState p { color: #6d6963; font-size: 12px; line-height: 1.6; margin: 0 0 18px; }
+.emptyState button { background: #231a10; border: 1px solid #231a10; color: #fff; }
+
+.configuration header h2 { font-size: 16px; margin: 5px 0 15px; }
+.configuration label { display: grid; gap: 6px; margin-bottom: 11px; }
+.configuration label > span { color: #49443e; font-size: 10px; font-weight: 800; }
+.configuration label em { color: #a87f4f; float: right; font-size: 8px; font-style: normal; text-transform: uppercase; }
+.configuration select,
+.configuration input { background: #fff; border: 1px solid #cfcac3; border-radius: 6px; font-size: 11px; min-height: 36px; padding: 0 9px; width: 100%; }
+.twoColumn { display: grid; gap: 9px; grid-template-columns: minmax(0, 1fr) 90px; }
+.boundaryNote { background: #fff8df; border: 1px solid #ecdca4; display: grid; gap: 4px; margin: 5px 0 13px; padding: 10px; }
+.boundaryNote strong { font-size: 10px; }
+.boundaryNote span { color: #625d55; font-size: 9px; line-height: 1.5; }
+.openBlock { background: #fff; border: 1px solid #bdb8b0; width: 100%; }
+.removeButton { background: transparent; border: 0; color: #a02b26; margin-top: 8px; width: 100%; }
+.missingLoop,
+.configurationEmpty { color: #6d6963; font-size: 11px; line-height: 1.6; }
+.configurationEmpty strong { color: #17130f; }
+
+@media (max-width: 1160px) {
+  .workspace { grid-template-columns: 250px minmax(420px, 1fr); }
+  .configuration { grid-column: 1 / -1; }
+}
+
+@media (max-width: 760px) {
+  .workspace { display: block; overflow: auto; }
+  .library,
+  .preview,
+  .configuration { margin-bottom: 14px; min-height: 360px; }
+  .previewHeader { display: block; }
+  .metrics { margin-top: 12px; }
+}

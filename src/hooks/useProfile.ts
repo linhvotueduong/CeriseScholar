@@ -37,8 +37,14 @@ export function useProfile(displayNameFallback = "Cerise Scholar") {
 
     // setState only inside the async callback (never synchronously in the
     // effect body) to satisfy react-hooks/set-state-in-effect.
-    fetchProfile(supabase, user.id).then((row) => {
+    fetchProfile(supabase, user.id).then(async (row) => {
       if (!mounted) return;
+      if (row?.avatar_path) {
+        const { data } = await supabase.storage
+          .from("avatars")
+          .createSignedUrl(row.avatar_path, 60 * 60);
+        if (data?.signedUrl) row = { ...row, avatar_url: data.signedUrl };
+      }
       setProfile(row);
       setLoadedUserId(user.id);
     });

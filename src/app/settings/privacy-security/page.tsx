@@ -18,8 +18,8 @@ export default function PrivacySecuritySettingsPage() {
         <section className="rounded-[12px] border border-[#e5e1dc] bg-white p-4">
           <h3 className="text-[13px] font-bold text-[#17120d]">Where your data lives</h3>
           <p className="mt-1 text-[10px] leading-4 text-[#6f6760]">
-            Cerise Scholar is a fully hosted app. Your account, projects, notes, and course
-            progress are stored in Supabase, our cloud database and authentication provider —
+            Cerise Scholar is a fully hosted app. Your account, projects, notes, and saved evidence
+            are stored in Supabase, our cloud database and authentication provider —
             not on any single device. Traffic between your browser and Cerise Scholar is
             encrypted (HTTPS/TLS), and your data is encrypted at rest by Supabase.
           </p>

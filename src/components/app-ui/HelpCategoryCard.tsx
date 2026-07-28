@@ -28,7 +28,7 @@ export default function HelpCategoryCard({
     "Research Workflow": "folder",
     "Report an issue": "bug",
     "Request a feature": "lightbulb",
-    "Ask Cerise Space": "users",
+    "Ask the Cerise Community": "users",
   };
   const icon = iconMap[label] || "help";
 

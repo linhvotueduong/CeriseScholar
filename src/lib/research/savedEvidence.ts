@@ -116,7 +116,7 @@ export function saveEvidenceItem(item: SavedEvidenceItem) {
   return next;
 }
 
-/** @deprecated v1 formatter for localStorage timestamps — new code uses `formatRelativeTime` from researchDeskDerive.ts against `evidence_library.created_at`. */
+/** @deprecated v1 formatter retained only for one-time localStorage migration support. */
 export function formatEvidenceAddedAt(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;

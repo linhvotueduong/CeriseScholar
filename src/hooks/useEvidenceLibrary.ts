@@ -6,15 +6,11 @@ import {
   deleteEvidenceLibraryRow,
   fetchEvidenceLibraryRows,
   migrateLegacySavedEvidence,
-  retryEvidenceAnalysis,
   type EvidenceLibraryRow,
 } from "@/lib/research/evidenceLibrary";
 
-// Shared client-fetch hook for both Evidence Library surfaces — the card on
-// /research-desk and the full page at /research-desk/evidence-library —
-// so the fetch/delete/retry/migration logic lives in exactly one place.
-// Fail-open like useResearchDeskData/useDashboardState: any query error
-// falls back to an empty list instead of crashing the page.
+// Client-fetch hook for the ScholarAsk-only Evidence Library page.
+// Any query error falls back to an empty list instead of crashing the page.
 
 export function useEvidenceLibrary(userId: string | null | undefined) {
   const [rows, setRows] = useState<EvidenceLibraryRow[]>([]);
@@ -70,16 +66,5 @@ export function useEvidenceLibrary(userId: string | null | undefined) {
     [refetch]
   );
 
-  const retryRow = useCallback(
-    async (row: EvidenceLibraryRow) => {
-      if (!row.pdf_id) return { ok: false, error: "This row has no source file to re-analyze." };
-      setRows((current) => current.map((r) => (r.id === row.id ? { ...r, status: "pending" } : r)));
-      const result = await retryEvidenceAnalysis(row.pdf_id);
-      void refetch();
-      return result;
-    },
-    [refetch]
-  );
-
-  return { rows, loading, error, refetch, removeRow, retryRow };
+  return { rows, loading, error, refetch, removeRow };
 }

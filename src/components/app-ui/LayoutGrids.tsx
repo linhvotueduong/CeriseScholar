@@ -37,22 +37,6 @@ export function DashboardMiddleGrid({ children, className }: { children: ReactNo
   );
 }
 
-export function ResearchDeskPageTemplate({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <section className={cn("grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_244px]", className)}>
-      {children}
-    </section>
-  );
-}
-
-export function CourseLibraryPageTemplate({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <section className={cn("grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_300px]", className)}>
-      {children}
-    </section>
-  );
-}
-
 export function HelpCenterPageTemplate({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <section className={cn("grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_300px]", className)}>
@@ -94,7 +78,5 @@ export function SettingsPageTemplate({ children, className }: { children: ReactN
 }
 
 export const DashboardLayoutGrid = DashboardPageTemplate;
-export const ResearchDeskLayoutGrid = ResearchDeskPageTemplate;
-export const CourseLibraryLayoutGrid = CourseLibraryPageTemplate;
 export const HelpCenterLayoutGrid = HelpCenterPageTemplate;
 export const SettingsLayoutGrid = SettingsPageTemplate;

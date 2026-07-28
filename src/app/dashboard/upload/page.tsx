@@ -113,7 +113,7 @@ function UploadPageInner() {
 
     // 5. Continue the journey: into the project's Workspace to read & highlight the
     // new source; without a project context, back to the dashboard as before.
-    router.push(projectId ? `/dashboard/project/${projectId}` : "/dashboard");
+    router.push(projectId ? `/dashboard/project/${projectId}` : "/projects");
     router.refresh();
   }
 
@@ -220,7 +220,7 @@ function UploadPageInner() {
           ) : (
             <Link
               className="mt-5 inline-flex w-full items-center justify-center rounded-lg border border-[#e0cdb8] bg-white px-4 py-3 font-medium text-[#17120d] transition-colors hover:bg-[#f6efe4]"
-              href="/dashboard"
+              href="/projects"
             >
               Open your dashboard to ask →
             </Link>
