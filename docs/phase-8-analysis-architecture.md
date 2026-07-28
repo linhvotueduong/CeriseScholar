@@ -5,8 +5,9 @@ Status:
 - Phase 8.0 analysis-contract and provenance foundation implemented on
   2026-07-28.
 - Phase 8.1 release-bound Analysis Plan Editor implemented on 2026-07-28.
-- Data import, transformations, statistical execution, results interpretation,
-  and publication outputs are later approval boundaries.
+- Phase 8.2 local Data Intake and Audit implemented on 2026-07-28.
+- Transformations, statistical execution, results interpretation, and
+  publication outputs are later approval boundaries.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
@@ -163,28 +164,78 @@ a scientific-validity certification.
   are executed or embedded by the contract.
 - AI is not given local participant responses in Phase 8.0.
 
+## Phase 8.2 outcome
+
+Phase 8.2 adds a dedicated full-width Data Intake and Audit workspace at
+`/data-intake/[projectId]` and links it from the second Stage 06 step. It accepts
+the complete Local Research Host export folder and reads exactly five bounded
+JSON files:
+
+- `release.json`;
+- `codebook.json`;
+- `analysis-contract.json`;
+- `production/responses.json`; and
+- `pilot/responses.json`.
+
+The browser independently verifies the frozen release, analysis-contract
+checksum, codebook identity, response-export identity, and execution mode. It
+then computes aggregate production/pilot counts, completion states, condition
+allocation, duplicate IDs, timestamp consistency, withdrawal erasure,
+unexpected or never-observed variables, required-response missingness, and
+planned primary-outcome missingness.
+
+Participant rows are never written to Local Storage, Supabase, Azure, OpenAI,
+or OpenRouter. They are parsed locally to produce bounded aggregates and then
+discarded. Only an aggregate audit receipt is kept on the device. The receipt
+contains provenance, filenames, file sizes and checksums, field names, counts,
+rates, and review issues—never session IDs or participant values.
+
+Phase 8.2 requires a ready Phase 8.1 plan for the same release before the file
+picker is enabled. The receipt records the plan update time, prior data-access
+declaration, and a device-reported local intake timestamp without mutating the
+plan or claiming trusted preregistration.
+
+The Stage 06 Data Intake step can be marked complete only after:
+
+1. the release, contract, and codebook match;
+2. production and pilot files prove their frozen execution modes;
+3. no session ID appears in both modes;
+4. there is at least one completed production session;
+5. no blocking structural or withdrawal-erasure issue remains; and
+6. the researcher explicitly reviews any non-blocking findings.
+
+Review findings may be acknowledged so Phase 8.3 can make an explicit,
+reproducible decision about them. Blocking identity or structural issues cannot
+be acknowledged away.
+
+Phase 8.2 is not:
+
+- a raw-data repository;
+- a transformation engine;
+- a statistics engine;
+- a preregistration or trusted timestamping service;
+- proof that the analysis plan was prospective;
+- a scientific-validity, ethics, timing, or data-quality certification; or
+- permission for AI to inspect participant responses.
+
 ## Recommended next boundaries
 
 Each boundary should be approved, built, and verified separately:
 
-1. **Phase 8.2 — Data Intake and Audit**
-
-   Import Local Host exports, verify release/contract identity, separate pilot
-   data, validate schemas, and produce a read-only data-quality report.
-2. **Phase 8.3 — Reproducible Preparation**
+1. **Phase 8.3 — Reproducible Preparation**
 
    Reviewable transformations and exclusions with a deterministic operation log
    and derived, never-overwritten datasets.
-3. **Phase 8.4 — Analysis Execution**
+2. **Phase 8.4 — Analysis Execution**
 
    A small reviewed method registry with assumptions, effect sizes, confidence
    intervals, diagnostics, and deterministic outputs. No arbitrary remote code.
-4. **Phase 8.5 — Results and Interpretation**
+3. **Phase 8.5 — Results and Interpretation**
 
    RQ-linked tables, figures, claims, limitations, and divergence from the
    frozen plan. AI may explain reviewed outputs but must not silently run or
    change analyses.
-5. **Phase 8.6 — Reproducibility Package**
+4. **Phase 8.6 — Reproducibility Package**
 
    Data dictionary, contract, amendment log, operation log, results, figures,
    environment/version metadata, and a machine-readable manifest.

@@ -50,8 +50,10 @@ test("Stage 6 adds analysis planning without shifting persisted analysis-step id
   assert.ok(stage);
   assert.equal(stage.steps[0].id, "stage-06-analysis-plan");
   assert.equal(stage.steps[0].canvas, "analysis-plan-launcher");
+  assert.equal(stage.steps[1].id, "stage-06-data-intake");
+  assert.equal(stage.steps[1].canvas, "data-intake-audit-launcher");
   assert.deepEqual(
-    stage.steps.slice(1).map((step) => step.id),
+    stage.steps.slice(2).map((step) => step.id),
     [
       "stage-06-step-01",
       "stage-06-step-02",

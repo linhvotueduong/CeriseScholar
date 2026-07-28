@@ -21,6 +21,7 @@ export type ResearchCanvasKind =
   | "study-participants"
   | "experiment-studio-launcher"
   | "analysis-plan-launcher"
+  | "data-intake-audit-launcher"
   | "guided";
 
 export interface ResearchPathStep {
@@ -247,6 +248,15 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
         shortTitle: "Analysis Plan",
         description: "Complete the release-bound analysis plan before importing or reviewing participant data.",
         canvas: "analysis-plan-launcher",
+        prompts: [],
+        checklist: [],
+      },
+      {
+        id: "stage-06-data-intake",
+        title: "Verify Data Intake and Quality",
+        shortTitle: "Data Intake",
+        description: "Verify Local Host export identity, separate pilot data, and review a read-only schema and quality audit.",
+        canvas: "data-intake-audit-launcher",
         prompts: [],
         checklist: [],
       },
