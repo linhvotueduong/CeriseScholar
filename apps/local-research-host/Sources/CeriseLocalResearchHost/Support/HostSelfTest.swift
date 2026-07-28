@@ -9,6 +9,8 @@ enum HostSelfTest {
     static func run() throws {
         try verifyBundleIntegrity()
         try verifyLocalDatabaseRecoveryAndExports()
+        try verifyLocalAudioLifecycle()
+        try verifyLocalVideoLifecycle()
         try verifyLocalServerBoundary()
     }
 
@@ -185,6 +187,271 @@ enum HostSelfTest {
         }
     }
 
+    private static func verifyLocalAudioLifecycle() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cerise-local-host-audio-self-test-\(UUID().uuidString)", isDirectory: true)
+        let mediaURL = root.appendingPathComponent("media", isDirectory: true)
+        try FileManager.default.createDirectory(at: mediaURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let database = try LocalResponseDatabase(
+            databaseURL: root.appendingPathComponent("responses.sqlite"),
+            mediaURL: mediaURL
+        )
+        defer { database.close() }
+        let releaseId = "release_audio_test"
+        let releaseChecksum = "sha256:" + String(repeating: "c", count: 64)
+        let sessionId = "participant_audio"
+        let blockId = "audio_response_1"
+        let uploadId = "upload_1"
+        let limit = HostAudioBlockLimit(
+            blockId: blockId,
+            maxDurationSeconds: 30,
+            maxBytes: 1_024
+        )
+        _ = try database.saveCheckpoint(
+            checkpoint(
+                idempotencyKey: "audio-started-1",
+                sequence: 1,
+                status: "started",
+                releaseId: releaseId,
+                releaseChecksum: releaseChecksum,
+                response: "consented",
+                sessionId: sessionId
+            ),
+            releaseId: releaseId,
+            releaseNumber: 1,
+            releaseChecksum: releaseChecksum
+        )
+
+        let first = Data("first-audio-chunk".utf8)
+        let second = Data("second-audio-chunk".utf8)
+        _ = try database.saveAudio(
+            first,
+            request: LocalAudioRequest(
+                action: .chunk,
+                sessionId: sessionId,
+                blockId: blockId,
+                uploadId: uploadId,
+                chunkIndex: 0,
+                totalBytes: first.count,
+                durationMilliseconds: 1_000,
+                mimeType: "audio/webm"
+            ),
+            limit: limit,
+            releaseId: releaseId,
+            releaseChecksum: releaseChecksum,
+            maximumChunkBytes: 512
+        )
+        _ = try database.saveAudio(
+            second,
+            request: LocalAudioRequest(
+                action: .chunk,
+                sessionId: sessionId,
+                blockId: blockId,
+                uploadId: uploadId,
+                chunkIndex: 1,
+                totalBytes: first.count + second.count,
+                durationMilliseconds: 2_000,
+                mimeType: "audio/webm"
+            ),
+            limit: limit,
+            releaseId: releaseId,
+            releaseChecksum: releaseChecksum,
+            maximumChunkBytes: 512
+        )
+        let finalize = LocalAudioRequest(
+            action: .finalize,
+            sessionId: sessionId,
+            blockId: blockId,
+            uploadId: uploadId,
+            chunkIndex: 2,
+            totalBytes: first.count + second.count,
+            durationMilliseconds: 2_100,
+            mimeType: "audio/webm"
+        )
+        guard try database.saveAudio(
+            Data(),
+            request: finalize,
+            limit: limit,
+            releaseId: releaseId,
+            releaseChecksum: releaseChecksum,
+            maximumChunkBytes: 512
+        ), try !database.saveAudio(
+            Data(),
+            request: finalize,
+            limit: limit,
+            releaseId: releaseId,
+            releaseChecksum: releaseChecksum,
+            maximumChunkBytes: 512
+        ) else {
+            throw Failure(message: "Audio finalization was not idempotent.")
+        }
+
+        let recordingURL = mediaURL
+            .appendingPathComponent(sessionId)
+            .appendingPathComponent(blockId)
+            .appendingPathComponent(uploadId)
+            .appendingPathComponent("recording.webm")
+        var expectedRecording = first
+        expectedRecording.append(second)
+        guard try Data(contentsOf: recordingURL) == expectedRecording else {
+            throw Failure(message: "The finalized local recording did not preserve its ordered chunks.")
+        }
+        let manifest = String(decoding: try database.audioManifestJSON(), as: UTF8.self)
+        guard manifest.contains("recording.webm"),
+              manifest.contains("\"storageBoundary\" : \"local-only\"")
+        else {
+            throw Failure(message: "The audio manifest did not identify the assembled local recording.")
+        }
+
+        _ = try database.saveCheckpoint(
+            checkpoint(
+                idempotencyKey: "audio-withdrawn-2",
+                sequence: 2,
+                status: "withdrawn",
+                releaseId: releaseId,
+                releaseChecksum: releaseChecksum,
+                response: "must be removed",
+                sessionId: sessionId
+            ),
+            releaseId: releaseId,
+            releaseNumber: 1,
+            releaseChecksum: releaseChecksum
+        )
+        guard !FileManager.default.fileExists(atPath: recordingURL.path),
+              !String(decoding: try database.audioManifestJSON(), as: UTF8.self)
+                .contains("recording.webm")
+        else {
+            throw Failure(message: "Withdrawal did not delete the participant's local audio.")
+        }
+    }
+
+    private static func verifyLocalVideoLifecycle() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cerise-local-host-video-self-test-\(UUID().uuidString)", isDirectory: true)
+        let mediaURL = root.appendingPathComponent("media", isDirectory: true)
+        try FileManager.default.createDirectory(at: mediaURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let database = try LocalResponseDatabase(
+            databaseURL: root.appendingPathComponent("responses.sqlite"),
+            mediaURL: mediaURL
+        )
+        defer { database.close() }
+        let releaseId = "release_video_test"
+        let releaseChecksum = "sha256:" + String(repeating: "d", count: 64)
+        let sessionId = "participant_video"
+        let blockId = "video_response_1"
+        let uploadId = "video_upload_1"
+        let limit = HostVideoBlockLimit(
+            blockId: blockId,
+            maxDurationSeconds: 30,
+            maxBytes: 4_096,
+            includeAudio: false
+        )
+        _ = try database.saveCheckpoint(
+            checkpoint(
+                idempotencyKey: "video-started-1",
+                sequence: 1,
+                status: "started",
+                releaseId: releaseId,
+                releaseChecksum: releaseChecksum,
+                response: "consented",
+                sessionId: sessionId
+            ),
+            releaseId: releaseId,
+            releaseNumber: 1,
+            releaseChecksum: releaseChecksum
+        )
+
+        let first = Data("first-video-chunk".utf8)
+        let second = Data("second-video-chunk".utf8)
+        for (index, chunk) in [first, second].enumerated() {
+            _ = try database.saveVideo(
+                chunk,
+                request: LocalVideoRequest(
+                    action: .chunk,
+                    sessionId: sessionId,
+                    blockId: blockId,
+                    uploadId: uploadId,
+                    chunkIndex: index,
+                    totalBytes: index == 0 ? first.count : first.count + second.count,
+                    durationMilliseconds: (index + 1) * 1_000,
+                    mimeType: "video/webm",
+                    includeAudio: false
+                ),
+                limit: limit,
+                releaseId: releaseId,
+                releaseChecksum: releaseChecksum,
+                maximumChunkBytes: 1_024
+            )
+        }
+        let finalize = LocalVideoRequest(
+            action: .finalize,
+            sessionId: sessionId,
+            blockId: blockId,
+            uploadId: uploadId,
+            chunkIndex: 2,
+            totalBytes: first.count + second.count,
+            durationMilliseconds: 2_100,
+            mimeType: "video/webm",
+            includeAudio: false
+        )
+        guard try database.saveVideo(
+            Data(),
+            request: finalize,
+            limit: limit,
+            releaseId: releaseId,
+            releaseChecksum: releaseChecksum,
+            maximumChunkBytes: 1_024
+        ), try !database.saveVideo(
+            Data(),
+            request: finalize,
+            limit: limit,
+            releaseId: releaseId,
+            releaseChecksum: releaseChecksum,
+            maximumChunkBytes: 1_024
+        ) else {
+            throw Failure(message: "Video finalization was not idempotent.")
+        }
+
+        let recordingURL = mediaURL
+            .appendingPathComponent(sessionId)
+            .appendingPathComponent(blockId)
+            .appendingPathComponent(uploadId)
+            .appendingPathComponent("recording.webm")
+        var expected = first
+        expected.append(second)
+        guard try Data(contentsOf: recordingURL) == expected,
+              String(decoding: try database.videoManifestJSON(), as: UTF8.self)
+                .contains("recording.webm")
+        else {
+            throw Failure(message: "The finalized local video did not preserve its chunks and manifest.")
+        }
+
+        _ = try database.saveCheckpoint(
+            checkpoint(
+                idempotencyKey: "video-withdrawn-2",
+                sequence: 2,
+                status: "withdrawn",
+                releaseId: releaseId,
+                releaseChecksum: releaseChecksum,
+                response: "must be removed",
+                sessionId: sessionId
+            ),
+            releaseId: releaseId,
+            releaseNumber: 1,
+            releaseChecksum: releaseChecksum
+        )
+        guard !FileManager.default.fileExists(atPath: recordingURL.path),
+              !String(decoding: try database.videoManifestJSON(), as: UTF8.self)
+                .contains("recording.webm")
+        else {
+            throw Failure(message: "Withdrawal did not delete the participant's local video.")
+        }
+    }
+
     private static func verifyLocalServerBoundary() throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("cerise-local-host-http-self-test-\(UUID().uuidString)", isDirectory: true)
@@ -208,6 +475,10 @@ enum HostSelfTest {
             releaseId: releaseId,
             releaseNumber: 1,
             releaseChecksum: releaseChecksum,
+            audioLimits: [:],
+            audioMaxChunkBytes: 0,
+            videoLimits: [:],
+            videoMaxChunkBytes: 0,
             onCheckpoint: {},
             completion: { value in
                 result.value = value
@@ -285,11 +556,12 @@ enum HostSelfTest {
         status: String,
         releaseId: String,
         releaseChecksum: String,
-        response: String
+        response: String,
+        sessionId: String = "participant_1"
     ) -> Data {
         let payload: [String: Any] = [
             "idempotencyKey": idempotencyKey,
-            "sessionId": "participant_1",
+            "sessionId": sessionId,
             "checkpointSequence": sequence,
             "releaseId": releaseId,
             "releaseNumber": 1,

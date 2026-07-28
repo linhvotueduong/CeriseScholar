@@ -104,6 +104,8 @@ const RESPONSE_LABELS: Record<ExperimentBlock["responseType"], string> = {
   likert: "Rating scale",
   "single-choice": "Single choice",
   keyboard: "Keyboard response",
+  audio: "Local audio response",
+  video: "Local video response",
   "long-text": "Long text",
 };
 
@@ -133,6 +135,50 @@ function ParticipantResponse({
       <div className={styles.keyboardResponse} aria-live="polite">
         <strong>{value ? `Recorded key: ${value}` : "Waiting for a keyboard response"}</strong>
         <span>Allowed keys: {keys.map((key) => key.toUpperCase()).join(" · ")}</span>
+      </div>
+    );
+  }
+
+  if (block.responseType === "audio") {
+    const completed = Boolean(value);
+    return (
+      <div className={styles.keyboardResponse} aria-live="polite">
+        <strong>{completed ? "Simulated recording complete" : "Local Host microphone recording"}</strong>
+        <span>
+          {interactive
+            ? "Rehearsal never opens the microphone or stores audio. Use this control only to rehearse the flow."
+            : "Microphone permission, recording, and local storage run only in the same-Mac Local Research Host."}
+        </span>
+        {interactive ? (
+          <button
+            onClick={() => onChange?.(completed ? "" : "rehearsal-audio-placeholder")}
+            type="button"
+          >
+            {completed ? "Clear simulated recording" : "Simulate completed recording"}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (block.responseType === "video") {
+    const completed = Boolean(value);
+    return (
+      <div className={styles.keyboardResponse} aria-live="polite">
+        <strong>{completed ? "Simulated video recording complete" : "Local Host camera recording"}</strong>
+        <span>
+          {interactive
+            ? "Rehearsal never opens the camera or stores video. Use this control only to rehearse the flow."
+            : "Camera permission, preview, recording, and local storage run only in the same-Mac Local Research Host."}
+        </span>
+        {interactive ? (
+          <button
+            onClick={() => onChange?.(completed ? "" : "rehearsal-video-placeholder")}
+            type="button"
+          >
+            {completed ? "Clear simulated recording" : "Simulate completed recording"}
+          </button>
+        ) : null}
       </div>
     );
   }
@@ -392,6 +438,164 @@ function BlockSettings({
         </>
       ) : null}
 
+      {block.responseType === "audio" && block.audio ? (
+        <section className={styles.mediaSettings}>
+          <div className={styles.panelHeading}>
+            <h2>Local audio limits</h2>
+            <span>same Mac only</span>
+          </div>
+          <label>
+            <span>Audio recording consent</span>
+            <select
+              onChange={(event) => onUpdate({
+                audio: { ...block.audio!, consentBlockId: event.target.value },
+              })}
+              value={block.audio.consentBlockId}
+            >
+              <option value="">Select a preceding audio-consent block</option>
+              {blocks
+                .slice(0, Math.max(0, blocks.findIndex((candidate) => candidate.id === block.id)))
+                .filter((candidate) => candidate.type === "audio-consent")
+                .map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.title}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Maximum duration <small>(seconds)</small></span>
+            <input
+              max={300}
+              min={5}
+              onChange={(event) => onUpdate({
+                audio: { ...block.audio!, maxDurationSeconds: Number(event.target.value) },
+              })}
+              type="number"
+              value={block.audio.maxDurationSeconds}
+            />
+          </label>
+          <label>
+            <span>Maximum recording <small>(MB)</small></span>
+            <input
+              max={25}
+              min={1}
+              onChange={(event) => onUpdate({
+                audio: {
+                  ...block.audio!,
+                  maxBytes: Math.round(Number(event.target.value) * 1024 * 1024),
+                },
+              })}
+              type="number"
+              value={Math.max(1, Math.round(block.audio.maxBytes / (1024 * 1024)))}
+            />
+          </label>
+          <small>
+            Participants must pass a microphone check and explicitly start recording.
+            Audio is chunked and stored only by the same-Mac Local Research Host.
+          </small>
+        </section>
+      ) : null}
+
+      {block.responseType === "video" && block.video ? (
+        <section className={styles.mediaSettings}>
+          <div className={styles.panelHeading}>
+            <h2>Local video limits</h2>
+            <span>same Mac only</span>
+          </div>
+          <label>
+            <span>Video recording consent</span>
+            <select
+              onChange={(event) => onUpdate({
+                video: { ...block.video!, consentBlockId: event.target.value },
+              })}
+              value={block.video.consentBlockId}
+            >
+              <option value="">Select a preceding video-consent block</option>
+              {blocks
+                .slice(0, Math.max(0, blocks.findIndex((candidate) => candidate.id === block.id)))
+                .filter((candidate) => candidate.type === "video-consent")
+                .map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.title}</option>)}
+            </select>
+          </label>
+          <label className={styles.toggleRow}>
+            <input
+              checked={block.video.includeAudio}
+              onChange={(event) => onUpdate({
+                video: {
+                  ...block.video!,
+                  includeAudio: event.target.checked,
+                  audioConsentBlockId: event.target.checked
+                    ? block.video!.audioConsentBlockId
+                    : "",
+                },
+              })}
+              type="checkbox"
+            />
+            <span>Include microphone audio in the video</span>
+          </label>
+          {block.video.includeAudio ? (
+            <label>
+              <span>Separate audio recording consent</span>
+              <select
+                onChange={(event) => onUpdate({
+                  video: { ...block.video!, audioConsentBlockId: event.target.value },
+                })}
+                value={block.video.audioConsentBlockId}
+              >
+                <option value="">Select a preceding audio-consent block</option>
+                {blocks
+                  .slice(0, Math.max(0, blocks.findIndex((candidate) => candidate.id === block.id)))
+                  .filter((candidate) => candidate.type === "audio-consent")
+                  .map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.title}</option>)}
+              </select>
+            </label>
+          ) : null}
+          <label>
+            <span>Preferred camera</span>
+            <select
+              onChange={(event) => onUpdate({
+                video: {
+                  ...block.video!,
+                  cameraFacing: event.target.value === "environment" ? "environment" : "user",
+                },
+              })}
+              value={block.video.cameraFacing}
+            >
+              <option value="user">Front-facing camera</option>
+              <option value="environment">Rear-facing camera</option>
+            </select>
+          </label>
+          <label>
+            <span>Maximum duration <small>(seconds)</small></span>
+            <input
+              max={300}
+              min={5}
+              onChange={(event) => onUpdate({
+                video: { ...block.video!, maxDurationSeconds: Number(event.target.value) },
+              })}
+              type="number"
+              value={block.video.maxDurationSeconds}
+            />
+          </label>
+          <label>
+            <span>Maximum recording <small>(MB)</small></span>
+            <input
+              max={100}
+              min={1}
+              onChange={(event) => onUpdate({
+                video: {
+                  ...block.video!,
+                  maxBytes: Math.round(Number(event.target.value) * 1024 * 1024),
+                },
+              })}
+              type="number"
+              value={Math.max(1, Math.round(block.video.maxBytes / (1024 * 1024)))}
+            />
+          </label>
+          <small>
+            Participants must pass a visible camera check and explicitly start recording.
+            Video is chunked and stored only by the same-Mac Local Research Host.
+          </small>
+        </section>
+      ) : null}
+
       {block.type === "attention-check" ? (
         <label>
           <span>Expected answer</span>
@@ -605,7 +809,26 @@ export default function ExperimentalStudio({ projectId, projectName }: Experimen
 
   const addBlock = useCallback(() => {
     const block = createExperimentBlock(blockType, makeBlockId(blockType));
-    changeStudio((current) => ({ ...current, blocks: [...current.blocks, block] }));
+    changeStudio((current) => {
+      if (block.type === "audio-response" && block.audio) {
+        const consent = [...current.blocks].reverse().find((candidate) => candidate.type === "audio-consent");
+        block.audio = { ...block.audio, consentBlockId: consent?.id ?? "" };
+      }
+      if (block.type === "video-response" && block.video) {
+        const videoConsent = [...current.blocks].reverse().find(
+          (candidate) => candidate.type === "video-consent",
+        );
+        const audioConsent = [...current.blocks].reverse().find(
+          (candidate) => candidate.type === "audio-consent",
+        );
+        block.video = {
+          ...block.video,
+          consentBlockId: videoConsent?.id ?? "",
+          audioConsentBlockId: audioConsent?.id ?? "",
+        };
+      }
+      return { ...current, blocks: [...current.blocks, block] };
+    });
     setActiveBlockId(block.id);
   }, [blockType, changeStudio]);
 

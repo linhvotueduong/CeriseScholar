@@ -12,8 +12,10 @@ import {
 import { collectExperimentVariables } from "./experimentStudio";
 
 export const EXPERIMENT_HOST_BUNDLE_FORMAT = "cerise-local-research-host" as const;
-export const EXPERIMENT_HOST_BUNDLE_VERSION = 1 as const;
+export const EXPERIMENT_HOST_BUNDLE_VERSION = 3 as const;
 export const MAX_EXPERIMENT_HOST_BUNDLE_BYTES = 8 * 1024 * 1024;
+export const MAX_EXPERIMENT_AUDIO_CHUNK_BYTES = 1024 * 1024;
+export const MAX_EXPERIMENT_VIDEO_CHUNK_BYTES = 2 * 1024 * 1024;
 
 export type ExperimentHostExecutionMode = "pilot" | "production";
 
@@ -31,6 +33,23 @@ export interface ExperimentHostCodebook {
     columns: string[];
     rowCount: number;
   }>;
+  audioResponses: Array<{
+    blockId: string;
+    variableName: string;
+    consentBlockId: string;
+    maxDurationSeconds: number;
+    maxBytes: number;
+  }>;
+  videoResponses: Array<{
+    blockId: string;
+    variableName: string;
+    consentBlockId: string;
+    includeAudio: boolean;
+    audioConsentBlockId: string;
+    maxDurationSeconds: number;
+    maxBytes: number;
+    cameraFacing: "user" | "environment";
+  }>;
 }
 export interface ExperimentHostBundlePayload {
   bundleFormat: typeof EXPERIMENT_HOST_BUNDLE_FORMAT;
@@ -42,6 +61,8 @@ export interface ExperimentHostBundlePayload {
   runner: {
     packageVersion: typeof EXPERIMENT_RUNNER_PACKAGE_VERSION;
     checkpointEndpoint: "/api/checkpoints";
+    audioEndpoint: "/api/audio" | null;
+    videoEndpoint: "/api/video" | null;
     html: string;
   };
   codebook: ExperimentHostCodebook;
@@ -50,6 +71,12 @@ export interface ExperimentHostBundlePayload {
     localDatabase: "sqlite";
     cloudUpload: false;
     mediaDirectoryPrepared: true;
+    audioResponses: "local-only";
+    audioExecutionBoundary: "localhost-only";
+    audioMaxChunkBytes: typeof MAX_EXPERIMENT_AUDIO_CHUNK_BYTES;
+    videoResponses: "local-only";
+    videoExecutionBoundary: "localhost-only";
+    videoMaxChunkBytes: typeof MAX_EXPERIMENT_VIDEO_CHUNK_BYTES;
   };
 }
 
@@ -88,6 +115,31 @@ function hostCodebook(release: ExperimentRelease): ExperimentHostCodebook {
       columns: [...table.columns],
       rowCount: table.rows.length,
     })),
+    audioResponses: release.studio.blocks.flatMap((block) => (
+      block.type === "audio-response" && block.audio
+        ? [{
+            blockId: block.id,
+            variableName: block.variableName,
+            consentBlockId: block.audio.consentBlockId,
+            maxDurationSeconds: block.audio.maxDurationSeconds,
+            maxBytes: block.audio.maxBytes,
+          }]
+        : []
+    )),
+    videoResponses: release.studio.blocks.flatMap((block) => (
+      block.type === "video-response" && block.video
+        ? [{
+            blockId: block.id,
+            variableName: block.variableName,
+            consentBlockId: block.video.consentBlockId,
+            includeAudio: block.video.includeAudio,
+            audioConsentBlockId: block.video.audioConsentBlockId,
+            maxDurationSeconds: block.video.maxDurationSeconds,
+            maxBytes: block.video.maxBytes,
+            cameraFacing: block.video.cameraFacing,
+          }]
+        : []
+    )),
   };
 }
 
@@ -99,10 +151,14 @@ export async function buildExperimentHostBundle(
     throw new Error("The selected release failed its integrity check.");
   }
   const executionMode = options.executionMode ?? "pilot";
+  const containsAudio = (release.manifest.audioResponseCount ?? 0) > 0;
+  const containsVideo = (release.manifest.videoResponseCount ?? 0) > 0;
   const runner = buildExperimentRunnerPackage(release.studio, {
     release,
     executionMode,
     collectorCheckpointEndpoint: "/api/checkpoints",
+    ...(containsAudio ? { collectorAudioEndpoint: "/api/audio" } : {}),
+    ...(containsVideo ? { collectorVideoEndpoint: "/api/video" } : {}),
   });
   const payload: ExperimentHostBundlePayload = {
     bundleFormat: EXPERIMENT_HOST_BUNDLE_FORMAT,
@@ -114,6 +170,8 @@ export async function buildExperimentHostBundle(
     runner: {
       packageVersion: EXPERIMENT_RUNNER_PACKAGE_VERSION,
       checkpointEndpoint: "/api/checkpoints",
+      audioEndpoint: containsAudio ? "/api/audio" : null,
+      videoEndpoint: containsVideo ? "/api/video" : null,
       html: runner.html,
     },
     codebook: hostCodebook(release),
@@ -122,6 +180,12 @@ export async function buildExperimentHostBundle(
       localDatabase: "sqlite",
       cloudUpload: false,
       mediaDirectoryPrepared: true,
+      audioResponses: "local-only",
+      audioExecutionBoundary: "localhost-only",
+      audioMaxChunkBytes: MAX_EXPERIMENT_AUDIO_CHUNK_BYTES,
+      videoResponses: "local-only",
+      videoExecutionBoundary: "localhost-only",
+      videoMaxChunkBytes: MAX_EXPERIMENT_VIDEO_CHUNK_BYTES,
     },
   };
   const bundle: ExperimentHostBundle = {
@@ -154,6 +218,8 @@ export async function verifyExperimentHostBundle(value: unknown): Promise<Experi
     || !isRecord(value.runner)
     || value.runner.packageVersion !== EXPERIMENT_RUNNER_PACKAGE_VERSION
     || value.runner.checkpointEndpoint !== "/api/checkpoints"
+    || (value.runner.audioEndpoint !== null && value.runner.audioEndpoint !== "/api/audio")
+    || (value.runner.videoEndpoint !== null && value.runner.videoEndpoint !== "/api/video")
     || typeof value.runner.html !== "string"
     || value.runner.html.length > MAX_EXPERIMENT_HOST_BUNDLE_BYTES
     || !isRecord(value.codebook)
@@ -162,6 +228,12 @@ export async function verifyExperimentHostBundle(value: unknown): Promise<Experi
     || value.dataPolicy.localDatabase !== "sqlite"
     || value.dataPolicy.cloudUpload !== false
     || value.dataPolicy.mediaDirectoryPrepared !== true
+    || value.dataPolicy.audioResponses !== "local-only"
+    || value.dataPolicy.audioExecutionBoundary !== "localhost-only"
+    || value.dataPolicy.audioMaxChunkBytes !== MAX_EXPERIMENT_AUDIO_CHUNK_BYTES
+    || value.dataPolicy.videoResponses !== "local-only"
+    || value.dataPolicy.videoExecutionBoundary !== "localhost-only"
+    || value.dataPolicy.videoMaxChunkBytes !== MAX_EXPERIMENT_VIDEO_CHUNK_BYTES
   ) return null;
 
   let encodedBytes: number;
@@ -181,6 +253,22 @@ export async function verifyExperimentHostBundle(value: unknown): Promise<Experi
     || value.codebook.timingClaim !== "browser-measured"
     || !Array.isArray(value.codebook.variables)
     || !Array.isArray(value.codebook.trialTables)
+    || !Array.isArray(value.codebook.audioResponses)
+    || !Array.isArray(value.codebook.videoResponses)
+  ) return null;
+  const audioResponseCount = release.manifest.audioResponseCount ?? 0;
+  const containsAudio = audioResponseCount > 0;
+  if (
+    value.runner.audioEndpoint !== (containsAudio ? "/api/audio" : null)
+    || value.codebook.audioResponses.length !== audioResponseCount
+    || (containsAudio && !value.runner.html.includes("/api/audio"))
+  ) return null;
+  const videoResponseCount = release.manifest.videoResponseCount ?? 0;
+  const containsVideo = videoResponseCount > 0;
+  if (
+    value.runner.videoEndpoint !== (containsVideo ? "/api/video" : null)
+    || value.codebook.videoResponses.length !== videoResponseCount
+    || (containsVideo && !value.runner.html.includes("/api/video"))
   ) return null;
 
   const { bundleChecksum, ...payload } = value;

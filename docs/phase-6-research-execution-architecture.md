@@ -128,7 +128,10 @@ Still postponed:
 - distribution signing and notarization;
 - Windows packaging;
 - installer pipelines and auto-update/rollback;
-- audio capture (Phase 7.2) and webcam/video capture (Phase 7.3);
+- Audio capture (Phase 7.2) and bounded same-Mac webcam/video capture
+  (Phase 7.3) are implemented in the separate native Local Research Host.
+  See `phase-7-local-research-host-architecture.md` for their consent, storage,
+  export, withdrawal, and non-cloud boundaries.
 - certified timing claims and a supported-device benchmark matrix.
 
 Public Cerise-hosted participant links and cloud response storage remain a separate future decision. They are not part of Phase 6 or Phase 7 by default.

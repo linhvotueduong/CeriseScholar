@@ -14,6 +14,10 @@ final class LocalHTTPServer: @unchecked Sendable {
     private var releaseId = ""
     private var releaseNumber = 0
     private var releaseChecksum = ""
+    private var audioLimits: [String: HostAudioBlockLimit] = [:]
+    private var audioMaxChunkBytes = 0
+    private var videoLimits: [String: HostVideoBlockLimit] = [:]
+    private var videoMaxChunkBytes = 0
     private var mode: HostExecutionMode = .sameComputer
     private var paused = false
     private var participantURL: URL?
@@ -27,6 +31,10 @@ final class LocalHTTPServer: @unchecked Sendable {
         releaseId: String,
         releaseNumber: Int,
         releaseChecksum: String,
+        audioLimits: [String: HostAudioBlockLimit],
+        audioMaxChunkBytes: Int,
+        videoLimits: [String: HostVideoBlockLimit],
+        videoMaxChunkBytes: Int,
         onCheckpoint: @escaping CheckpointHandler,
         completion: @escaping ReadyHandler
     ) {
@@ -39,6 +47,10 @@ final class LocalHTTPServer: @unchecked Sendable {
             self.releaseId = releaseId
             self.releaseNumber = releaseNumber
             self.releaseChecksum = releaseChecksum
+            self.audioLimits = audioLimits
+            self.audioMaxChunkBytes = audioMaxChunkBytes
+            self.videoLimits = videoLimits
+            self.videoMaxChunkBytes = videoMaxChunkBytes
             self.paused = false
             self.checkpointHandler = onCheckpoint
 
@@ -171,7 +183,15 @@ final class LocalHTTPServer: @unchecked Sendable {
                 send(.text(503, "This local study is temporarily paused."), to: connection)
                 return
             }
-            send(.html(200, runnerHTML, nonce: runnerNonce), to: connection)
+            send(
+                .html(
+                    200,
+                    runnerHTML,
+                    nonce: runnerNonce,
+                    mediaEnabled: mode == .sameComputer && !videoLimits.isEmpty
+                ),
+                to: connection
+            )
             return
         }
         if request.method == "POST", path == "/api/checkpoints" {
@@ -198,6 +218,134 @@ final class LocalHTTPServer: @unchecked Sendable {
                 send(.json(200, ["saved": true, "duplicate": !inserted]), to: connection)
             } catch {
                 send(.json(400, ["saved": false, "error": "invalid-checkpoint"]), to: connection)
+            }
+            return
+        }
+        if request.method == "POST", path == "/api/audio" {
+            guard !paused else {
+                send(.json(503, ["saved": false, "error": "paused"]), to: connection)
+                return
+            }
+            guard mode == .sameComputer, !audioLimits.isEmpty else {
+                send(.json(403, ["saved": false, "error": "audio-boundary"]), to: connection)
+                return
+            }
+            guard originIsAllowed(request),
+                  let actionValue = request.headers["x-cerise-audio-action"],
+                  let action = LocalAudioRequest.Action(rawValue: actionValue),
+                  let sessionId = request.headers["x-cerise-session-id"],
+                  let blockId = request.headers["x-cerise-block-id"],
+                  let uploadId = request.headers["x-cerise-upload-id"],
+                  let chunkIndex = strictInteger(request.headers["x-cerise-chunk-index"]),
+                  let totalBytes = strictInteger(request.headers["x-cerise-total-bytes"]),
+                  let durationMilliseconds = strictInteger(request.headers["x-cerise-duration-ms"]),
+                  let mimeType = request.headers["x-cerise-audio-mime"],
+                  let limit = audioLimits[blockId],
+                  request.body.count <= audioMaxChunkBytes
+            else {
+                send(.json(400, ["saved": false, "error": "invalid-audio-metadata"]), to: connection)
+                return
+            }
+            let contentType = request.headers["content-type"]?
+                .lowercased()
+                .split(separator: ";", maxSplits: 1)
+                .first
+                .map(String.init) ?? ""
+            let contentTypeAllowed = action == .chunk
+                ? ["audio/webm", "audio/mp4", "audio/ogg"].contains(contentType)
+                : contentType == "application/octet-stream"
+            guard contentTypeAllowed else {
+                send(.json(415, ["saved": false, "error": "audio-content-type"]), to: connection)
+                return
+            }
+            do {
+                let inserted = try database?.saveAudio(
+                    request.body,
+                    request: LocalAudioRequest(
+                        action: action,
+                        sessionId: sessionId,
+                        blockId: blockId,
+                        uploadId: uploadId,
+                        chunkIndex: chunkIndex,
+                        totalBytes: totalBytes,
+                        durationMilliseconds: durationMilliseconds,
+                        mimeType: mimeType
+                    ),
+                    limit: limit,
+                    releaseId: releaseId,
+                    releaseChecksum: releaseChecksum,
+                    maximumChunkBytes: audioMaxChunkBytes
+                ) ?? false
+                checkpointHandler?()
+                send(.json(200, ["saved": true, "duplicate": !inserted]), to: connection)
+            } catch {
+                send(.json(400, ["saved": false, "error": "invalid-audio"]), to: connection)
+            }
+            return
+        }
+        if request.method == "POST", path == "/api/video" {
+            guard !paused else {
+                send(.json(503, ["saved": false, "error": "paused"]), to: connection)
+                return
+            }
+            guard mode == .sameComputer, !videoLimits.isEmpty else {
+                send(.json(403, ["saved": false, "error": "video-boundary"]), to: connection)
+                return
+            }
+            guard originIsAllowed(request),
+                  let actionValue = request.headers["x-cerise-video-action"],
+                  let action = LocalVideoRequest.Action(rawValue: actionValue),
+                  let sessionId = request.headers["x-cerise-session-id"],
+                  let blockId = request.headers["x-cerise-block-id"],
+                  let uploadId = request.headers["x-cerise-upload-id"],
+                  let chunkIndex = strictInteger(request.headers["x-cerise-chunk-index"]),
+                  let totalBytes = strictInteger(request.headers["x-cerise-total-bytes"]),
+                  let durationMilliseconds = strictInteger(request.headers["x-cerise-duration-ms"]),
+                  let mimeType = request.headers["x-cerise-video-mime"],
+                  let includeAudio = strictBoolean(
+                    request.headers["x-cerise-video-includes-audio"]
+                  ),
+                  let limit = videoLimits[blockId],
+                  request.body.count <= videoMaxChunkBytes
+            else {
+                send(.json(400, ["saved": false, "error": "invalid-video-metadata"]), to: connection)
+                return
+            }
+            let contentType = request.headers["content-type"]?
+                .lowercased()
+                .split(separator: ";", maxSplits: 1)
+                .first
+                .map(String.init) ?? ""
+            let contentTypeAllowed = action == .chunk
+                ? ["video/webm", "video/mp4"].contains(contentType)
+                : contentType == "application/octet-stream"
+            guard contentTypeAllowed else {
+                send(.json(415, ["saved": false, "error": "video-content-type"]), to: connection)
+                return
+            }
+            do {
+                let inserted = try database?.saveVideo(
+                    request.body,
+                    request: LocalVideoRequest(
+                        action: action,
+                        sessionId: sessionId,
+                        blockId: blockId,
+                        uploadId: uploadId,
+                        chunkIndex: chunkIndex,
+                        totalBytes: totalBytes,
+                        durationMilliseconds: durationMilliseconds,
+                        mimeType: mimeType,
+                        includeAudio: includeAudio
+                    ),
+                    limit: limit,
+                    releaseId: releaseId,
+                    releaseChecksum: releaseChecksum,
+                    maximumChunkBytes: videoMaxChunkBytes
+                ) ?? false
+                checkpointHandler?()
+                send(.json(200, ["saved": true, "duplicate": !inserted]), to: connection)
+            } catch {
+                send(.json(400, ["saved": false, "error": "invalid-video"]), to: connection)
             }
             return
         }
@@ -237,7 +385,7 @@ final class LocalHTTPServer: @unchecked Sendable {
             "Cross-Origin-Opener-Policy: same-origin",
             "Cross-Origin-Resource-Policy: same-origin",
             "Referrer-Policy: no-referrer",
-            "Permissions-Policy: camera=(), microphone=(), geolocation=()",
+            "Permissions-Policy: camera=\(videoLimits.isEmpty || mode != .sameComputer ? "()" : "(self)"), microphone=\((audioLimits.isEmpty && !videoLimits.values.contains(where: \.includeAudio)) || mode != .sameComputer ? "()" : "(self)"), geolocation=()",
         ]
         headers.append(contentsOf: response.headers.map { "\($0.key): \($0.value)" })
         let head = headers.joined(separator: "\r\n") + "\r\n\r\n"
@@ -252,6 +400,24 @@ final class LocalHTTPServer: @unchecked Sendable {
     private func remove(_ connection: NWConnection) {
         connection.cancel()
         connections.removeValue(forKey: ObjectIdentifier(connection))
+    }
+
+    private func strictInteger(_ value: String?) -> Int? {
+        guard let value,
+              !value.isEmpty,
+              value.count <= 20,
+              value.allSatisfy(\.isNumber),
+              let parsed = Int(value)
+        else { return nil }
+        return parsed
+    }
+
+    private func strictBoolean(_ value: String?) -> Bool? {
+        switch value {
+        case "true": true
+        case "false": false
+        default: nil
+        }
     }
 }
 
@@ -328,7 +494,12 @@ private struct HTTPResponse {
         HTTPResponse(status: status, contentType: "text/plain;charset=utf-8", body: Data(value.utf8))
     }
 
-    static func html(_ status: Int, _ value: String, nonce: String) -> HTTPResponse {
+    static func html(
+        _ status: Int,
+        _ value: String,
+        nonce: String,
+        mediaEnabled: Bool
+    ) -> HTTPResponse {
         let policy = [
             "default-src 'none'",
             "script-src 'nonce-\(nonce)'",
@@ -336,7 +507,7 @@ private struct HTTPResponse {
             "img-src data: blob:",
             "connect-src 'self'",
             "font-src 'none'",
-            "media-src 'none'",
+            mediaEnabled ? "media-src blob:" : "media-src 'none'",
             "worker-src 'none'",
             "object-src 'none'",
             "base-uri 'none'",

@@ -18,7 +18,8 @@ enum HostBundleVerifier {
             throw HostError.invalidBundle("The Local Host bundle must contain one JSON object.")
         }
         guard root["bundleFormat"] as? String == "cerise-local-research-host",
-              number(root["bundleVersion"]) == 1,
+              let bundleVersion = number(root["bundleVersion"]),
+              [1, 2, 3].contains(bundleVersion),
               root["participantResponsesIncluded"] as? Bool == false,
               let createdAtText = root["createdAt"] as? String,
               createdAtText.utf8.count <= 40,
@@ -28,7 +29,12 @@ enum HostBundleVerifier {
               let executionMode = root["executionMode"] as? String,
               ["pilot", "production"].contains(executionMode),
               let runner = root["runner"] as? [String: Any],
-              number(runner["packageVersion"]) == 4,
+              let runnerVersion = number(runner["packageVersion"]),
+              (bundleVersion == 1
+                ? runnerVersion == 4
+                : bundleVersion == 2
+                    ? runnerVersion == 5
+                    : runnerVersion == 6),
               runner["checkpointEndpoint"] as? String == "/api/checkpoints",
               let runnerHTML = runner["html"] as? String,
               !runnerHTML.isEmpty,
@@ -48,6 +54,7 @@ enum HostBundleVerifier {
               let releaseChecksum = release["checksum"] as? String,
               isValidChecksum(releaseChecksum),
               let studio = release["studio"] as? [String: Any],
+              let blocks = studio["blocks"] as? [[String: Any]],
               let title = studio["title"] as? String,
               !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               title.count <= 200,
@@ -60,6 +67,129 @@ enum HostBundleVerifier {
             throw HostError.invalidBundle("The Local Host bundle is incomplete or uses an unsupported format.")
         }
 
+        let audioBlockCount = blocks.filter { $0["type"] as? String == "audio-response" }.count
+        let containsAudioResponses = audioBlockCount > 0
+        let audioMaxChunkBytes: Int
+        var audioLimits: [String: HostAudioBlockLimit] = [:]
+        if bundleVersion >= 2 {
+            guard dataPolicy["audioResponses"] as? String == "local-only",
+                  dataPolicy["audioExecutionBoundary"] as? String == "localhost-only",
+                  number(dataPolicy["audioMaxChunkBytes"]) == 1_048_576,
+                  let manifest = release["manifest"] as? [String: Any],
+                  number(manifest["audioResponseCount"]) == audioBlockCount,
+                  let containsSensitiveMedia = manifest["containsSensitiveMedia"] as? Bool,
+                  (containsAudioResponses
+                    ? manifest["audioCaptureBoundary"] as? String == "localhost-only"
+                    : manifest["audioCaptureBoundary"] is NSNull),
+                  let audioCodebook = codebook["audioResponses"] as? [[String: Any]],
+                  audioCodebook.count == audioBlockCount
+            else {
+                throw HostError.invalidBundle("The Local Host audio policy does not match the frozen release.")
+            }
+            if bundleVersion == 2 && containsSensitiveMedia != containsAudioResponses {
+                throw HostError.invalidBundle("The Local Host audio policy does not match the frozen release.")
+            }
+            for item in audioCodebook {
+                guard let blockId = item["blockId"] as? String,
+                      isValidIdentifier(blockId),
+                      let maxDurationSeconds = number(item["maxDurationSeconds"]),
+                      (5...300).contains(maxDurationSeconds),
+                      let maxBytes = number(item["maxBytes"]),
+                      (256 * 1_024...25 * 1_024 * 1_024).contains(maxBytes),
+                      audioLimits[blockId] == nil
+                else {
+                    throw HostError.invalidBundle("An audio-response limit in the codebook is invalid.")
+                }
+                audioLimits[blockId] = HostAudioBlockLimit(
+                    blockId: blockId,
+                    maxDurationSeconds: maxDurationSeconds,
+                    maxBytes: maxBytes
+                )
+            }
+            let frozenAudioIds = Set(blocks.compactMap { block -> String? in
+                guard block["type"] as? String == "audio-response" else { return nil }
+                return block["id"] as? String
+            })
+            guard Set(audioLimits.keys) == frozenAudioIds else {
+                throw HostError.invalidBundle("The audio codebook does not match the frozen audio blocks.")
+            }
+            let endpoint = runner["audioEndpoint"]
+            guard containsAudioResponses
+                ? (endpoint as? String == "/api/audio")
+                : (endpoint is NSNull)
+            else {
+                throw HostError.invalidBundle("The audio endpoint does not match the frozen release.")
+            }
+            audioMaxChunkBytes = 1_048_576
+        } else {
+            guard !containsAudioResponses else {
+                throw HostError.invalidBundle("Audio responses require a version 2 Local Host bundle.")
+            }
+            audioMaxChunkBytes = 0
+        }
+
+        let videoBlockCount = blocks.filter { $0["type"] as? String == "video-response" }.count
+        let containsVideoResponses = videoBlockCount > 0
+        let videoMaxChunkBytes: Int
+        var videoLimits: [String: HostVideoBlockLimit] = [:]
+        if bundleVersion == 3 {
+            guard dataPolicy["videoResponses"] as? String == "local-only",
+                  dataPolicy["videoExecutionBoundary"] as? String == "localhost-only",
+                  number(dataPolicy["videoMaxChunkBytes"]) == 2_097_152,
+                  let manifest = release["manifest"] as? [String: Any],
+                  number(manifest["videoResponseCount"]) == videoBlockCount,
+                  manifest["containsSensitiveMedia"] as? Bool == (containsAudioResponses || containsVideoResponses),
+                  (containsVideoResponses
+                    ? manifest["videoCaptureBoundary"] as? String == "localhost-only"
+                    : manifest["videoCaptureBoundary"] is NSNull),
+                  let videoCodebook = codebook["videoResponses"] as? [[String: Any]],
+                  videoCodebook.count == videoBlockCount
+            else {
+                throw HostError.invalidBundle("The Local Host video policy does not match the frozen release.")
+            }
+            for item in videoCodebook {
+                guard let blockId = item["blockId"] as? String,
+                      isValidIdentifier(blockId),
+                      let maxDurationSeconds = number(item["maxDurationSeconds"]),
+                      (5...300).contains(maxDurationSeconds),
+                      let maxBytes = number(item["maxBytes"]),
+                      (1_024 * 1_024...100 * 1_024 * 1_024).contains(maxBytes),
+                      let includeAudio = item["includeAudio"] as? Bool,
+                      let cameraFacing = item["cameraFacing"] as? String,
+                      ["user", "environment"].contains(cameraFacing),
+                      videoLimits[blockId] == nil
+                else {
+                    throw HostError.invalidBundle("A video-response limit in the codebook is invalid.")
+                }
+                videoLimits[blockId] = HostVideoBlockLimit(
+                    blockId: blockId,
+                    maxDurationSeconds: maxDurationSeconds,
+                    maxBytes: maxBytes,
+                    includeAudio: includeAudio
+                )
+            }
+            let frozenVideoIds = Set(blocks.compactMap { block -> String? in
+                guard block["type"] as? String == "video-response" else { return nil }
+                return block["id"] as? String
+            })
+            guard Set(videoLimits.keys) == frozenVideoIds else {
+                throw HostError.invalidBundle("The video codebook does not match the frozen video blocks.")
+            }
+            let endpoint = runner["videoEndpoint"]
+            guard containsVideoResponses
+                ? (endpoint as? String == "/api/video")
+                : (endpoint is NSNull)
+            else {
+                throw HostError.invalidBundle("The video endpoint does not match the frozen release.")
+            }
+            videoMaxChunkBytes = 2_097_152
+        } else {
+            guard !containsVideoResponses else {
+                throw HostError.invalidBundle("Video responses require a version 3 Local Host bundle.")
+            }
+            videoMaxChunkBytes = 0
+        }
+
         guard runnerHTML.contains("connect-src 'self'"),
               runnerHTML.contains(releaseChecksum),
               runnerHTML.contains("/api/checkpoints"),
@@ -70,6 +200,12 @@ enum HostBundleVerifier {
               runnerHTML.contains("<script nonce=\"\(runnerNonce)\">")
         else {
             throw HostError.invalidBundle("The participant runner is not bound to this release and local checkpoint endpoint.")
+        }
+        if containsAudioResponses && !runnerHTML.contains("/api/audio") {
+            throw HostError.invalidBundle("The participant runner is missing its local audio endpoint.")
+        }
+        if containsVideoResponses && !runnerHTML.contains("/api/video") {
+            throw HostError.invalidBundle("The participant runner is missing its local video endpoint.")
         }
 
         var releasePayload = release
@@ -101,6 +237,12 @@ enum HostBundleVerifier {
             title: title,
             createdAt: createdAt,
             authoringMode: executionMode,
+            containsAudioResponses: containsAudioResponses,
+            audioMaxChunkBytes: audioMaxChunkBytes,
+            audioLimits: audioLimits,
+            containsVideoResponses: containsVideoResponses,
+            videoMaxChunkBytes: videoMaxChunkBytes,
+            videoLimits: videoLimits,
             runnerNonce: runnerNonce,
             runnerHTML: runnerHTML,
             releaseJSON: releaseData,

@@ -117,7 +117,7 @@ test("CSV trial loops are frozen into deterministic runtime and long-format expo
   assert.match(runner.html, /Download trial CSV/);
   assert.match(runner.html, /sourceColumns\.map/);
   assert.match(runner.html, /trial_id/);
-  assert.match(runner.html, /packageVersion:4/);
+  assert.match(runner.html, /packageVersion:6/);
   assert.match(runner.html, /timingDiagnostic/);
 });
 
@@ -128,6 +128,61 @@ test("runner filenames are bounded and cannot contain paths", () => {
     "research-final.html",
   );
   assert.equal(normalizeExperimentRunnerFilename("", ""), "cerise-study.html");
+});
+
+test("audio responses are enabled only through the same-origin local audio endpoint", () => {
+  const document = createExperimentStudioDocument("project-1");
+  const audioConsent = createExperimentBlock("audio-consent", "audio-consent-1");
+  const audio = createExperimentBlock("audio-response", "audio-response-1");
+  assert.ok(audio.audio);
+  audio.audio.consentBlockId = audioConsent.id;
+  document.blocks.splice(2, 0, audioConsent, audio);
+
+  const portable = buildExperimentRunnerPackage(document, { nonce: "0123456789abcdef" });
+  assert.match(portable.html, /Audio recording is unavailable/);
+  assert.doesNotMatch(portable.html, /\bfetch\s*\(/);
+
+  const local = buildExperimentRunnerPackage(document, {
+    nonce: "0123456789abcdef",
+    collectorCheckpointEndpoint: "/api/checkpoints",
+    collectorAudioEndpoint: "/api/audio",
+  });
+  assert.match(local.html, /navigator\.mediaDevices\.getUserMedia/);
+  assert.match(local.html, /MediaRecorder/);
+  assert.match(local.html, /\/api\/audio/);
+  assert.match(local.html, /X-Cerise-Audio-Action/);
+  assert.match(local.html, /audio-recording-complete/);
+  assert.doesNotMatch(local.html, /api\.openai\.com|api\.openrouter\.ai|supabase\.co/i);
+});
+
+test("video responses require explicit consent and remain unavailable outside the local collector", () => {
+  const document = createExperimentStudioDocument("project-1");
+  const videoConsent = createExperimentBlock("video-consent", "video-consent-1");
+  const audioConsent = createExperimentBlock("audio-consent", "audio-consent-1");
+  const video = createExperimentBlock("video-response", "video-response-1");
+  assert.ok(video.video);
+  video.video.consentBlockId = videoConsent.id;
+  video.video.includeAudio = true;
+  video.video.audioConsentBlockId = audioConsent.id;
+  document.blocks.splice(2, 0, videoConsent, audioConsent, video);
+
+  const portable = buildExperimentRunnerPackage(document, { nonce: "0123456789abcdef" });
+  assert.match(portable.html, /Video recording is unavailable/);
+  assert.doesNotMatch(portable.html, /\bfetch\s*\(/);
+
+  const local = buildExperimentRunnerPackage(document, {
+    nonce: "0123456789abcdef",
+    collectorCheckpointEndpoint: "/api/checkpoints",
+    collectorAudioEndpoint: "/api/audio",
+    collectorVideoEndpoint: "/api/video",
+  });
+  assert.match(local.html, /navigator\.mediaDevices\.getUserMedia/);
+  assert.match(local.html, /MediaRecorder/);
+  assert.match(local.html, /\/api\/video/);
+  assert.match(local.html, /X-Cerise-Video-Action/);
+  assert.match(local.html, /video-recording-complete/);
+  assert.match(local.html, /media-src blob:/);
+  assert.doesNotMatch(local.html, /api\.openai\.com|api\.openrouter\.ai|supabase\.co/i);
 });
 
 test("CSV cells neutralize spreadsheet formulas and preserve quotes", () => {

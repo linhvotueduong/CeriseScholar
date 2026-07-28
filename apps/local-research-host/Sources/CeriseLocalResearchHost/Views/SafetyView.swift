@@ -10,7 +10,7 @@ struct SafetyView: View {
                     Text("Safety boundary")
                         .font(.largeTitle)
                         .fontWeight(.semibold)
-                    Text("What Phase 7.1 does—and deliberately does not do.")
+                    Text("What Phase 7.1–7.3 does—and deliberately does not do.")
                         .foregroundStyle(.secondary)
                 }
                 safetyCard(
@@ -31,17 +31,27 @@ struct SafetyView: View {
                 safetyCard(
                     "Withdrawal is scrubbed",
                     icon: "hand.raised",
-                    detail: "A withdrawal checkpoint removes earlier checkpoints for that session and clears response, timing, event, and trial payloads before the withdrawal record is retained."
+                    detail: "A withdrawal checkpoint removes earlier checkpoints, local audio/video metadata, and local media files for that session, then retains only a scrubbed withdrawal record."
                 )
                 safetyCard(
-                    "LAN mode is structured-only",
+                    "Video is participant-controlled and local-only",
+                    icon: "video.and.waveform",
+                    detail: "Video releases require separate camera consent, a visible participant-controlled camera check and recording action, bounded duration and size, small chunks, and local checksums. Microphone audio is off by default and requires separate audio consent when enabled."
+                )
+                safetyCard(
+                    "Audio is same-Mac and local-only",
+                    icon: "mic.and.signal.meter",
+                    detail: "Audio releases require separate recording consent, a participant-controlled microphone check and recording action, bounded duration and size, small chunks, and local media checksums. The browser sends chunks only to this app; there is no transcription or cloud path."
+                )
+                safetyCard(
+                    "LAN mode remains structured-only",
                     icon: "network.badge.shield.half.filled",
-                    detail: "Trusted-LAN participant pages use local HTTP. Phase 7.1 disables camera, microphone, and geolocation. Audio is Phase 7.2 and will be same-computer-only until a trustworthy HTTPS boundary exists."
+                    detail: "Trusted-LAN participant pages use local HTTP. Camera, microphone, and geolocation remain disabled. Any release containing an audio- or video-response block is refused in LAN mode."
                 )
                 safetyCard(
                     "Research limits remain visible",
                     icon: "clock.badge.exclamationmark",
-                    detail: "Timing is browser-measured. This host does not claim PsychoPy/Gorilla parity, certified millisecond precision, eye tracking, public remote recruitment, or medical-device validation."
+                    detail: "Timing is browser-measured. Audio is not calibrated acoustic measurement. Video is not biometric, clinical, face-analysis, or eye-tracking measurement. Neither has a certified onset or latency claim, and this host does not claim PsychoPy/Gorilla parity or public remote recruitment."
                 )
                 GroupBox("Researcher responsibility") {
                     Text("Use an approved consent process, retention schedule, access-control plan, de-identification procedure, and institutional ethics workflow. Keep exported and backup files in approved encrypted storage.")

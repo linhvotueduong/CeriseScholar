@@ -30,11 +30,16 @@ test("a frozen release has a reproducible SHA-256 integrity checksum", async () 
 
   assert.match(release.checksum, /^sha256:[a-f0-9]{64}$/);
   assert.equal(release.manifest.timingClaim, "browser-measured");
-  assert.equal(release.manifest.formatVersion, 2);
+  assert.equal(release.manifest.formatVersion, 4);
   assert.equal(release.manifest.timingDiagnostic, null);
   assert.equal(release.manifest.participantDataBoundary, "local-only");
   assert.equal(release.manifest.trialTableCount, 0);
   assert.equal(release.manifest.trialRowCount, 0);
+  assert.equal(release.manifest.audioResponseCount, 0);
+  assert.equal(release.manifest.videoResponseCount, 0);
+  assert.equal(release.manifest.containsSensitiveMedia, false);
+  assert.equal(release.manifest.audioCaptureBoundary, null);
+  assert.equal(release.manifest.videoCaptureBoundary, null);
   assert.equal(await verifyExperimentRelease(release), true);
 
   const roundTrip = normalizeExperimentRelease(JSON.parse(JSON.stringify(release)));
@@ -61,6 +66,11 @@ test("loading Phase 6.1 releases preserves their original checksum and frozen va
   legacyManifest.formatVersion = 1;
   legacyManifest.studySchemaVersion = 5;
   delete legacyManifest.timingDiagnostic;
+  delete legacyManifest.audioResponseCount;
+  delete legacyManifest.videoResponseCount;
+  delete legacyManifest.containsSensitiveMedia;
+  delete legacyManifest.audioCaptureBoundary;
+  delete legacyManifest.videoCaptureBoundary;
   const legacyPayload = {
     releaseId: current.releaseId,
     projectId: current.projectId,
@@ -79,6 +89,86 @@ test("loading Phase 6.1 releases preserves their original checksum and frozen va
   assert.ok(normalized);
   assert.equal(normalized.manifest.formatVersion, 1);
   assert.equal(normalized.manifest.timingDiagnostic, undefined);
+  assert.equal(await verifyExperimentRelease(normalized), true);
+});
+
+test("loading Phase 6.2 releases does not add Phase 7.2 audio fields or alter the checksum", async () => {
+  const current = await createExperimentRelease({
+    releaseId: "phase-6-2-release",
+    releaseNumber: 2,
+    createdAt: "2026-07-27T12:30:00.000Z",
+    releaseNotes: "Frozen before local audio",
+    studio: createExperimentStudioDocument("project-1"),
+    review: createCompletedExperimentReleaseReview(),
+  });
+  const legacyStudio = { ...current.studio } as Record<string, unknown>;
+  legacyStudio.schemaVersion = 6;
+  const legacyManifest = { ...current.manifest } as Record<string, unknown>;
+  legacyManifest.formatVersion = 2;
+  legacyManifest.studySchemaVersion = 6;
+  delete legacyManifest.audioResponseCount;
+  delete legacyManifest.videoResponseCount;
+  delete legacyManifest.containsSensitiveMedia;
+  delete legacyManifest.audioCaptureBoundary;
+  delete legacyManifest.videoCaptureBoundary;
+  const legacyPayload = {
+    releaseId: current.releaseId,
+    projectId: current.projectId,
+    releaseNumber: current.releaseNumber,
+    createdAt: current.createdAt,
+    releaseNotes: current.releaseNotes,
+    manifest: legacyManifest,
+    studio: legacyStudio,
+  };
+  const legacyRelease = {
+    ...legacyPayload,
+    checksum: await sha256Checksum(legacyPayload),
+  };
+
+  const normalized = normalizeExperimentRelease(legacyRelease);
+  assert.ok(normalized);
+  assert.equal(normalized.manifest.formatVersion, 2);
+  assert.equal(normalized.manifest.audioResponseCount, undefined);
+  assert.equal(normalized.manifest.containsSensitiveMedia, undefined);
+  assert.equal(normalized.manifest.audioCaptureBoundary, undefined);
+  assert.equal(await verifyExperimentRelease(normalized), true);
+});
+
+test("loading Phase 7.2 releases does not add Phase 7.3 video fields or alter the checksum", async () => {
+  const current = await createExperimentRelease({
+    releaseId: "phase-7-2-release",
+    releaseNumber: 3,
+    createdAt: "2026-07-28T12:30:00.000Z",
+    releaseNotes: "Frozen before local video",
+    studio: createExperimentStudioDocument("project-1"),
+    review: createCompletedExperimentReleaseReview(),
+  });
+  const legacyStudio = { ...current.studio } as Record<string, unknown>;
+  legacyStudio.schemaVersion = 7;
+  const legacyManifest = { ...current.manifest } as Record<string, unknown>;
+  legacyManifest.formatVersion = 3;
+  legacyManifest.studySchemaVersion = 7;
+  delete legacyManifest.videoResponseCount;
+  delete legacyManifest.videoCaptureBoundary;
+  const legacyPayload = {
+    releaseId: current.releaseId,
+    projectId: current.projectId,
+    releaseNumber: current.releaseNumber,
+    createdAt: current.createdAt,
+    releaseNotes: current.releaseNotes,
+    manifest: legacyManifest,
+    studio: legacyStudio,
+  };
+  const legacyRelease = {
+    ...legacyPayload,
+    checksum: await sha256Checksum(legacyPayload),
+  };
+
+  const normalized = normalizeExperimentRelease(legacyRelease);
+  assert.ok(normalized);
+  assert.equal(normalized.manifest.formatVersion, 3);
+  assert.equal(normalized.manifest.videoResponseCount, undefined);
+  assert.equal(normalized.manifest.videoCaptureBoundary, undefined);
   assert.equal(await verifyExperimentRelease(normalized), true);
 });
 

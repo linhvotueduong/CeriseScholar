@@ -16,11 +16,24 @@ enum HostExecutionMode: String, CaseIterable, Codable, Identifiable {
     var detail: String {
         switch self {
         case .sameComputer:
-            "Participants use this Mac. The localhost boundary can support secure browser APIs in later phases."
+            "Participants use this Mac. The localhost boundary supports bounded audio and Phase 7.3 video responses when the frozen release requires them."
         case .trustedLAN:
-            "Nearby devices can join over HTTP. Phase 7.1 permits structured responses only—no microphone or camera."
+            "Nearby devices can join over HTTP. This mode permits structured responses only—no microphone or camera."
         }
     }
+}
+
+struct HostAudioBlockLimit: Equatable {
+    let blockId: String
+    let maxDurationSeconds: Int
+    let maxBytes: Int
+}
+
+struct HostVideoBlockLimit: Equatable {
+    let blockId: String
+    let maxDurationSeconds: Int
+    let maxBytes: Int
+    let includeAudio: Bool
 }
 
 enum HostRunState: Equatable {
@@ -77,6 +90,12 @@ struct VerifiedHostBundle: Identifiable, Equatable {
     let title: String
     let createdAt: Date
     let authoringMode: String
+    let containsAudioResponses: Bool
+    let audioMaxChunkBytes: Int
+    let audioLimits: [String: HostAudioBlockLimit]
+    let containsVideoResponses: Bool
+    let videoMaxChunkBytes: Int
+    let videoLimits: [String: HostVideoBlockLimit]
     let runnerNonce: String
     let runnerHTML: String
     let releaseJSON: Data

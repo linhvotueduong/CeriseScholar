@@ -1,6 +1,10 @@
-# Phase 7.1 — Local Research Host
+# Phase 7 — Local Research Host
 
-Status: implemented locally on 2026-07-27.
+Status:
+
+- Phase 7.1 structured local collection implemented on 2026-07-27.
+- Phase 7.2 bounded local audio responses implemented on 2026-07-28.
+- Phase 7.3 bounded local video responses implemented on 2026-07-28.
 
 Phase 7.1 turns a verified immutable Experimental Studio release into a
 researcher-operated local collection service. Participant response data stays on
@@ -36,12 +40,17 @@ Tauri, a native Windows shell, or another reviewed host.
 
 ## Bundle contract
 
-- Format: `cerise-local-research-host`, version 1.
+- Current format: `cerise-local-research-host`, version 3.
+- Version 1 structured-response and version 2 audio bundles remain importable.
 - Maximum bundle size: 8 MB.
-- Runner package version: 4.
+- Current runner package version: 6. Versions 4 and 5 are retained only for
+  compatible version 1 and 2 bundles.
 - Checkpoint endpoint: exactly `/api/checkpoints`.
+- Audio endpoint for bundles containing audio: exactly `/api/audio`.
+- Video endpoint for version 3 bundles containing video: exactly `/api/video`.
 - Data policy: local-only participant responses, SQLite storage, no cloud
-  upload, and a prepared media directory.
+  upload, a prepared media directory, and `localhost-only` audio/video
+  boundaries.
 - The release and codebook must agree on release ID, number, checksum, and the
   `browser-measured` timing claim.
 - The host recalculates the release checksum and then the whole-bundle checksum.
@@ -76,11 +85,95 @@ participant server:
 - accepts only the runner route and same-origin JSON checkpoint posts;
 - limits headers, request bodies, active connections, and connection lifetime;
 - returns no-store, anti-framing, no-referrer, and no-sniff headers;
-- denies camera, microphone, and geolocation;
+- denies geolocation and grants camera/microphone only when a verified
+  same-Mac media release requires them;
 - never changes firewall, router, certificate, or operating-system settings.
 
-LAN HTTP is therefore restricted to structured Phase 7.1 responses. Features
-that require secure browser contexts remain outside this boundary.
+LAN HTTP is therefore restricted to structured Phase 7.1 responses. Any release
+containing audio or video can only run in **This Mac only** mode, and the host
+refuses to expose it through Trusted LAN.
+
+## Phase 7.2 audio-response boundary
+
+Phase 7.2 adds two explicit Studio blocks:
+
+- **Audio recording consent**, which records a separate agree/decline decision
+  for microphone recording and local voice-file storage.
+- **Audio response**, which records a bounded participant response only after a
+  preceding audio-consent block has been accepted.
+
+Audio capture is deliberately narrower than structured response collection:
+
+- it runs only in the native Local Research Host at a `127.0.0.1` participant
+  URL on the same Mac;
+- the participant must first run a microphone permission check and then
+  explicitly start recording;
+- the runner shows a persistent recording indicator, elapsed time, byte count,
+  and a stop control;
+- recordings are split into small chunks, with a maximum per-chunk size, total
+  response size, and duration frozen into the release;
+- chunks are sent only to same-origin `/api/audio` and written beneath the
+  release's private `media` directory;
+- finalization assembles the ordered chunks into one local recording while
+  retaining per-chunk checksums for audit and recovery;
+- file names and paths are derived from validated session, block, upload, and
+  chunk identifiers rather than participant-entered text;
+- SQLite records the relative path, MIME type, byte count, and SHA-256 checksum
+  for every accepted chunk;
+- a withdrawal removes the session's earlier structured payloads, audio
+  metadata, and audio files before retaining the scrubbed withdrawal record;
+- exports use anonymous session/block/upload identifiers and include an audio
+  manifest plus the local media files.
+
+Audio never goes to Cerise Scholar, Supabase, Azure, OpenRouter, OpenAI, or an
+automatic transcription service. The host does not install certificates,
+change firewall settings, expose a public endpoint, or request microphone
+permission itself; the participant browser owns the permission prompt.
+
+Researchers must treat raw voice as potentially identifying and sensitive
+research data. The release review warns that browser codecs vary, microphone
+quality must be piloted on representative hardware, and Phase 7.2 does not
+claim calibrated acoustic measurement or certified audio latency.
+
+## Phase 7.3 video-response boundary
+
+Phase 7.3 adds two additional Studio blocks:
+
+- **Video recording consent**, which records a separate agree/decline decision
+  for camera recording and local video-file storage.
+- **Video response**, which records one bounded participant-controlled camera
+  response after the linked video-consent decision has been accepted.
+
+Microphone audio is disabled by default for a video response. When a researcher
+explicitly enables it, the release must also link a separate, preceding
+**Audio recording consent** block. General study consent is not treated as
+camera or microphone consent.
+
+Video capture follows a deliberately narrow contract:
+
+- it runs only from the verified native Local Research Host through
+  `127.0.0.1`; video releases cannot start in Trusted LAN mode;
+- the participant performs a camera check before recording, sees a live muted
+  preview, and explicitly starts and stops the recording;
+- the camera preview is not stored and camera tracks are stopped on navigation,
+  completion, withdrawal, error, or page exit;
+- duration and total-byte limits are frozen into the immutable release, while
+  each upload request is also subject to a smaller fixed chunk limit;
+- ordered chunks are sent only to same-origin `/api/video`, checksummed, stored
+  in the release's private media directory, and assembled locally;
+- optional microphone audio uses the same video container and is accepted only
+  when both the frozen video configuration and separate audio consent allow it;
+- withdrawal deletes the session's structured payloads, media metadata, and
+  local audio/video files before retaining a scrubbed withdrawal record;
+- exports contain anonymous IDs, video and audio manifests, checksums, and the
+  local media files—never participant names supplied by a response field.
+
+The video path has no cloud upload, streaming, AI access, transcription, face
+recognition, emotion inference, biometric template, or eye-tracking behavior.
+Cerise does not claim clinical-grade capture, calibrated audiovisual latency,
+or certified frame timing. Researchers must pilot the supported browser,
+camera, codec, lighting, storage estimate, consent language, and withdrawal
+process on representative hardware before production collection.
 
 ## Exports and recovery
 
@@ -95,19 +188,23 @@ The local export package contains:
 - a README recording release and bundle checksums and the local-only data claim.
 
 The Storage view shows actual local database/assets/media size and a planning
-estimate based on expected sessions and structured-data size. Audio storage is
-not included because audio is not part of Phase 7.1.
+estimate based on expected sessions, structured-data size, and the frozen
+audio/video limits contained in the release.
 
 ## Verification
 
 The native host provides `--self-test`, which checks:
 
 - valid bundle acceptance and tampered runner rejection;
+- version 1 structured, version 2 audio, and version 3 video contract
+  verification;
 - idempotent checkpoint handling;
+- bounded, same-origin audio-chunk ingestion;
+- bounded, same-origin video-chunk ingestion and finalization;
 - newest-sequence-wins recovery;
 - spreadsheet-formula-safe CSV export;
 - consistent SQLite backup;
-- withdrawal payload scrubbing.
+- withdrawal payload and all session-media deletion.
 
 The TypeScript bundle tests independently check creation, size/data-policy
 claims, and tampering. A cross-runtime check generates a real bundle in the web
@@ -116,8 +213,10 @@ application and verifies it with the Swift host.
 ## Explicitly not included
 
 - public Cerise-hosted participant links or cloud response storage;
-- microphone/audio capture (Phase 7.2);
-- webcam/video capture (Phase 7.3);
+- LAN or public-internet audio/video capture;
+- automatic transcription, speech/face/emotion analysis, biometric templates,
+  or AI access to recordings;
+- calibrated audiovisual measurement or certified audio/video latency;
 - eye tracking or medical-device workflows;
 - automatic firewall or certificate changes;
 - arbitrary researcher scripts;

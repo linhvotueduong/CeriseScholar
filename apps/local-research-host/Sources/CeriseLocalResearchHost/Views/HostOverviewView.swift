@@ -79,7 +79,11 @@ struct HostOverviewView: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 15) {
                 Picker("Execution boundary", selection: $store.executionMode) {
-                    ForEach(HostExecutionMode.allCases) { mode in
+                    ForEach((store.bundle?.containsAudioResponses == true
+                             || store.bundle?.containsVideoResponses == true)
+                        ? [HostExecutionMode.sameComputer]
+                        : HostExecutionMode.allCases
+                    ) { mode in
                         Text(mode.title).tag(mode)
                     }
                 }
@@ -88,6 +92,22 @@ struct HostOverviewView: View {
                 Text(store.executionMode.detail)
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                if store.bundle?.containsAudioResponses == true {
+                    Label(
+                        "This release contains voice recordings. Microphone permission and audio collection are limited to the participant browser on this Mac.",
+                        systemImage: "mic.and.signal.meter"
+                    )
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                }
+                if store.bundle?.containsVideoResponses == true {
+                    Label(
+                        "This release contains camera recordings. Camera preview and video collection are limited to the participant browser on this Mac.",
+                        systemImage: "video.and.waveform"
+                    )
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                }
                 HStack {
                     Button("Start collection") { store.startHosting() }
                         .buttonStyle(.borderedProminent)

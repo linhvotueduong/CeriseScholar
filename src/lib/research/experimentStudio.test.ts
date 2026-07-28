@@ -34,7 +34,7 @@ function memoryStorage() {
 test("a new Experimental Studio draft provides a safe five-screen study flow", () => {
   const document = createExperimentStudioDocument("project-1");
 
-  assert.equal(document.schemaVersion, 6);
+  assert.equal(document.schemaVersion, 8);
   assert.deepEqual(document.trialTables, []);
   assert.equal(document.timingDiagnostic, null);
   assert.deepEqual(document.blocks.map((block) => block.type), [
@@ -67,7 +67,7 @@ test("older drafts upgrade to the media-capable schema without losing blocks", (
     }],
   }, "project-1");
 
-  assert.equal(normalized.schemaVersion, 6);
+  assert.equal(normalized.schemaVersion, 8);
   assert.equal(normalized.blocks[0].title, "Legacy rating");
   assert.equal(normalized.blocks[0].displayDurationMs, 0);
   assert.equal(normalized.conditions[0].name, "All participants");
@@ -210,6 +210,110 @@ test("behavioral response blocks require auditable key and attention-check scori
   assert.ok(issues.some((issue) => issue.id === "keyboard-1-duplicate-keys"));
   assert.ok(issues.some((issue) => issue.id === "keyboard-1-correct-key"));
   assert.ok(issues.some((issue) => issue.id === "attention-1-correct-answer-option"));
+});
+
+test("audio responses require separate preceding recording consent and bounded limits", () => {
+  const document = createExperimentStudioDocument("project-1");
+  const audioConsent = createExperimentBlock("audio-consent", "audio-consent-1");
+  const audio = createExperimentBlock("audio-response", "audio-response-1");
+  assert.ok(audio.audio);
+  document.blocks.splice(2, 0, audioConsent, audio);
+
+  assert.ok(validateExperimentStudio(document).some((issue) => issue.id === "audio-response-1-audio-consent"));
+
+  audio.audio.consentBlockId = audioConsent.id;
+  document.blocks[2] = audio;
+  document.blocks[3] = audioConsent;
+  assert.ok(validateExperimentStudio(document).some((issue) => issue.id === "audio-response-1-audio-consent-order"));
+
+  document.blocks = document.blocks.filter((block) => block.id !== audio.id && block.id !== audioConsent.id);
+  document.blocks.splice(2, 0, audioConsent, audio);
+  assert.equal(validateExperimentStudio(document).some((issue) => issue.blockId === audio.id && issue.severity === "error"), false);
+});
+
+test("untrusted audio settings are normalized to the local safety bounds", () => {
+  const normalized = normalizeExperimentStudioDocument({
+    blocks: [{
+      id: "audio-1",
+      type: "audio-response",
+      title: "Voice response",
+      internalName: "voice_response",
+      heading: "Record",
+      prompt: "Speak",
+      responseType: "audio",
+      variableName: "voice_response",
+      required: true,
+      audio: {
+        consentBlockId: "../../unsafe",
+        maxDurationSeconds: 50_000,
+        maxBytes: 999_999_999,
+        requireMicrophoneCheck: false,
+      },
+    }],
+  }, "project-1");
+
+  assert.equal(normalized.blocks[0].audio?.consentBlockId, "unsafe");
+  assert.equal(normalized.blocks[0].audio?.maxDurationSeconds, 300);
+  assert.equal(normalized.blocks[0].audio?.maxBytes, 25 * 1024 * 1024);
+  assert.equal(normalized.blocks[0].audio?.requireMicrophoneCheck, true);
+});
+
+test("video responses require separate preceding video consent and optional audio consent", () => {
+  const document = createExperimentStudioDocument("project-1");
+  const videoConsent = createExperimentBlock("video-consent", "video-consent-1");
+  const audioConsent = createExperimentBlock("audio-consent", "audio-consent-1");
+  const video = createExperimentBlock("video-response", "video-response-1");
+  assert.ok(video.video);
+  document.blocks.splice(2, 0, videoConsent, audioConsent, video);
+
+  assert.ok(validateExperimentStudio(document).some((issue) => issue.id === "video-response-1-video-consent"));
+
+  video.video.consentBlockId = videoConsent.id;
+  video.video.includeAudio = true;
+  assert.ok(validateExperimentStudio(document).some((issue) => issue.id === "video-response-1-video-audio-consent"));
+
+  video.video.audioConsentBlockId = audioConsent.id;
+  assert.equal(
+    validateExperimentStudio(document).some((issue) => issue.blockId === video.id && issue.severity === "error"),
+    false,
+  );
+
+  document.blocks = document.blocks.filter((block) => block.id !== videoConsent.id);
+  document.blocks.splice(4, 0, videoConsent);
+  assert.ok(validateExperimentStudio(document).some((issue) => issue.id === "video-response-1-video-consent-order"));
+});
+
+test("untrusted video settings are normalized to local capture limits", () => {
+  const normalized = normalizeExperimentStudioDocument({
+    blocks: [{
+      id: "video-1",
+      type: "video-response",
+      title: "Camera response",
+      internalName: "camera_response",
+      heading: "Record",
+      prompt: "Respond on camera",
+      responseType: "video",
+      variableName: "camera_response",
+      required: true,
+      video: {
+        consentBlockId: "../../video-consent",
+        includeAudio: true,
+        audioConsentBlockId: "../../audio-consent",
+        maxDurationSeconds: 50_000,
+        maxBytes: 999_999_999,
+        cameraFacing: "invalid",
+        requireCameraCheck: false,
+      },
+    }],
+  }, "project-1");
+
+  assert.equal(normalized.blocks[0].video?.consentBlockId, "video-consent");
+  assert.equal(normalized.blocks[0].video?.audioConsentBlockId, "audio-consent");
+  assert.equal(normalized.blocks[0].video?.includeAudio, true);
+  assert.equal(normalized.blocks[0].video?.maxDurationSeconds, 300);
+  assert.equal(normalized.blocks[0].video?.maxBytes, 100 * 1024 * 1024);
+  assert.equal(normalized.blocks[0].video?.cameraFacing, "user");
+  assert.equal(normalized.blocks[0].video?.requireCameraCheck, true);
 });
 
 test("local versioned persistence round-trips and malformed JSON fails open", () => {

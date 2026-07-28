@@ -86,6 +86,20 @@ enum StudyWorkspaceService {
         }
     }
 
+    static func directoryContainsRegularFiles(_ directory: URL) -> Bool {
+        guard let enumerator = FileManager.default.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) else { return false }
+        for case let file as URL in enumerator {
+            if (try? file.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true {
+                return true
+            }
+        }
+        return false
+    }
+
     private static func fileSize(_ url: URL) -> Int64 {
         let values = try? url.resourceValues(forKeys: [.fileSizeKey])
         return Int64(values?.fileSize ?? 0)

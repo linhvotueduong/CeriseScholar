@@ -50,11 +50,17 @@ final class HostStore: ObservableObject {
             let data = try Data(contentsOf: url, options: [.mappedIfSafe])
             let verified = try HostBundleVerifier.verify(data: data)
             let importedWorkspace = try StudyWorkspaceService.importBundle(verified)
-            let localDatabase = try LocalResponseDatabase(databaseURL: importedWorkspace.databaseURL)
+            let localDatabase = try LocalResponseDatabase(
+                databaseURL: importedWorkspace.databaseURL,
+                mediaURL: importedWorkspace.mediaURL
+            )
             database?.close()
             bundle = verified
             workspace = importedWorkspace
             database = localDatabase
+            if verified.containsAudioResponses || verified.containsVideoResponses {
+                executionMode = .sameComputer
+            }
             runState = .stopped
             participantURL = nil
             selectedSection = .overview
@@ -71,6 +77,13 @@ final class HostStore: ObservableObject {
             message = "Import a verified .cerisehost study before starting collection."
             return
         }
+        guard (!bundle.containsAudioResponses && !bundle.containsVideoResponses)
+            || executionMode == .sameComputer
+        else {
+            runState = .failed("Media responses can run only on this Mac.")
+            message = "This release contains audio or video recordings, so Trusted LAN is unavailable. Select This Mac only."
+            return
+        }
         runState = .starting
         message = ""
         server.start(
@@ -81,6 +94,10 @@ final class HostStore: ObservableObject {
             releaseId: bundle.id,
             releaseNumber: bundle.releaseNumber,
             releaseChecksum: bundle.releaseChecksum,
+            audioLimits: bundle.audioLimits,
+            audioMaxChunkBytes: bundle.audioMaxChunkBytes,
+            videoLimits: bundle.videoLimits,
+            videoMaxChunkBytes: bundle.videoMaxChunkBytes,
             onCheckpoint: { [weak self] in
                 Task { @MainActor in self?.refresh() }
             },
@@ -92,7 +109,11 @@ final class HostStore: ObservableObject {
                         self.participantURL = url
                         self.runState = .active
                         self.message = self.executionMode == .sameComputer
-                            ? "Collection is active on this Mac. Participant responses save to local SQLite."
+                            ? (bundle.containsVideoResponses
+                                ? "Video collection is active on this Mac. Camera recordings and structured responses stay in the private local study folder."
+                                : bundle.containsAudioResponses
+                                ? "Audio collection is active on this Mac. Voice recordings and structured responses stay in the private local study folder."
+                                : "Collection is active on this Mac. Participant responses save to local SQLite.")
                             : "Trusted-LAN collection is active. Keep this Mac awake and use structured responses only."
                     case .failure(let error):
                         self.participantURL = nil
@@ -127,7 +148,10 @@ final class HostStore: ObservableObject {
         }
         database?.close()
         if let workspace {
-            database = try? LocalResponseDatabase(databaseURL: workspace.databaseURL)
+            database = try? LocalResponseDatabase(
+                databaseURL: workspace.databaseURL,
+                mediaURL: workspace.mediaURL
+            )
         }
         refresh()
     }
@@ -182,7 +206,7 @@ final class HostStore: ObservableObject {
                 workspace: workspace,
                 database: database
             )
-            message = "Consistent SQLite backup created."
+            message = "Consistent local backup created with SQLite and local audio/video media when present."
             NSWorkspace.shared.activateFileViewerSelecting([backupURL])
             refresh()
         } catch {
@@ -218,7 +242,10 @@ final class HostStore: ObservableObject {
             }
             bundle = recoveredBundle
             workspace = recoveredWorkspace
-            database = try LocalResponseDatabase(databaseURL: recoveredWorkspace.databaseURL)
+            database = try LocalResponseDatabase(
+                databaseURL: recoveredWorkspace.databaseURL,
+                mediaURL: recoveredWorkspace.mediaURL
+            )
             message = "Recovered the last verified study. Collection is stopped for safety."
             refresh()
         } catch {

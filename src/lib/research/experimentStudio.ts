@@ -5,7 +5,7 @@ import {
   type ExperimentTimingDiagnosticSummary,
 } from "./experimentTimingDiagnostics";
 
-export const EXPERIMENT_STUDIO_SCHEMA_VERSION = 6 as const;
+export const EXPERIMENT_STUDIO_SCHEMA_VERSION = 8 as const;
 export const EXPERIMENT_STUDIO_STORAGE_VERSION = 1 as const;
 export const MAX_EXPERIMENT_BLOCKS = 100;
 export const MAX_EXPERIMENT_CONDITIONS = 12;
@@ -17,10 +17,24 @@ export const MAX_EXPERIMENT_TRIAL_ROWS = 5_000;
 export const MAX_EXPERIMENT_TRIAL_COLUMNS = 40;
 export const MAX_EXPERIMENT_TRIAL_CELL_LENGTH = 4_000;
 export const MAX_EXPERIMENT_RUNTIME_TRIALS = 10_000;
+export const MIN_EXPERIMENT_AUDIO_DURATION_SECONDS = 5;
+export const MAX_EXPERIMENT_AUDIO_DURATION_SECONDS = 5 * 60;
+export const MIN_EXPERIMENT_AUDIO_RESPONSE_BYTES = 256 * 1024;
+export const MAX_EXPERIMENT_AUDIO_RESPONSE_BYTES = 25 * 1024 * 1024;
+export const DEFAULT_EXPERIMENT_AUDIO_DURATION_SECONDS = 2 * 60;
+export const DEFAULT_EXPERIMENT_AUDIO_RESPONSE_BYTES = 10 * 1024 * 1024;
+export const MIN_EXPERIMENT_VIDEO_DURATION_SECONDS = 5;
+export const MAX_EXPERIMENT_VIDEO_DURATION_SECONDS = 5 * 60;
+export const MIN_EXPERIMENT_VIDEO_RESPONSE_BYTES = 1024 * 1024;
+export const MAX_EXPERIMENT_VIDEO_RESPONSE_BYTES = 100 * 1024 * 1024;
+export const DEFAULT_EXPERIMENT_VIDEO_DURATION_SECONDS = 60;
+export const DEFAULT_EXPERIMENT_VIDEO_RESPONSE_BYTES = 25 * 1024 * 1024;
 
 export type ExperimentBlockType =
   | "welcome"
   | "consent"
+  | "audio-consent"
+  | "video-consent"
   | "instructions"
   | "rating"
   | "single-choice"
@@ -28,6 +42,8 @@ export type ExperimentBlockType =
   | "stimulus"
   | "fixation"
   | "keyboard-response"
+  | "audio-response"
+  | "video-response"
   | "trial-loop"
   | "attention-check"
   | "debrief";
@@ -38,6 +54,8 @@ export type ExperimentResponseType =
   | "likert"
   | "single-choice"
   | "keyboard"
+  | "audio"
+  | "video"
   | "long-text";
 
 export type ExperimentAssignmentMethod = "single" | "random";
@@ -108,6 +126,23 @@ export interface ExperimentTrialLoopConfig {
   repetitions: number;
 }
 
+export interface ExperimentAudioResponseConfig {
+  consentBlockId: string;
+  maxDurationSeconds: number;
+  maxBytes: number;
+  requireMicrophoneCheck: true;
+}
+
+export interface ExperimentVideoResponseConfig {
+  consentBlockId: string;
+  includeAudio: boolean;
+  audioConsentBlockId: string;
+  maxDurationSeconds: number;
+  maxBytes: number;
+  cameraFacing: "user" | "environment";
+  requireCameraCheck: true;
+}
+
 export interface ExperimentBlock {
   id: string;
   type: ExperimentBlockType;
@@ -132,6 +167,8 @@ export interface ExperimentBlock {
   practice?: boolean;
   randomizeChoices?: boolean;
   trialLoop?: ExperimentTrialLoopConfig | null;
+  audio?: ExperimentAudioResponseConfig | null;
+  video?: ExperimentVideoResponseConfig | null;
 }
 
 export interface ExperimentStudioDocument {
@@ -170,6 +207,8 @@ export const EXPERIMENT_BLOCK_OPTIONS: ReadonlyArray<{
 }> = [
   { type: "welcome", label: "Welcome", description: "Introduce the study and set expectations." },
   { type: "consent", label: "Consent", description: "Record an explicit participation decision." },
+  { type: "audio-consent", label: "Audio recording consent", description: "Collect a separate decision before any voice recording." },
+  { type: "video-consent", label: "Video recording consent", description: "Collect a separate decision before any camera recording." },
   { type: "instructions", label: "Instructions", description: "Explain what the participant should do." },
   { type: "rating", label: "Rating scale", description: "Collect a 1–7 Likert-style response." },
   { type: "single-choice", label: "Single choice", description: "Ask the participant to choose one option." },
@@ -177,6 +216,8 @@ export const EXPERIMENT_BLOCK_OPTIONS: ReadonlyArray<{
   { type: "stimulus", label: "Stimulus screen", description: "Present text and one compact image in the local runner." },
   { type: "fixation", label: "Fixation", description: "Present a timed fixation screen before a behavioral trial." },
   { type: "keyboard-response", label: "Keyboard response", description: "Capture a browser-measured key response and reaction time." },
+  { type: "audio-response", label: "Audio response", description: "Capture one bounded voice response in the same-Mac Local Research Host." },
+  { type: "video-response", label: "Video response", description: "Capture one bounded camera response in the same-Mac Local Research Host." },
   { type: "trial-loop", label: "Trial loop", description: "Run a deterministic sequence imported from a CSV trial table." },
   { type: "attention-check", label: "Attention check", description: "Add an explicitly scored data-quality check." },
   { type: "debrief", label: "Debrief", description: "Close the study and explain next steps." },
@@ -201,6 +242,8 @@ const RESPONSE_TYPES: readonly ExperimentResponseType[] = [
   "likert",
   "single-choice",
   "keyboard",
+  "audio",
+  "video",
   "long-text",
 ];
 const ASSIGNMENT_METHODS: readonly ExperimentAssignmentMethod[] = ["single", "random"];
@@ -244,6 +287,44 @@ const BLOCK_DEFAULTS: Record<ExperimentBlockType, Omit<ExperimentBlock, "id">> =
     variableName: "consent_given",
     required: true,
     choices: ["I agree to participate", "I do not agree"],
+    scaleMin: 1,
+    scaleMax: 2,
+    minLabel: "",
+    maxLabel: "",
+    nextBlockId: "",
+    displayDurationMs: 0,
+    responseDeadlineMs: 0,
+    media: null,
+  },
+  "audio-consent": {
+    type: "audio-consent",
+    title: "Audio recording consent",
+    internalName: "audio_recording_consent",
+    heading: "Consent to audio recording",
+    prompt: "This study will record your voice and store the recording only on the researcher's Mac. I understand the recording may be identifying and voluntarily agree to this audio collection.",
+    responseType: "consent",
+    variableName: "audio_recording_consent",
+    required: true,
+    choices: ["I agree to audio recording", "I do not agree"],
+    scaleMin: 1,
+    scaleMax: 2,
+    minLabel: "",
+    maxLabel: "",
+    nextBlockId: "",
+    displayDurationMs: 0,
+    responseDeadlineMs: 0,
+    media: null,
+  },
+  "video-consent": {
+    type: "video-consent",
+    title: "Video recording consent",
+    internalName: "video_recording_consent",
+    heading: "Consent to video recording",
+    prompt: "This study will record video from your camera and store the recording only on the researcher's Mac. I understand that my face, surroundings, or bystanders may be identifying and voluntarily agree to this video collection.",
+    responseType: "consent",
+    variableName: "video_recording_consent",
+    required: true,
+    choices: ["I agree to video recording", "I do not agree"],
     scaleMin: 1,
     scaleMax: 2,
     minLabel: "",
@@ -389,6 +470,59 @@ const BLOCK_DEFAULTS: Record<ExperimentBlockType, Omit<ExperimentBlock, "id">> =
     correctAnswer: "",
     practice: false,
   },
+  "audio-response": {
+    type: "audio-response",
+    title: "Audio response",
+    internalName: "audio_response",
+    heading: "Record your response",
+    prompt: "Run the microphone check, then record your response. Stop the recording when you are finished.",
+    responseType: "audio",
+    variableName: "audio_response_1",
+    required: true,
+    choices: [],
+    scaleMin: 1,
+    scaleMax: 7,
+    minLabel: "",
+    maxLabel: "",
+    nextBlockId: "",
+    displayDurationMs: 0,
+    responseDeadlineMs: 0,
+    media: null,
+    audio: {
+      consentBlockId: "",
+      maxDurationSeconds: DEFAULT_EXPERIMENT_AUDIO_DURATION_SECONDS,
+      maxBytes: DEFAULT_EXPERIMENT_AUDIO_RESPONSE_BYTES,
+      requireMicrophoneCheck: true,
+    },
+  },
+  "video-response": {
+    type: "video-response",
+    title: "Video response",
+    internalName: "video_response",
+    heading: "Record your video response",
+    prompt: "Run the camera check, review the preview, then record your response. Stop the recording when you are finished.",
+    responseType: "video",
+    variableName: "video_response_1",
+    required: true,
+    choices: [],
+    scaleMin: 1,
+    scaleMax: 7,
+    minLabel: "",
+    maxLabel: "",
+    nextBlockId: "",
+    displayDurationMs: 0,
+    responseDeadlineMs: 0,
+    media: null,
+    video: {
+      consentBlockId: "",
+      includeAudio: false,
+      audioConsentBlockId: "",
+      maxDurationSeconds: DEFAULT_EXPERIMENT_VIDEO_DURATION_SECONDS,
+      maxBytes: DEFAULT_EXPERIMENT_VIDEO_RESPONSE_BYTES,
+      cameraFacing: "user",
+      requireCameraCheck: true,
+    },
+  },
   "trial-loop": {
     type: "trial-loop",
     title: "Trial loop",
@@ -472,6 +606,8 @@ export function createExperimentBlock(type: ExperimentBlockType, id: string): Ex
     choices: [...BLOCK_DEFAULTS[type].choices],
     allowedKeys: [...(BLOCK_DEFAULTS[type].allowedKeys ?? [])],
     trialLoop: BLOCK_DEFAULTS[type].trialLoop ? { ...BLOCK_DEFAULTS[type].trialLoop } : null,
+    audio: BLOCK_DEFAULTS[type].audio ? { ...BLOCK_DEFAULTS[type].audio } : null,
+    video: BLOCK_DEFAULTS[type].video ? { ...BLOCK_DEFAULTS[type].video } : null,
   };
 }
 
@@ -588,6 +724,55 @@ function normalizeExperimentTrialLoop(value: unknown): ExperimentTrialLoopConfig
   };
 }
 
+function normalizeExperimentAudioResponse(
+  value: unknown,
+  fallback: ExperimentAudioResponseConfig,
+): ExperimentAudioResponseConfig {
+  const record = isRecord(value) ? value : {};
+  return {
+    consentBlockId: safeId(record.consentBlockId, ""),
+    maxDurationSeconds: safeNumber(
+      record.maxDurationSeconds,
+      fallback.maxDurationSeconds,
+      MIN_EXPERIMENT_AUDIO_DURATION_SECONDS,
+      MAX_EXPERIMENT_AUDIO_DURATION_SECONDS,
+    ),
+    maxBytes: safeNumber(
+      record.maxBytes,
+      fallback.maxBytes,
+      MIN_EXPERIMENT_AUDIO_RESPONSE_BYTES,
+      MAX_EXPERIMENT_AUDIO_RESPONSE_BYTES,
+    ),
+    requireMicrophoneCheck: true,
+  };
+}
+
+function normalizeExperimentVideoResponse(
+  value: unknown,
+  fallback: ExperimentVideoResponseConfig,
+): ExperimentVideoResponseConfig {
+  const record = isRecord(value) ? value : {};
+  return {
+    consentBlockId: safeId(record.consentBlockId, ""),
+    includeAudio: record.includeAudio === true,
+    audioConsentBlockId: safeId(record.audioConsentBlockId, ""),
+    maxDurationSeconds: safeNumber(
+      record.maxDurationSeconds,
+      fallback.maxDurationSeconds,
+      MIN_EXPERIMENT_VIDEO_DURATION_SECONDS,
+      MAX_EXPERIMENT_VIDEO_DURATION_SECONDS,
+    ),
+    maxBytes: safeNumber(
+      record.maxBytes,
+      fallback.maxBytes,
+      MIN_EXPERIMENT_VIDEO_RESPONSE_BYTES,
+      MAX_EXPERIMENT_VIDEO_RESPONSE_BYTES,
+    ),
+    cameraFacing: record.cameraFacing === "environment" ? "environment" : "user",
+    requireCameraCheck: true,
+  };
+}
+
 function normalizeExperimentTrialTable(value: unknown, index: number): ExperimentTrialTable | null {
   if (!isRecord(value)) return null;
   const rawColumns = Array.isArray(value.columns)
@@ -662,6 +847,12 @@ export function normalizeExperimentStudioDocument(
       randomizeChoices: candidate.randomizeChoices === true,
       trialLoop: type === "trial-loop"
         ? normalizeExperimentTrialLoop(candidate.trialLoop) ?? defaults.trialLoop ?? null
+        : null,
+      audio: type === "audio-response" && defaults.audio
+        ? normalizeExperimentAudioResponse(candidate.audio, defaults.audio)
+        : null,
+      video: type === "video-response" && defaults.video
+        ? normalizeExperimentVideoResponse(candidate.video, defaults.video)
         : null,
     } satisfies ExperimentBlock];
   });
@@ -865,6 +1056,7 @@ export function validateExperimentStudio(document: ExperimentStudioDocument): Ex
   const internalNames = new Map<string, string>();
   const variableNames = new Map<string, string>();
   const conditionIds = new Set(document.conditions.map((condition) => condition.id));
+  const blockIndexes = new Map(document.blocks.map((block, index) => [block.id, index]));
   let runtimeTrialUpperBound = 0;
 
   if (document.blocks.length > MAX_EXPERIMENT_BLOCKS) {
@@ -970,6 +1162,190 @@ export function validateExperimentStudio(document: ExperimentStudioDocument): Ex
           }
         }
       }
+    }
+    if (block.type === "audio-response") {
+      if (block.responseType !== "audio") {
+        issues.push({
+          id: `${block.id}-audio-response-type`,
+          blockId: block.id,
+          severity: "error",
+          message: `${block.title} must use the audio response type.`,
+        });
+      }
+      if (block.responseDeadlineMs !== 0) {
+        issues.push({
+          id: `${block.id}-audio-response-deadline`,
+          blockId: block.id,
+          severity: "error",
+          message: `${block.title} cannot use an automatic response deadline. Its bounded recording duration controls when capture stops.`,
+        });
+      }
+      if (!block.audio) {
+        issues.push({
+          id: `${block.id}-audio-settings`,
+          blockId: block.id,
+          severity: "error",
+          message: `${block.title} needs bounded local audio settings.`,
+        });
+      } else {
+        const consent = document.blocks.find((candidate) => candidate.id === block.audio?.consentBlockId);
+        if (!consent || consent.type !== "audio-consent") {
+          issues.push({
+            id: `${block.id}-audio-consent`,
+            blockId: block.id,
+            severity: "error",
+            message: `${block.title} needs a linked audio recording consent block.`,
+          });
+        } else if ((blockIndexes.get(consent.id) ?? Number.POSITIVE_INFINITY) >= (blockIndexes.get(block.id) ?? -1)) {
+          issues.push({
+            id: `${block.id}-audio-consent-order`,
+            blockId: block.id,
+            severity: "error",
+            message: `${consent.title} must appear before ${block.title}.`,
+          });
+        }
+        if (
+          !Number.isInteger(block.audio.maxDurationSeconds)
+          || block.audio.maxDurationSeconds < MIN_EXPERIMENT_AUDIO_DURATION_SECONDS
+          || block.audio.maxDurationSeconds > MAX_EXPERIMENT_AUDIO_DURATION_SECONDS
+        ) {
+          issues.push({
+            id: `${block.id}-audio-duration`,
+            blockId: block.id,
+            severity: "error",
+            message: `${block.title} needs a maximum duration from ${MIN_EXPERIMENT_AUDIO_DURATION_SECONDS} to ${MAX_EXPERIMENT_AUDIO_DURATION_SECONDS} seconds.`,
+          });
+        }
+        if (
+          !Number.isInteger(block.audio.maxBytes)
+          || block.audio.maxBytes < MIN_EXPERIMENT_AUDIO_RESPONSE_BYTES
+          || block.audio.maxBytes > MAX_EXPERIMENT_AUDIO_RESPONSE_BYTES
+        ) {
+          issues.push({
+            id: `${block.id}-audio-size`,
+            blockId: block.id,
+            severity: "error",
+            message: `${block.title} needs a maximum file size from 256 KB to 25 MB.`,
+          });
+        }
+      }
+    } else if (block.responseType === "audio") {
+      issues.push({
+        id: `${block.id}-audio-block-type`,
+        blockId: block.id,
+        severity: "error",
+        message: `${block.title} can collect audio only when it uses the Audio response block type.`,
+      });
+    }
+    if (block.type === "video-response") {
+      if (block.responseType !== "video") {
+        issues.push({
+          id: `${block.id}-video-response-type`,
+          blockId: block.id,
+          severity: "error",
+          message: `${block.title} must use the video response type.`,
+        });
+      }
+      if (block.responseDeadlineMs !== 0) {
+        issues.push({
+          id: `${block.id}-video-response-deadline`,
+          blockId: block.id,
+          severity: "error",
+          message: `${block.title} cannot use an automatic response deadline. Its bounded recording duration controls when capture stops.`,
+        });
+      }
+      if (!block.video) {
+        issues.push({
+          id: `${block.id}-video-settings`,
+          blockId: block.id,
+          severity: "error",
+          message: `${block.title} needs bounded local video settings.`,
+        });
+      } else {
+        const consent = document.blocks.find((candidate) => candidate.id === block.video?.consentBlockId);
+        if (!consent || consent.type !== "video-consent") {
+          issues.push({
+            id: `${block.id}-video-consent`,
+            blockId: block.id,
+            severity: "error",
+            message: `${block.title} needs a linked video recording consent block.`,
+          });
+        } else if ((blockIndexes.get(consent.id) ?? Number.POSITIVE_INFINITY) >= (blockIndexes.get(block.id) ?? -1)) {
+          issues.push({
+            id: `${block.id}-video-consent-order`,
+            blockId: block.id,
+            severity: "error",
+            message: `${consent.title} must appear before ${block.title}.`,
+          });
+        }
+        if (block.video.includeAudio) {
+          const audioConsent = document.blocks.find(
+            (candidate) => candidate.id === block.video?.audioConsentBlockId,
+          );
+          if (!audioConsent || audioConsent.type !== "audio-consent") {
+            issues.push({
+              id: `${block.id}-video-audio-consent`,
+              blockId: block.id,
+              severity: "error",
+              message: `${block.title} includes microphone audio and therefore needs a linked audio recording consent block.`,
+            });
+          } else if ((blockIndexes.get(audioConsent.id) ?? Number.POSITIVE_INFINITY) >= (blockIndexes.get(block.id) ?? -1)) {
+            issues.push({
+              id: `${block.id}-video-audio-consent-order`,
+              blockId: block.id,
+              severity: "error",
+              message: `${audioConsent.title} must appear before ${block.title}.`,
+            });
+          }
+        }
+        if (
+          !Number.isInteger(block.video.maxDurationSeconds)
+          || block.video.maxDurationSeconds < MIN_EXPERIMENT_VIDEO_DURATION_SECONDS
+          || block.video.maxDurationSeconds > MAX_EXPERIMENT_VIDEO_DURATION_SECONDS
+        ) {
+          issues.push({
+            id: `${block.id}-video-duration`,
+            blockId: block.id,
+            severity: "error",
+            message: `${block.title} needs a maximum duration from ${MIN_EXPERIMENT_VIDEO_DURATION_SECONDS} to ${MAX_EXPERIMENT_VIDEO_DURATION_SECONDS} seconds.`,
+          });
+        }
+        if (
+          !Number.isInteger(block.video.maxBytes)
+          || block.video.maxBytes < MIN_EXPERIMENT_VIDEO_RESPONSE_BYTES
+          || block.video.maxBytes > MAX_EXPERIMENT_VIDEO_RESPONSE_BYTES
+        ) {
+          issues.push({
+            id: `${block.id}-video-size`,
+            blockId: block.id,
+            severity: "error",
+            message: `${block.title} needs a maximum file size from 1 MB to 100 MB.`,
+          });
+        }
+      }
+    } else if (block.responseType === "video") {
+      issues.push({
+        id: `${block.id}-video-block-type`,
+        blockId: block.id,
+        severity: "error",
+        message: `${block.title} can collect video only when it uses the Video response block type.`,
+      });
+    }
+    if (block.type === "audio-consent" && block.responseType !== "consent") {
+      issues.push({
+        id: `${block.id}-audio-consent-response`,
+        blockId: block.id,
+        severity: "error",
+        message: `${block.title} must collect an explicit agree or decline decision.`,
+      });
+    }
+    if (block.type === "video-consent" && block.responseType !== "consent") {
+      issues.push({
+        id: `${block.id}-video-consent-response`,
+        blockId: block.id,
+        severity: "error",
+        message: `${block.title} must collect an explicit agree or decline decision.`,
+      });
     }
     if (block.media && experimentImageDataBytes(block.media.dataUrl) > EXPERIMENT_MEDIA_MAX_BYTES) {
       issues.push({

@@ -152,6 +152,8 @@ const RESPONSE_TYPES: readonly ExperimentResponseType[] = [
   "likert",
   "single-choice",
   "keyboard",
+  "audio",
+  "video",
   "long-text",
 ];
 

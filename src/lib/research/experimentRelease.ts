@@ -13,9 +13,9 @@ import {
   type ExperimentStudioDocument,
 } from "./experimentStudio";
 
-export const EXPERIMENT_RELEASE_FORMAT_VERSION = 2 as const;
+export const EXPERIMENT_RELEASE_FORMAT_VERSION = 4 as const;
 export const MAX_EXPERIMENT_RELEASE_NOTES_LENGTH = 2_000;
-export type ExperimentReleaseFormatVersion = 1 | typeof EXPERIMENT_RELEASE_FORMAT_VERSION;
+export type ExperimentReleaseFormatVersion = 1 | 2 | 3 | typeof EXPERIMENT_RELEASE_FORMAT_VERSION;
 
 export type ExperimentReleaseValidationLevel = "blocking" | "warning" | "advisory";
 
@@ -60,6 +60,11 @@ export interface ExperimentReleaseManifest {
     status: "stable" | "review" | "interrupted";
   } | null;
   participantDataBoundary: "local-only";
+  audioResponseCount?: number;
+  videoResponseCount?: number;
+  containsSensitiveMedia?: boolean;
+  audioCaptureBoundary?: "localhost-only" | null;
+  videoCaptureBoundary?: "localhost-only" | null;
   review: ExperimentReleaseReview;
   validationSummary: ExperimentReleaseValidationSummary;
   validationIssues: ExperimentReleaseValidationIssue[];
@@ -303,6 +308,60 @@ export function collectExperimentReleaseValidation(
       message: "Fullscreen is requested. Test keyboard escape, assistive technology behavior, and the participant fallback when fullscreen is denied.",
     });
   }
+  const audioBlocks = document.blocks.filter((block) => block.type === "audio-response");
+  if (audioBlocks.length > 0) {
+    issues.push({
+      id: "audio-sensitive-media",
+      level: "warning",
+      category: "privacy",
+      message: "Raw voice recordings can identify participants and may contain sensitive information. Confirm approved consent, access control, retention, and deletion procedures.",
+    });
+    issues.push({
+      id: "audio-localhost-only",
+      level: "warning",
+      category: "execution",
+      message: "Audio responses run only on the same Mac through the native Local Research Host. Trusted-LAN and portable HTML execution are blocked for audio collection.",
+    });
+    issues.push({
+      id: "audio-device-pilot",
+      level: "advisory",
+      category: "research",
+      message: "Pilot microphone permission, browser codec, input level, duration limits, and withdrawal deletion on every planned Mac and browser configuration.",
+    });
+    issues.push({
+      id: "audio-measurement-limit",
+      level: "advisory",
+      category: "execution",
+      message: "Audio capture is not calibrated acoustic measurement and does not provide certified recording-onset or audio-latency timing.",
+    });
+  }
+  const videoBlocks = document.blocks.filter((block) => block.type === "video-response");
+  if (videoBlocks.length > 0) {
+    issues.push({
+      id: "video-sensitive-media",
+      level: "warning",
+      category: "privacy",
+      message: "Raw camera recordings can identify participants, surroundings, and bystanders. Confirm approved consent, framing guidance, access control, retention, and deletion procedures.",
+    });
+    issues.push({
+      id: "video-localhost-only",
+      level: "warning",
+      category: "execution",
+      message: "Video responses run only on the same Mac through the native Local Research Host. Trusted-LAN and portable HTML execution are blocked for video collection.",
+    });
+    issues.push({
+      id: "video-device-pilot",
+      level: "advisory",
+      category: "research",
+      message: "Pilot camera permission, browser codec, framing, duration and storage limits, and withdrawal deletion on every planned Mac and browser configuration.",
+    });
+    issues.push({
+      id: "video-measurement-limit",
+      level: "advisory",
+      category: "execution",
+      message: "Video capture is not biometric, clinical, eye-tracking, or calibrated behavioral measurement and does not provide certified recording-onset timing.",
+    });
+  }
   issues.push({
     id: "browser-timing-claim",
     level: "advisory",
@@ -369,6 +428,8 @@ export async function sha256Checksum(value: unknown): Promise<string> {
 
 export function experimentReleasePayload(input: CreateExperimentReleaseInput) {
   const issues = collectExperimentReleaseValidation(input.studio);
+  const audioResponseCount = input.studio.blocks.filter((block) => block.type === "audio-response").length;
+  const videoResponseCount = input.studio.blocks.filter((block) => block.type === "video-response").length;
   return {
     releaseId: input.releaseId,
     projectId: input.studio.projectId,
@@ -391,6 +452,11 @@ export function experimentReleasePayload(input: CreateExperimentReleaseInput) {
         status: input.studio.timingDiagnostic.status,
       } : null,
       participantDataBoundary: "local-only" as const,
+      audioResponseCount,
+      videoResponseCount,
+      containsSensitiveMedia: audioResponseCount > 0 || videoResponseCount > 0,
+      audioCaptureBoundary: audioResponseCount > 0 ? "localhost-only" as const : null,
+      videoCaptureBoundary: videoResponseCount > 0 ? "localhost-only" as const : null,
       review: { ...input.review, reviewedAt: input.createdAt },
       validationSummary: summarizeExperimentReleaseValidation(issues),
       validationIssues: issues,
@@ -439,9 +505,13 @@ export function normalizeExperimentRelease(value: unknown): ExperimentRelease | 
 
   const formatVersion = value.manifest.formatVersion === 1
     ? 1
-    : value.manifest.formatVersion === EXPERIMENT_RELEASE_FORMAT_VERSION
-      ? EXPERIMENT_RELEASE_FORMAT_VERSION
-      : null;
+    : value.manifest.formatVersion === 2
+      ? 2
+      : value.manifest.formatVersion === 3
+        ? 3
+        : value.manifest.formatVersion === EXPERIMENT_RELEASE_FORMAT_VERSION
+          ? EXPERIMENT_RELEASE_FORMAT_VERSION
+          : null;
   if (!formatVersion) return null;
 
   const nonNegativeInteger = (candidate: unknown): candidate is number => (
@@ -458,6 +528,53 @@ export function normalizeExperimentRelease(value: unknown): ExperimentRelease | 
     || value.manifest.participantDataBoundary !== "local-only"
   ) return null;
   if (!frozenStudioShapeIsSafe(value.studio, projectId, value.manifest.studySchemaVersion)) return null;
+
+  let audioResponseCount = 0;
+  let containsSensitiveMedia = false;
+  let audioCaptureBoundary: ExperimentReleaseManifest["audioCaptureBoundary"] = null;
+  if (formatVersion >= 3) {
+    if (
+      !nonNegativeInteger(value.manifest.audioResponseCount)
+      || typeof value.manifest.containsSensitiveMedia !== "boolean"
+      || (
+        value.manifest.audioCaptureBoundary !== null
+        && value.manifest.audioCaptureBoundary !== "localhost-only"
+      )
+    ) return null;
+    audioResponseCount = value.manifest.audioResponseCount;
+    containsSensitiveMedia = value.manifest.containsSensitiveMedia;
+    audioCaptureBoundary = value.manifest.audioCaptureBoundary;
+    const frozenAudioCount = (value.studio.blocks as Array<Record<string, unknown>>)
+      .filter((block) => block.type === "audio-response").length;
+    if (
+      frozenAudioCount !== audioResponseCount
+      || (
+        formatVersion === 3
+        && containsSensitiveMedia !== (audioResponseCount > 0)
+      )
+      || audioCaptureBoundary !== (audioResponseCount > 0 ? "localhost-only" : null)
+    ) return null;
+  }
+  let videoResponseCount = 0;
+  let videoCaptureBoundary: ExperimentReleaseManifest["videoCaptureBoundary"] = null;
+  if (formatVersion >= 4) {
+    if (
+      !nonNegativeInteger(value.manifest.videoResponseCount)
+      || (
+        value.manifest.videoCaptureBoundary !== null
+        && value.manifest.videoCaptureBoundary !== "localhost-only"
+      )
+    ) return null;
+    videoResponseCount = value.manifest.videoResponseCount;
+    videoCaptureBoundary = value.manifest.videoCaptureBoundary;
+    const frozenVideoCount = (value.studio.blocks as Array<Record<string, unknown>>)
+      .filter((block) => block.type === "video-response").length;
+    if (
+      frozenVideoCount !== videoResponseCount
+      || containsSensitiveMedia !== (audioResponseCount > 0 || videoResponseCount > 0)
+      || videoCaptureBoundary !== (videoResponseCount > 0 ? "localhost-only" : null)
+    ) return null;
+  }
 
   const reviewValue = isRecord(value.manifest.review) ? value.manifest.review : {};
   if (
@@ -518,7 +635,7 @@ export function normalizeExperimentRelease(value: unknown): ExperimentRelease | 
   }
 
   const hasTimingDiagnostic = Object.prototype.hasOwnProperty.call(value.manifest, "timingDiagnostic");
-  if (formatVersion === EXPERIMENT_RELEASE_FORMAT_VERSION && !hasTimingDiagnostic) return null;
+  if (formatVersion >= 2 && !hasTimingDiagnostic) return null;
   let timingDiagnostic: ExperimentReleaseManifest["timingDiagnostic"];
   if (value.manifest.timingDiagnostic === null || value.manifest.timingDiagnostic === undefined) {
     timingDiagnostic = null;
@@ -567,6 +684,19 @@ export function normalizeExperimentRelease(value: unknown): ExperimentRelease | 
         ? { timingDiagnostic }
         : {}),
       participantDataBoundary: "local-only",
+      ...(formatVersion >= 3
+        ? {
+            audioResponseCount,
+            containsSensitiveMedia,
+            audioCaptureBoundary,
+          }
+        : {}),
+      ...(formatVersion >= 4
+        ? {
+            videoResponseCount,
+            videoCaptureBoundary,
+          }
+        : {}),
       review,
       validationSummary,
       validationIssues,

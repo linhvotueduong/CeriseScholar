@@ -47,7 +47,35 @@ struct StorageView: View {
                             ))
                             .fontWeight(.semibold)
                         }
-                        Text("Planning estimate only. Embedded assets, SQLite overhead, exports, and later audio files are separate.")
+                        if let bundle = store.bundle, bundle.containsAudioResponses {
+                            HStack {
+                                Text("Maximum audio at frozen limits")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text(HostFormatters.bytes.string(
+                                    fromByteCount: Int64(
+                                        expectedSessions
+                                        * bundle.audioLimits.values.reduce(0) { $0 + $1.maxBytes }
+                                    )
+                                ))
+                                .fontWeight(.semibold)
+                            }
+                        }
+                        if let bundle = store.bundle, bundle.containsVideoResponses {
+                            HStack {
+                                Text("Maximum video at frozen limits")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text(HostFormatters.bytes.string(
+                                    fromByteCount: Int64(
+                                        expectedSessions
+                                        * bundle.videoLimits.values.reduce(0) { $0 + $1.maxBytes }
+                                    )
+                                ))
+                                .fontWeight(.semibold)
+                            }
+                        }
+                        Text("Planning estimate only. Embedded assets, SQLite overhead, exports, and media chunk metadata add some overhead.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -55,14 +83,14 @@ struct StorageView: View {
                 }
                 GroupBox("Research package") {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("The export contains formula-safe CSV, structured JSON, trial-level CSV, a consistent SQLite backup, the immutable release, codebook, and README.")
+                        Text("The export contains formula-safe CSV, structured JSON, trial-level CSV, local audio/video files and manifests when present, a consistent SQLite backup, the immutable release, codebook, and README.")
                             .foregroundStyle(.secondary)
                         HStack {
                             Button("Export research package…") {
                                 store.exportResearchPackage()
                             }
                             .buttonStyle(.borderedProminent)
-                            Button("Create SQLite backup") {
+                            Button("Create local backup") {
                                 store.createBackup()
                             }
                             Button("Reveal study folder") {

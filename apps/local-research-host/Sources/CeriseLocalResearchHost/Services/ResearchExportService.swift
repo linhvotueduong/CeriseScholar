@@ -40,6 +40,28 @@ enum ResearchExportService {
                 bundle.codebookJSON,
                 to: directory.appendingPathComponent("codebook.json")
             )
+            try StudyWorkspaceService.atomicWrite(
+                try database.audioManifestJSON(),
+                to: directory.appendingPathComponent("audio-manifest.json")
+            )
+            try StudyWorkspaceService.atomicWrite(
+                try database.audioManifestCSV(),
+                to: directory.appendingPathComponent("audio-manifest.csv")
+            )
+            try StudyWorkspaceService.atomicWrite(
+                try database.videoManifestJSON(),
+                to: directory.appendingPathComponent("video-manifest.json")
+            )
+            try StudyWorkspaceService.atomicWrite(
+                try database.videoManifestCSV(),
+                to: directory.appendingPathComponent("video-manifest.csv")
+            )
+            if StudyWorkspaceService.directoryContainsRegularFiles(workspace.mediaURL) {
+                try FileManager.default.copyItem(
+                    at: workspace.mediaURL,
+                    to: directory.appendingPathComponent("media", isDirectory: true)
+                )
+            }
             let backup = directory.appendingPathComponent("responses.sqlite")
             try database.backup(to: backup)
             let readme = """
@@ -65,6 +87,20 @@ enum ResearchExportService {
                 - responses.sqlite: consistent local database backup.
                 - release.json: immutable frozen release.
                 - codebook.json: variable and trial-table definitions.
+                - audio-manifest.json / audio-manifest.csv: anonymous local recording/chunk references, sizes, MIME types, and checksums.
+                - video-manifest.json / video-manifest.csv: local camera-recording references, sizes, MIME types, audio inclusion, and checksums.
+                - media/: finalized local recordings plus transport chunks when this release collected audio or video. Raw media may identify participants, surroundings, or bystanders.
+
+                Audio boundary
+                - Audio was captured only through the same-Mac Local Research Host.
+                - Cerise does not transcribe, analyze, or upload these recordings.
+                - Browser audio codecs and microphone properties vary; this is not calibrated acoustic measurement.
+
+                Video boundary
+                - Video was captured only through the same-Mac Local Research Host after a visible camera check.
+                - Microphone audio is off by default and requires separate audio consent when enabled.
+                - Cerise does not identify faces, analyze behavior, transcribe, or upload these recordings.
+                - Browser video codecs and camera properties vary; this is not biometric, clinical, eye-tracking, or certified timing measurement.
 
                 Keep this folder according to the approved consent, retention, de-identification,
                 access-control, and institutional research-data plan.
@@ -86,9 +122,30 @@ enum ResearchExportService {
         database: LocalResponseDatabase
     ) throws -> URL {
         let destination = workspace.backupsURL.appendingPathComponent(
-            "responses-v\(bundle.releaseNumber)-\(timestampForFilename()).sqlite"
+            "local-backup-v\(bundle.releaseNumber)-\(timestampForFilename())",
+            isDirectory: true
         )
-        try database.backup(to: destination)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: false)
+        do {
+            try database.backup(to: destination.appendingPathComponent("responses.sqlite"))
+            try StudyWorkspaceService.atomicWrite(
+                try database.audioManifestJSON(),
+                to: destination.appendingPathComponent("audio-manifest.json")
+            )
+            try StudyWorkspaceService.atomicWrite(
+                try database.videoManifestJSON(),
+                to: destination.appendingPathComponent("video-manifest.json")
+            )
+            if StudyWorkspaceService.directoryContainsRegularFiles(workspace.mediaURL) {
+                try FileManager.default.copyItem(
+                    at: workspace.mediaURL,
+                    to: destination.appendingPathComponent("media", isDirectory: true)
+                )
+            }
+        } catch {
+            try? FileManager.default.removeItem(at: destination)
+            throw error
+        }
         return destination
     }
 
