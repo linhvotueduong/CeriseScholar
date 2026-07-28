@@ -6,8 +6,9 @@ Status:
   2026-07-28.
 - Phase 8.1 release-bound Analysis Plan Editor implemented on 2026-07-28.
 - Phase 8.2 local Data Intake and Audit implemented on 2026-07-28.
-- Transformations, statistical execution, results interpretation, and
-  publication outputs are later approval boundaries.
+- Phase 8.3 local Reproducible Preparation implemented on 2026-07-28.
+- Statistical execution, results interpretation, and publication outputs are
+  later approval boundaries.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
@@ -218,24 +219,52 @@ Phase 8.2 is not:
 - a scientific-validity, ethics, timing, or data-quality certification; or
 - permission for AI to inspect participant responses.
 
+## Phase 8.3 outcome
+
+Phase 8.3 adds a dedicated full-width Reproducible Preparation workspace at
+`/data-preparation/[projectId]` and links it from the third Stage 06 step. It
+requires the researcher to re-select the exact five-file Local Research Host
+export reviewed in Phase 8.2 and fails closed when any role, size, or SHA-256
+checksum differs.
+
+The deterministic engine starts from completed production sessions only. Pilot,
+withdrawn, and incomplete sessions remain outside the derived response table.
+It applies an ordered allowlist of explicit missing-value recodes, text
+trimming, numeric coercion, reverse scoring, composite scoring, and
+single-comparison exclusions. Operations run on cloned rows, never overwrite
+the source, and remove trial rows only when their parent session is explicitly
+excluded.
+
+The workspace shows aggregate before/after effects and retains only operation
+metadata, counts, integrity checksums, and review/export events. Raw and derived
+participant rows remain in memory until the tab closes or source is replaced.
+They are not stored in Local Storage, Supabase, Azure, OpenAI, or OpenRouter.
+
+The derived JSON package contains response and trial tables, frozen
+provenance, the normalized operation log, and independent response, trial, and
+package checksums. It is labelled potentially identifying local research data
+and must be stored by the researcher in an approved location.
+
+Phase 8.3 does not provide arbitrary code, free-form formulas, automatic
+outlier deletion, imputation, transcription, inferential statistics, or AI
+access to participant data. Its completion gate records a local review and
+export event; it is not a signed audit trail, preregistration, validity
+certification, or proof that the exported package was later analyzed.
+
 ## Recommended next boundaries
 
 Each boundary should be approved, built, and verified separately:
 
-1. **Phase 8.3 — Reproducible Preparation**
-
-   Reviewable transformations and exclusions with a deterministic operation log
-   and derived, never-overwritten datasets.
-2. **Phase 8.4 — Analysis Execution**
+1. **Phase 8.4 — Analysis Execution**
 
    A small reviewed method registry with assumptions, effect sizes, confidence
    intervals, diagnostics, and deterministic outputs. No arbitrary remote code.
-3. **Phase 8.5 — Results and Interpretation**
+2. **Phase 8.5 — Results and Interpretation**
 
    RQ-linked tables, figures, claims, limitations, and divergence from the
    frozen plan. AI may explain reviewed outputs but must not silently run or
    change analyses.
-4. **Phase 8.6 — Reproducibility Package**
+3. **Phase 8.6 — Reproducibility Package**
 
    Data dictionary, contract, amendment log, operation log, results, figures,
    environment/version metadata, and a machine-readable manifest.

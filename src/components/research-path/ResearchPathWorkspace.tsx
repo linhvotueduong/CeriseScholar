@@ -69,6 +69,10 @@ const DataIntakeAuditLauncher = dynamic(
   () => import("./DataIntakeAuditLauncher"),
   { loading: () => <ToolLoading label="Data Intake & Audit" />, ssr: false },
 );
+const DataPreparationLauncher = dynamic(
+  () => import("./DataPreparationLauncher"),
+  { loading: () => <ToolLoading label="Reproducible Preparation" />, ssr: false },
+);
 
 interface ResearchPathWorkspaceProps {
   projectId: string;
@@ -593,6 +597,7 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
   const [experimentStudioReady, setExperimentStudioReady] = useState(false);
   const [analysisPlanReady, setAnalysisPlanReady] = useState(false);
   const [dataIntakeReady, setDataIntakeReady] = useState(false);
+  const [dataPreparationReady, setDataPreparationReady] = useState(false);
   const saveTimer = useRef<number | null>(null);
   const cloudSaveTimer = useRef<number | null>(null);
   const studyDirty = useRef(false);
@@ -619,6 +624,8 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     activeStage.id === "stage-06" && activeStep.canvas === "analysis-plan-launcher";
   const isDataIntakeStep =
     activeStage.id === "stage-06" && activeStep.canvas === "data-intake-audit-launcher";
+  const isDataPreparationStep =
+    activeStage.id === "stage-06" && activeStep.canvas === "data-preparation-launcher";
   const activeIndex = RESEARCH_PATH_STEPS.findIndex((step) => step.id === activeStep.id);
   const previousStep = activeIndex > 0 ? RESEARCH_PATH_STEPS[activeIndex - 1] : null;
   const nextStep = activeIndex < RESEARCH_PATH_STEPS.length - 1 ? RESEARCH_PATH_STEPS[activeIndex + 1] : null;
@@ -800,6 +807,15 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
       setSaveState("Verify and review the data-intake audit first");
       return;
     }
+    if (
+      activeStage.id === "stage-06"
+      && !activeDraft.completed
+      && isDataPreparationStep
+      && !dataPreparationReady
+    ) {
+      setSaveState("Review and export the reproducible preparation package first");
+      return;
+    }
     updateStepDraft(activeStep.id, (current) => ({ ...current, completed: !current.completed }));
   }, [
     activeDraft.completed,
@@ -807,9 +823,11 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     activeStep.id,
     analysisPlanReady,
     dataIntakeReady,
+    dataPreparationReady,
     experimentStudioReady,
     isAnalysisPlanStep,
     isDataIntakeStep,
+    isDataPreparationStep,
     isExperimentStudioStep,
     isStudyPlanningStep,
     studyDesign.spec,
@@ -932,6 +950,12 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
             {isDataIntakeStep ? (
               <DataIntakeAuditLauncher
                 onReadyChange={setDataIntakeReady}
+                projectId={projectId}
+              />
+            ) : null}
+            {isDataPreparationStep ? (
+              <DataPreparationLauncher
+                onReadyChange={setDataPreparationReady}
                 projectId={projectId}
               />
             ) : null}

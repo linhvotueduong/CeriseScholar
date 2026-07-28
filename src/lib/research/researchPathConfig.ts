@@ -22,6 +22,7 @@ export type ResearchCanvasKind =
   | "experiment-studio-launcher"
   | "analysis-plan-launcher"
   | "data-intake-audit-launcher"
+  | "data-preparation-launcher"
   | "guided";
 
 export interface ResearchPathStep {
@@ -261,8 +262,13 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
         checklist: [],
       },
       {
-        ...guided("Clean, Transcribe, Transform, or Code the Evidence", "Prepare Evidence", "Prepare analyzable evidence while preserving the raw source and transformation history.", ["Which cleaning, transcription, transformation, or coding actions were performed?", "How can every change be traced or reproduced?"], ["Raw evidence remains preserved", "Transformations and coding decisions are documented"]),
         id: "stage-06-step-01",
+        title: "Prepare a Reproducible Derived Dataset",
+        shortTitle: "Prepare Evidence",
+        description: "Apply reviewable transformations and exclusions to a derived copy while preserving the raw source and deterministic operation history.",
+        canvas: "data-preparation-launcher",
+        prompts: [],
+        checklist: [],
       },
       {
         ...guided("Conduct Data-Quality and Descriptive Checks", "Quality Checks", "Understand completeness, distributions, inconsistencies, and missingness before primary analysis.", ["What do the descriptive and quality checks show?", "Which issues require correction, exclusion, or sensitivity analysis?"], ["Planned quality checks are complete", "Material quality issues have documented decisions"]),
