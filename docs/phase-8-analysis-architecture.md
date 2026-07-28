@@ -4,9 +4,9 @@ Status:
 
 - Phase 8.0 analysis-contract and provenance foundation implemented on
   2026-07-28.
-- Analysis planning UI, data import, transformations, statistical execution,
-  results interpretation, and publication outputs are later approval
-  boundaries.
+- Phase 8.1 release-bound Analysis Plan Editor implemented on 2026-07-28.
+- Data import, transformations, statistical execution, results interpretation,
+  and publication outputs are later approval boundaries.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
@@ -101,6 +101,54 @@ not infer that a plan was prospective. A later amendment boundary should record
 researcher attestations, timestamps, reasons, and the frozen contract checksum
 without mutating the original release.
 
+## Phase 8.1 outcome
+
+Phase 8.1 adds a dedicated full-width Analysis Plan Editor at
+`/analysis-plan/[projectId]` and links it from the first Stage 06 step. The
+editor:
+
+- opens only a verified release that contains a Phase 8.0 analysis contract;
+- keeps one versioned local draft per project and release ID;
+- preserves the frozen research-question wording, variable names, response
+  types, release checksum, and contract checksum;
+- supports primary, secondary, and exploratory designation;
+- records estimand population, exposure or intervention, comparator, outcome,
+  summary measure, and timepoint;
+- maps outcome, predictor, and covariate variables only from the frozen data
+  dictionary;
+- records unit of analysis, planned method, effect size, missing-data strategy,
+  exclusions, transformations, multiplicity, and sensitivity analyses;
+- classifies frozen variables into analysis or administrative roles;
+- records study-wide analysis decisions;
+- requires an explicit declaration of whether participant data was accessed
+  before planning;
+- recomputes readiness from normalized content instead of trusting stored
+  client status; and
+- exports a clearly labelled editable draft for review.
+
+The editor autosaves to bounded, validated browser storage. It intentionally
+does not create a Supabase table, upload participant data, mutate a release,
+or claim that the draft is immutable or preregistered. Remote persistence and
+an amendment/freeze ledger require their own approved architecture boundary.
+
+### Phase 8.1 readiness gate
+
+For each research question, the editor checks eight required decisions:
+
+1. designation;
+2. estimand population;
+3. estimand outcome;
+4. frozen outcome-variable mapping;
+5. planned method;
+6. unit of analysis;
+7. missing-data strategy; and
+8. multiplicity strategy.
+
+The plan also requires the data-access declaration and flags every unassigned
+frozen variable. The Stage 06 step can be marked complete only when the local
+draft reports no unresolved readiness issue. This is a completeness gate, not
+a scientific-validity certification.
+
 ## Security and privacy boundaries
 
 - Untrusted browser/network JSON is bounded before it can enter a frozen
@@ -119,28 +167,24 @@ without mutating the original release.
 
 Each boundary should be approved, built, and verified separately:
 
-1. **Phase 8.1 — Analysis Plan Editor**
-
-   Researcher UI for designation, variable roles, estimands, exclusions,
-   missingness, transformations, multiplicity, and sensitivity analyses.
-2. **Phase 8.2 — Data Intake and Audit**
+1. **Phase 8.2 — Data Intake and Audit**
 
    Import Local Host exports, verify release/contract identity, separate pilot
    data, validate schemas, and produce a read-only data-quality report.
-3. **Phase 8.3 — Reproducible Preparation**
+2. **Phase 8.3 — Reproducible Preparation**
 
    Reviewable transformations and exclusions with a deterministic operation log
    and derived, never-overwritten datasets.
-4. **Phase 8.4 — Analysis Execution**
+3. **Phase 8.4 — Analysis Execution**
 
    A small reviewed method registry with assumptions, effect sizes, confidence
    intervals, diagnostics, and deterministic outputs. No arbitrary remote code.
-5. **Phase 8.5 — Results and Interpretation**
+4. **Phase 8.5 — Results and Interpretation**
 
    RQ-linked tables, figures, claims, limitations, and divergence from the
    frozen plan. AI may explain reviewed outputs but must not silently run or
    change analyses.
-6. **Phase 8.6 — Reproducibility Package**
+5. **Phase 8.6 — Reproducibility Package**
 
    Data dictionary, contract, amendment log, operation log, results, figures,
    environment/version metadata, and a machine-readable manifest.

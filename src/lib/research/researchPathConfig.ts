@@ -20,6 +20,7 @@ export type ResearchCanvasKind =
   | "study-measures"
   | "study-participants"
   | "experiment-studio-launcher"
+  | "analysis-plan-launcher"
   | "guided";
 
 export interface ResearchPathStep {
@@ -240,11 +241,35 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
     "Transform raw evidence into a transparent analysis package and findings record.",
     "Analysis Package and Findings",
     [
-      guided("Clean, Transcribe, Transform, or Code the Evidence", "Prepare Evidence", "Prepare analyzable evidence while preserving the raw source and transformation history.", ["Which cleaning, transcription, transformation, or coding actions were performed?", "How can every change be traced or reproduced?"], ["Raw evidence remains preserved", "Transformations and coding decisions are documented"]),
-      guided("Conduct Data-Quality and Descriptive Checks", "Quality Checks", "Understand completeness, distributions, inconsistencies, and missingness before primary analysis.", ["What do the descriptive and quality checks show?", "Which issues require correction, exclusion, or sensitivity analysis?"], ["Planned quality checks are complete", "Material quality issues have documented decisions"]),
-      guided("Perform the Primary Analysis", "Primary Analysis", "Execute the analysis plan that directly addresses the research questions.", ["What primary analyses were performed?", "What findings correspond to each research question?"], ["The planned primary analysis is complete", "Outputs are linked to questions and source evidence"]),
-      guided("Test Reliability, Robustness, Sensitivity, or Triangulation", "Robustness", "Challenge the findings with the quality tests appropriate to the methodology.", ["Which robustness, sensitivity, reliability, or triangulation checks were used?", "Which conclusions changed, weakened, or strengthened?"], ["Relevant quality tests are complete", "Differences from the primary result are explained"]),
-      guided("Produce Tables, Figures, Themes, and a Results Record", "Results Record", "Create the stable results package used for interpretation and writing.", ["Which tables, figures, themes, or result summaries are final?", "Where are the analysis outputs and reproducible materials stored?"], ["Every key result has a stable output", "Captions, labels, and provenance are complete"]),
+      {
+        id: "stage-06-analysis-plan",
+        title: "Finalize the Analysis Plan",
+        shortTitle: "Analysis Plan",
+        description: "Complete the release-bound analysis plan before importing or reviewing participant data.",
+        canvas: "analysis-plan-launcher",
+        prompts: [],
+        checklist: [],
+      },
+      {
+        ...guided("Clean, Transcribe, Transform, or Code the Evidence", "Prepare Evidence", "Prepare analyzable evidence while preserving the raw source and transformation history.", ["Which cleaning, transcription, transformation, or coding actions were performed?", "How can every change be traced or reproduced?"], ["Raw evidence remains preserved", "Transformations and coding decisions are documented"]),
+        id: "stage-06-step-01",
+      },
+      {
+        ...guided("Conduct Data-Quality and Descriptive Checks", "Quality Checks", "Understand completeness, distributions, inconsistencies, and missingness before primary analysis.", ["What do the descriptive and quality checks show?", "Which issues require correction, exclusion, or sensitivity analysis?"], ["Planned quality checks are complete", "Material quality issues have documented decisions"]),
+        id: "stage-06-step-02",
+      },
+      {
+        ...guided("Perform the Primary Analysis", "Primary Analysis", "Execute the analysis plan that directly addresses the research questions.", ["What primary analyses were performed?", "What findings correspond to each research question?"], ["The planned primary analysis is complete", "Outputs are linked to questions and source evidence"]),
+        id: "stage-06-step-03",
+      },
+      {
+        ...guided("Test Reliability, Robustness, Sensitivity, or Triangulation", "Robustness", "Challenge the findings with the quality tests appropriate to the methodology.", ["Which robustness, sensitivity, reliability, or triangulation checks were used?", "Which conclusions changed, weakened, or strengthened?"], ["Relevant quality tests are complete", "Differences from the primary result are explained"]),
+        id: "stage-06-step-04",
+      },
+      {
+        ...guided("Produce Tables, Figures, Themes, and a Results Record", "Results Record", "Create the stable results package used for interpretation and writing.", ["Which tables, figures, themes, or result summaries are final?", "Where are the analysis outputs and reproducible materials stored?"], ["Every key result has a stable output", "Captions, labels, and provenance are complete"]),
+        id: "stage-06-step-05",
+      },
     ],
   ),
   makeStage(

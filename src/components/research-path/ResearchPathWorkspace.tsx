@@ -61,6 +61,10 @@ const ExperimentStudioLauncher = dynamic(
   () => import("./ExperimentStudioLauncher"),
   { loading: () => <ToolLoading label="Experimental Studio" />, ssr: false },
 );
+const AnalysisPlanLauncher = dynamic(
+  () => import("./AnalysisPlanLauncher"),
+  { loading: () => <ToolLoading label="Analysis Plan" />, ssr: false },
+);
 
 interface ResearchPathWorkspaceProps {
   projectId: string;
@@ -583,6 +587,7 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
   const [cloudUserId, setCloudUserId] = useState<string | null>(null);
   const [cloudReady, setCloudReady] = useState(false);
   const [experimentStudioReady, setExperimentStudioReady] = useState(false);
+  const [analysisPlanReady, setAnalysisPlanReady] = useState(false);
   const saveTimer = useRef<number | null>(null);
   const cloudSaveTimer = useRef<number | null>(null);
   const studyDirty = useRef(false);
@@ -605,6 +610,8 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
   ].includes(activeStep.canvas);
   const isExperimentStudioStep =
     activeStage.id === "stage-03" && activeStep.canvas === "experiment-studio-launcher";
+  const isAnalysisPlanStep =
+    activeStage.id === "stage-06" && activeStep.canvas === "analysis-plan-launcher";
   const activeIndex = RESEARCH_PATH_STEPS.findIndex((step) => step.id === activeStep.id);
   const previousStep = activeIndex > 0 ? RESEARCH_PATH_STEPS[activeIndex - 1] : null;
   const nextStep = activeIndex < RESEARCH_PATH_STEPS.length - 1 ? RESEARCH_PATH_STEPS[activeIndex + 1] : null;
@@ -768,12 +775,23 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
       setSaveState("Resolve Experimental Studio errors before completing this step");
       return;
     }
+    if (
+      activeStage.id === "stage-06"
+      && !activeDraft.completed
+      && isAnalysisPlanStep
+      && !analysisPlanReady
+    ) {
+      setSaveState("Complete the required analysis-plan decisions first");
+      return;
+    }
     updateStepDraft(activeStep.id, (current) => ({ ...current, completed: !current.completed }));
   }, [
     activeDraft.completed,
     activeStage.id,
     activeStep.id,
+    analysisPlanReady,
     experimentStudioReady,
+    isAnalysisPlanStep,
     isExperimentStudioStep,
     isStudyPlanningStep,
     studyDesign.spec,
@@ -884,6 +902,12 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
             {isExperimentStudioStep ? (
               <ExperimentStudioLauncher
                 onReadyChange={setExperimentStudioReady}
+                projectId={projectId}
+              />
+            ) : null}
+            {isAnalysisPlanStep ? (
+              <AnalysisPlanLauncher
+                onReadyChange={setAnalysisPlanReady}
                 projectId={projectId}
               />
             ) : null}

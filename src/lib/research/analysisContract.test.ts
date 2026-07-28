@@ -76,7 +76,7 @@ test("rejects malformed references and forged readiness metadata", () => {
   assert.equal(normalizeAnalysisContract(forged, studio.projectId), null);
 });
 
-test("analysis validation remains advisory until the dedicated planning UI exists", () => {
+test("frozen-contract validation remains advisory while the plan editor records later decisions", () => {
   const studio = createExperimentStudioDocument("project-analysis");
   const contract = createAnalysisContract(studio, null, "2026-07-28T19:00:00.000Z");
   const issues = validateAnalysisContract(contract);
