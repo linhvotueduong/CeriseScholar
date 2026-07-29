@@ -7,8 +7,8 @@ Status:
 - Phase 8.1 release-bound Analysis Plan Editor implemented on 2026-07-28.
 - Phase 8.2 local Data Intake and Audit implemented on 2026-07-28.
 - Phase 8.3 local Reproducible Preparation implemented on 2026-07-28.
-- Statistical execution, results interpretation, and publication outputs are
-  later approval boundaries.
+- Phase 8.4 local Analysis Execution implemented on 2026-07-29.
+- Results interpretation and publication outputs are later approval boundaries.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
@@ -251,20 +251,89 @@ access to participant data. Its completion gate records a local review and
 export event; it is not a signed audit trail, preregistration, validity
 certification, or proof that the exported package was later analyzed.
 
+## Phase 8.4 outcome
+
+Phase 8.4 adds a dedicated full-width Analysis Execution workspace at
+`/analysis-execution/[projectId]` and links it from the Stage 06 primary-analysis
+step. It requires a ready Phase 8.1 plan and a reviewed/exported Phase 8.3
+preparation document for the same immutable release.
+
+The researcher must re-select the exact Phase 8.3 derived JSON package. The
+browser validates its release identity, plan identity, operation fingerprint,
+row and column bounds, and independent response, trial, and package checksums.
+Any changed cell, checksum, release, or preparation receipt fails closed.
+
+### Reviewed method registry
+
+The initial bounded registry contains:
+
+- descriptive summary with a Student-t confidence interval for the mean;
+- Pearson correlation with a Fisher-z confidence interval;
+- a two-group raw mean difference using Welch inference, plus Hedges g; and
+- simple ordinary-least-squares regression with an unstandardized slope
+  interval and R-squared.
+
+Each enabled research question records a reviewed method, outcome, optional
+predictor or grouping variable, confidence level, and—when the configuration
+differs from the frozen plan—a required deviation rationale. Variables can be
+selected only from the frozen plan or the verified derived package. The engine
+does not execute user-authored formulas, scripts, SQL, Python, R, network code,
+or model-generated code.
+
+Every result includes:
+
+- the complete-case sample size and excluded missing or invalid count;
+- a primary estimate, bounded supporting metrics, and an interval;
+- explicit assumptions and computation notes;
+- method-specific blocking or advisory diagnostics; and
+- an alignment status tied to the frozen analysis plan.
+
+Blocking diagnostics prevent the review/export gate. Advisory diagnostics
+remain visible and require researcher judgment; they are not silently
+corrected. The completion gate requires a current deterministic run, no
+blocking diagnostic, explicit review of estimates, intervals, assumptions and
+diagnostics, and export of the aggregate results package.
+
+### Local execution and persistence boundary
+
+Prepared participant response rows are held only in the current browser tab's
+memory. They are never persisted to Local Storage, Supabase, Azure, OpenAI,
+OpenRouter, application logs, or the aggregate results package. Local Storage
+contains only:
+
+- bounded method configuration;
+- frozen release, plan, and preparation provenance;
+- source and result checksums;
+- aggregate run counts and diagnostic counts; and
+- review/export timestamps.
+
+The exported package contains aggregate statistical output, the normalized
+method configuration and registry metadata, the source preparation checksum,
+and independent result/package checksums. Aggregate results may still be
+sensitive and must be stored in a researcher-approved location.
+
+Phase 8.4 is not:
+
+- general statistical software;
+- support for multilevel, longitudinal, repeated-measures, survival, Bayesian,
+  psychometric, qualitative, or custom models;
+- an automatic method recommender or substitute for statistical expertise;
+- a preregistration or prospective-plan proof;
+- an amendment ledger;
+- a causal-inference, validity, reproducibility, or publication certification;
+  or
+- permission for AI to inspect participant-level data.
+
 ## Recommended next boundaries
 
 Each boundary should be approved, built, and verified separately:
 
-1. **Phase 8.4 — Analysis Execution**
-
-   A small reviewed method registry with assumptions, effect sizes, confidence
-   intervals, diagnostics, and deterministic outputs. No arbitrary remote code.
-2. **Phase 8.5 — Results and Interpretation**
+1. **Phase 8.5 — Results and Interpretation**
 
    RQ-linked tables, figures, claims, limitations, and divergence from the
    frozen plan. AI may explain reviewed outputs but must not silently run or
    change analyses.
-3. **Phase 8.6 — Reproducibility Package**
+2. **Phase 8.6 — Reproducibility Package**
 
    Data dictionary, contract, amendment log, operation log, results, figures,
    environment/version metadata, and a machine-readable manifest.

@@ -44,7 +44,7 @@ test("Stage 3 preserves its six persisted step ids while introducing the study b
   assert.equal(stage.steps[3].canvas, "experiment-studio-launcher");
 });
 
-test("Stage 6 adds analysis planning without shifting persisted analysis-step ids", () => {
+test("Stage 6 adds release-bound analysis tools without shifting persisted step ids", () => {
   const stage = RESEARCH_PATH_STAGES.find((item) => item.id === "stage-06");
 
   assert.ok(stage);
@@ -54,6 +54,8 @@ test("Stage 6 adds analysis planning without shifting persisted analysis-step id
   assert.equal(stage.steps[1].canvas, "data-intake-audit-launcher");
   assert.equal(stage.steps[2].id, "stage-06-step-01");
   assert.equal(stage.steps[2].canvas, "data-preparation-launcher");
+  assert.equal(stage.steps[4].id, "stage-06-step-03");
+  assert.equal(stage.steps[4].canvas, "analysis-execution-launcher");
   assert.deepEqual(
     stage.steps.slice(2).map((step) => step.id),
     [

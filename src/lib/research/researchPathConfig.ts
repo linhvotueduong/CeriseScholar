@@ -23,6 +23,7 @@ export type ResearchCanvasKind =
   | "analysis-plan-launcher"
   | "data-intake-audit-launcher"
   | "data-preparation-launcher"
+  | "analysis-execution-launcher"
   | "guided";
 
 export interface ResearchPathStep {
@@ -275,8 +276,13 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
         id: "stage-06-step-02",
       },
       {
-        ...guided("Perform the Primary Analysis", "Primary Analysis", "Execute the analysis plan that directly addresses the research questions.", ["What primary analyses were performed?", "What findings correspond to each research question?"], ["The planned primary analysis is complete", "Outputs are linked to questions and source evidence"]),
         id: "stage-06-step-03",
+        title: "Run the Reviewed Primary Analysis",
+        shortTitle: "Analysis Execution",
+        description: "Execute bounded, reviewed methods against the verified derived package and inspect estimates, intervals, assumptions, and diagnostics.",
+        canvas: "analysis-execution-launcher",
+        prompts: [],
+        checklist: [],
       },
       {
         ...guided("Test Reliability, Robustness, Sensitivity, or Triangulation", "Robustness", "Challenge the findings with the quality tests appropriate to the methodology.", ["Which robustness, sensitivity, reliability, or triangulation checks were used?", "Which conclusions changed, weakened, or strengthened?"], ["Relevant quality tests are complete", "Differences from the primary result are explained"]),
