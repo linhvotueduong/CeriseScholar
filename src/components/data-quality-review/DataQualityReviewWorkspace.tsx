@@ -700,6 +700,30 @@ export default function DataQualityReviewWorkspace({
                 </span>
               </div>
             ) : null}
+            {report ? (
+              <div className={styles.inlineSummary}>
+                <strong>Checksummed inclusion ledger</strong>
+                <span>
+                  {report.summary.inclusionLedger.includedRows} included ·
+                  {" "}{report.summary.inclusionLedger.excludedRows} excluded ·
+                  {" "}{report.summary.inclusionLedger.exclusionRuleCounts.length} exclusion rule(s)
+                </span>
+              </div>
+            ) : null}
+            {report && report.summary.behavioral.sessionsProfiled > 0 ? (
+              <div className={styles.inlineSummary}>
+                <strong>Included-population behavioral checks</strong>
+                <span>
+                  Attention {report.summary.behavioral.attentionChecksCorrect}/
+                  {report.summary.behavioral.attentionChecksExpected} correct ·
+                  {" "}{report.summary.behavioral.sessionsWithFocusLoss} session(s) with focus loss ·
+                  {" "}scored accuracy{" "}
+                  {report.summary.behavioral.scoredAccuracyRate === null
+                    ? "not available"
+                    : formatPercent(report.summary.behavioral.scoredAccuracyRate)}
+                </span>
+              </div>
+            ) : null}
           </section>
 
           <section className={styles.sectionCard}>

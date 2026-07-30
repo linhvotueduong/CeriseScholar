@@ -441,6 +441,140 @@ function OperationEditor({
               </label>
             </>
           ) : null}
+          {operation.type === "summarize-trial-accuracy" ? (
+            <>
+              <label>
+                <span>New derived variable</span>
+                <input
+                  onChange={(event) => onChange({
+                    ...operation,
+                    targetVariable: event.target.value,
+                  })}
+                  value={operation.targetVariable}
+                />
+              </label>
+              <label>
+                <span>Minimum scored trials</span>
+                <input
+                  min={1}
+                  onChange={(event) => onChange({
+                    ...operation,
+                    minimumScoredTrials: Number(event.target.value),
+                  })}
+                  type="number"
+                  value={operation.minimumScoredTrials}
+                />
+              </label>
+              <label className={styles.checkField}>
+                <input
+                  checked={operation.includePractice}
+                  onChange={(event) => onChange({
+                    ...operation,
+                    includePractice: event.target.checked,
+                  })}
+                  type="checkbox"
+                />
+                <span>Include practice trials</span>
+              </label>
+            </>
+          ) : null}
+          {operation.type === "summarize-reaction-time" ? (
+            <>
+              <label>
+                <span>New derived variable</span>
+                <input
+                  onChange={(event) => onChange({
+                    ...operation,
+                    targetVariable: event.target.value,
+                  })}
+                  value={operation.targetVariable}
+                />
+              </label>
+              <label>
+                <span>Summary method</span>
+                <select
+                  onChange={(event) => onChange({
+                    ...operation,
+                    method: event.target.value as "mean" | "median",
+                  })}
+                  value={operation.method}
+                >
+                  <option value="median">Median</option>
+                  <option value="mean">Mean</option>
+                </select>
+              </label>
+              <label>
+                <span>Minimum RT (ms, inclusive)</span>
+                <input
+                  min={0}
+                  onChange={(event) => onChange({
+                    ...operation,
+                    minimumMilliseconds: Number(event.target.value),
+                  })}
+                  type="number"
+                  value={operation.minimumMilliseconds}
+                />
+              </label>
+              <label>
+                <span>Maximum RT (ms, inclusive)</span>
+                <input
+                  max={3_600_000}
+                  min={0}
+                  onChange={(event) => onChange({
+                    ...operation,
+                    maximumMilliseconds: Number(event.target.value),
+                  })}
+                  type="number"
+                  value={operation.maximumMilliseconds}
+                />
+              </label>
+              <label>
+                <span>Minimum eligible trials</span>
+                <input
+                  min={1}
+                  onChange={(event) => onChange({
+                    ...operation,
+                    minimumValidTrials: Number(event.target.value),
+                  })}
+                  type="number"
+                  value={operation.minimumValidTrials}
+                />
+              </label>
+              <label className={styles.checkField}>
+                <input
+                  checked={operation.correctOnly}
+                  onChange={(event) => onChange({
+                    ...operation,
+                    correctOnly: event.target.checked,
+                  })}
+                  type="checkbox"
+                />
+                <span>Correct trials only</span>
+              </label>
+              <label className={styles.checkField}>
+                <input
+                  checked={operation.excludeDeadlineExceeded}
+                  onChange={(event) => onChange({
+                    ...operation,
+                    excludeDeadlineExceeded: event.target.checked,
+                  })}
+                  type="checkbox"
+                />
+                <span>Exclude deadline-exceeded trials</span>
+              </label>
+              <label className={styles.checkField}>
+                <input
+                  checked={operation.includePractice}
+                  onChange={(event) => onChange({
+                    ...operation,
+                    includePractice: event.target.checked,
+                  })}
+                  type="checkbox"
+                />
+                <span>Include practice trials</span>
+              </label>
+            </>
+          ) : null}
           {operation.type === "exclude-record" ? (
             <>
               <label>
@@ -548,6 +682,8 @@ export default function DataPreparationWorkspace({
       if (
         operation.type === "reverse-score"
         || operation.type === "composite-score"
+        || operation.type === "summarize-trial-accuracy"
+        || operation.type === "summarize-reaction-time"
       ) columns.push(operation.targetVariable);
       return [...new Set(available)];
     });
@@ -663,7 +799,12 @@ export default function DataPreparationWorkspace({
       draftOperations.length + 1,
       selectedRelease,
     );
-    if (created.type === "reverse-score" || created.type === "composite-score") {
+    if (
+      created.type === "reverse-score"
+      || created.type === "composite-score"
+      || created.type === "summarize-trial-accuracy"
+      || created.type === "summarize-reaction-time"
+    ) {
       created.targetVariable = `${created.targetVariable}_${draftOperations.length + 1}`;
     }
     persistOperations([...draftOperations, created]);
@@ -1040,6 +1181,20 @@ export default function DataPreparationWorkspace({
                     <strong>{run.inputTrialRows} <em>→</em> {run.outputTrialRows}</strong>
                     <small>Removed only with excluded sessions</small>
                   </article>
+                  <article>
+                    <span>Inclusion ledger</span>
+                    <strong>{run.sourceCompletedRows} decisions</strong>
+                    <small>
+                      {run.inclusionLedgerChecksum
+                        ? `${run.inclusionLedgerChecksum.slice(0, 18)}…`
+                        : "Available in expanded packages"}
+                    </small>
+                  </article>
+                  <article>
+                    <span>Behavioral summary</span>
+                    <strong>{run.behavioralSummaryRows ?? 0} rows</strong>
+                    <small>Attention, focus, accuracy, deadlines, and RT</small>
+                  </article>
                 </div>
               ) : (
                 <div className={styles.emptyImpact}>
@@ -1086,7 +1241,7 @@ export default function DataPreparationWorkspace({
                 <strong>Raw rows stay in memory only</strong>
                 <p>
                   Browser storage keeps operation metadata, checksums, counts, and review
-                  events—not participant rows, trial values, session IDs, or media.
+                  events—not participant rows, trial values, ledger session IDs, or media.
                 </p>
               </div>
             </div>

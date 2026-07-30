@@ -31,6 +31,8 @@ export type PreparationOperationType =
   | "coerce-number"
   | "reverse-score"
   | "composite-score"
+  | "summarize-trial-accuracy"
+  | "summarize-reaction-time"
   | "exclude-record";
 
 export type PreparationComparison =
@@ -79,6 +81,25 @@ export interface CompositeScoreOperation extends PreparationOperationBase {
   minimumValid: number;
 }
 
+export interface TrialAccuracyOperation extends PreparationOperationBase {
+  type: "summarize-trial-accuracy";
+  targetVariable: string;
+  includePractice: boolean;
+  minimumScoredTrials: number;
+}
+
+export interface ReactionTimeSummaryOperation extends PreparationOperationBase {
+  type: "summarize-reaction-time";
+  targetVariable: string;
+  method: "mean" | "median";
+  includePractice: boolean;
+  correctOnly: boolean;
+  excludeDeadlineExceeded: boolean;
+  minimumMilliseconds: number;
+  maximumMilliseconds: number;
+  minimumValidTrials: number;
+}
+
 export interface ExcludeRecordOperation extends PreparationOperationBase {
   type: "exclude-record";
   sourceVariable: string;
@@ -92,6 +113,8 @@ export type PreparationOperation =
   | CoerceNumberOperation
   | ReverseScoreOperation
   | CompositeScoreOperation
+  | TrialAccuracyOperation
+  | ReactionTimeSummaryOperation
   | ExcludeRecordOperation;
 
 export interface PreparationOperationSummary {
@@ -123,6 +146,9 @@ export interface DataPreparationRunSummary {
   responseChecksum: string;
   trialChecksum: string;
   packageChecksum: string;
+  inclusionLedgerChecksum?: string;
+  behavioralSummaryChecksum?: string;
+  behavioralSummaryRows?: number;
 }
 
 export interface DataPreparationReadiness {
@@ -178,6 +204,35 @@ export interface PreparedTrialRow {
   completion_reason: string;
 }
 
+export interface PreparedInclusionLedgerEntry {
+  _cerise_session_id: string;
+  _cerise_condition_id: string;
+  included: boolean;
+  exclusion_operation_ids: string[];
+}
+
+export interface PreparedBehavioralSummaryRow {
+  _cerise_session_id: string;
+  _cerise_condition_id: string;
+  included: boolean;
+  attention_checks_expected: number;
+  attention_checks_observed: number;
+  attention_checks_correct: number;
+  attention_checks_incorrect: number;
+  visibility_hidden_events: number;
+  window_blur_events: number;
+  focus_loss_events: number;
+  practice_trials: number;
+  production_trials: number;
+  scored_production_trials: number;
+  correct_production_trials: number;
+  incorrect_production_trials: number;
+  deadline_exceeded_production_trials: number;
+  valid_reaction_time_trials: number;
+  mean_reaction_time_ms: number | null;
+  median_reaction_time_ms: number | null;
+}
+
 export interface DataPreparationPackage {
   packageVersion: typeof DATA_PREPARATION_PACKAGE_VERSION;
   projectId: string;
@@ -199,6 +254,21 @@ export interface DataPreparationPackage {
   trialColumns: string[];
   responses: PreparedResponseRow[];
   trials: PreparedTrialRow[];
+  inclusionLedger?: {
+    columns: readonly [
+      "_cerise_session_id",
+      "_cerise_condition_id",
+      "included",
+      "exclusion_operation_ids",
+    ];
+    rows: PreparedInclusionLedgerEntry[];
+    checksum: string;
+  };
+  behavioralSummary?: {
+    columns: string[];
+    rows: PreparedBehavioralSummaryRow[];
+    checksum: string;
+  };
   integrity: {
     responseChecksum: string;
     trialChecksum: string;
@@ -230,6 +300,7 @@ interface StorageLike {
 interface ParsedProduction {
   rows: PreparedResponseRow[];
   trials: PreparedTrialRow[];
+  eventTypesBySessionId: Map<string, string[]>;
   completedSessionIds: Set<string>;
   totalSessions: number;
 }
@@ -263,6 +334,16 @@ export const PREPARATION_OPERATION_OPTIONS: ReadonlyArray<{
     type: "composite-score",
     label: "Compute composite",
     description: "Create a deterministic mean or sum from selected variables.",
+  },
+  {
+    type: "summarize-trial-accuracy",
+    label: "Compute trial accuracy",
+    description: "Create a participant accuracy proportion from explicitly scored trials.",
+  },
+  {
+    type: "summarize-reaction-time",
+    label: "Summarize reaction time",
+    description: "Create a bounded participant RT mean or median from declared eligible trials.",
   },
   {
     type: "exclude-record",
@@ -348,7 +429,12 @@ function availableSourceColumns(release: ExperimentRelease): string[] {
 }
 
 function operationTarget(operation: PreparationOperation): string | null {
-  if (operation.type === "reverse-score" || operation.type === "composite-score") {
+  if (
+    operation.type === "reverse-score"
+    || operation.type === "composite-score"
+    || operation.type === "summarize-trial-accuracy"
+    || operation.type === "summarize-reaction-time"
+  ) {
     return operation.targetVariable;
   }
   return null;
@@ -440,6 +526,55 @@ function normalizeOperation(
       targetVariable: value.targetVariable,
       method: value.method as "mean" | "sum",
       minimumValid: value.minimumValid,
+    };
+  }
+  if (value.type === "summarize-trial-accuracy") {
+    if (
+      !safeVariableName(value.targetVariable)
+      || available.has(value.targetVariable)
+      || String(value.targetVariable).startsWith("_cerise_")
+      || typeof value.includePractice !== "boolean"
+      || !finiteNonNegativeInteger(value.minimumScoredTrials)
+      || value.minimumScoredTrials < 1
+      || value.minimumScoredTrials > MAX_DATA_INTAKE_TRIALS
+    ) return null;
+    return {
+      ...base,
+      type: "summarize-trial-accuracy",
+      targetVariable: value.targetVariable,
+      includePractice: value.includePractice,
+      minimumScoredTrials: value.minimumScoredTrials,
+    };
+  }
+  if (value.type === "summarize-reaction-time") {
+    if (
+      !safeVariableName(value.targetVariable)
+      || available.has(value.targetVariable)
+      || String(value.targetVariable).startsWith("_cerise_")
+      || !["mean", "median"].includes(String(value.method))
+      || typeof value.includePractice !== "boolean"
+      || typeof value.correctOnly !== "boolean"
+      || typeof value.excludeDeadlineExceeded !== "boolean"
+      || !finiteNumber(value.minimumMilliseconds)
+      || value.minimumMilliseconds < 0
+      || !finiteNumber(value.maximumMilliseconds)
+      || value.maximumMilliseconds <= value.minimumMilliseconds
+      || value.maximumMilliseconds > 3_600_000
+      || !finiteNonNegativeInteger(value.minimumValidTrials)
+      || value.minimumValidTrials < 1
+      || value.minimumValidTrials > MAX_DATA_INTAKE_TRIALS
+    ) return null;
+    return {
+      ...base,
+      type: "summarize-reaction-time",
+      targetVariable: value.targetVariable,
+      method: value.method as "mean" | "median",
+      includePractice: value.includePractice,
+      correctOnly: value.correctOnly,
+      excludeDeadlineExceeded: value.excludeDeadlineExceeded,
+      minimumMilliseconds: value.minimumMilliseconds,
+      maximumMilliseconds: value.maximumMilliseconds,
+      minimumValidTrials: value.minimumValidTrials,
     };
   }
   if (
@@ -554,6 +689,33 @@ export function createPreparationOperation(
       minimumValid: 1,
     };
   }
+  if (type === "summarize-trial-accuracy") {
+    return {
+      id,
+      type,
+      enabled: true,
+      rationale: "",
+      targetVariable: "trial_accuracy",
+      includePractice: false,
+      minimumScoredTrials: 1,
+    };
+  }
+  if (type === "summarize-reaction-time") {
+    return {
+      id,
+      type,
+      enabled: true,
+      rationale: "",
+      targetVariable: "reaction_time_ms",
+      method: "median",
+      includePractice: false,
+      correctOnly: true,
+      excludeDeadlineExceeded: true,
+      minimumMilliseconds: 100,
+      maximumMilliseconds: 3_000,
+      minimumValidTrials: 1,
+    };
+  }
   return {
     id,
     type,
@@ -638,12 +800,49 @@ function normalizeRunSummary(value: unknown): DataPreparationRunSummary | null {
     || !integerFields.every((field) => finiteNonNegativeInteger(value[field]))
     || !Array.isArray(value.operationSummaries)
     || value.operationSummaries.length > MAX_PREPARATION_OPERATIONS
+    || (
+      value.inclusionLedgerChecksum !== undefined
+      && !safeChecksum(value.inclusionLedgerChecksum)
+    )
+    || (
+      value.behavioralSummaryChecksum !== undefined
+      && !safeChecksum(value.behavioralSummaryChecksum)
+    )
+    || (
+      value.behavioralSummaryRows !== undefined
+      && !finiteNonNegativeInteger(value.behavioralSummaryRows)
+    )
   ) return null;
   const operationSummaries = value.operationSummaries.map(normalizeOperationSummary);
   if (operationSummaries.some((item) => !item)) return null;
   return {
-    ...(value as unknown as DataPreparationRunSummary),
+    preparedAt: value.preparedAt,
+    operationFingerprint: value.operationFingerprint,
+    sourceProductionChecksum: value.sourceProductionChecksum,
+    sourceCompletedRows: value.sourceCompletedRows as number,
+    sourceNonCompletedRows: value.sourceNonCompletedRows as number,
+    inputRows: value.inputRows as number,
+    outputRows: value.outputRows as number,
+    excludedRows: value.excludedRows as number,
+    inputColumns: value.inputColumns as number,
+    outputColumns: value.outputColumns as number,
+    inputMissingCells: value.inputMissingCells as number,
+    outputMissingCells: value.outputMissingCells as number,
+    inputTrialRows: value.inputTrialRows as number,
+    outputTrialRows: value.outputTrialRows as number,
     operationSummaries: operationSummaries as PreparationOperationSummary[],
+    responseChecksum: value.responseChecksum,
+    trialChecksum: value.trialChecksum,
+    packageChecksum: value.packageChecksum,
+    ...(value.inclusionLedgerChecksum === undefined
+      ? {}
+      : { inclusionLedgerChecksum: value.inclusionLedgerChecksum }),
+    ...(value.behavioralSummaryChecksum === undefined
+      ? {}
+      : { behavioralSummaryChecksum: value.behavioralSummaryChecksum }),
+    ...(value.behavioralSummaryRows === undefined
+      ? {}
+      : { behavioralSummaryRows: value.behavioralSummaryRows }),
   };
 }
 
@@ -871,6 +1070,7 @@ function parseProduction(
   const frozenVariables = collectExperimentVariables(release.studio);
   const rows: PreparedResponseRow[] = [];
   const trials: PreparedTrialRow[] = [];
+  const eventTypesBySessionId = new Map<string, string[]>();
   const completedSessionIds = new Set<string>();
   for (const candidate of value.sessions) {
     if (
@@ -905,6 +1105,17 @@ function parseProduction(
     }
     rows.push(row);
 
+    const sessionEvents = Array.isArray(candidate.events) ? candidate.events : [];
+    if (sessionEvents.length > 500) {
+      throw new Error("A production session exceeds the bounded runner event limit.");
+    }
+    eventTypesBySessionId.set(sessionId, sessionEvents.map((event) => {
+      if (!isRecord(event) || !safeString(event.type, 120)) {
+        throw new Error("A production runner event is not valid.");
+      }
+      return String(event.type);
+    }));
+
     const sessionTrials = Array.isArray(candidate.trials)
       ? candidate.trials
       : Array.isArray(candidate.trialResults)
@@ -920,6 +1131,7 @@ function parseProduction(
   return {
     rows,
     trials,
+    eventTypesBySessionId,
     completedSessionIds,
     totalSessions: value.sessions.length,
   };
@@ -944,10 +1156,23 @@ function comparisonMatches(
   return comparator === "less-than" ? numeric < comparison : numeric > comparison;
 }
 
+function median(values: number[]): number {
+  const sorted = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[middle - 1] + sorted[middle]) / 2
+    : sorted[middle];
+}
+
 function applyOperation(
   inputRows: PreparedResponseRow[],
   operation: PreparationOperation,
-): { rows: PreparedResponseRow[]; summary: PreparationOperationSummary } {
+  trialsBySessionId: Map<string, PreparedTrialRow[]>,
+): {
+  rows: PreparedResponseRow[];
+  summary: PreparationOperationSummary;
+  excludedSessionIds: string[];
+} {
   const rows = inputRows.map((row) => ({ ...row }));
   const summary: PreparationOperationSummary = {
     id: operation.id,
@@ -958,17 +1183,22 @@ function applyOperation(
     excludedRows: 0,
     createdVariables: [],
   };
-  if (!operation.enabled) return { rows, summary };
+  if (!operation.enabled) return { rows, summary, excludedSessionIds: [] };
 
   if (operation.type === "exclude-record") {
-    const filtered = rows.filter((row) => !comparisonMatches(
-      row[operation.sourceVariable] ?? null,
-      operation.comparator,
-      operation.comparisonValue,
-    ));
+    const excludedSessionIds: string[] = [];
+    const filtered = rows.filter((row) => {
+      const excluded = comparisonMatches(
+        row[operation.sourceVariable] ?? null,
+        operation.comparator,
+        operation.comparisonValue,
+      );
+      if (excluded) excludedSessionIds.push(String(row._cerise_session_id));
+      return !excluded;
+    });
     summary.outputRows = filtered.length;
     summary.excludedRows = rows.length - filtered.length;
-    return { rows: filtered, summary };
+    return { rows: filtered, summary, excludedSessionIds };
   }
 
   for (const row of rows) {
@@ -1005,7 +1235,7 @@ function applyOperation(
         ? null
         : operation.minimum + operation.maximum - numeric;
       summary.affectedCells += 1;
-    } else {
+    } else if (operation.type === "composite-score") {
       const values = operation.sourceVariables
         .map((name) => toFiniteNumeric(row[name] ?? null))
         .filter((value): value is number => value !== null);
@@ -1015,11 +1245,40 @@ function applyOperation(
           : values.reduce((total, value) => total + value, 0) / values.length
         : null;
       summary.affectedCells += 1;
+    } else if (operation.type === "summarize-trial-accuracy") {
+      const sessionTrials = trialsBySessionId.get(String(row._cerise_session_id)) ?? [];
+      const scored = sessionTrials.filter((trial) => (
+        (operation.includePractice || !trial.practice)
+        && trial.correct !== null
+      ));
+      row[operation.targetVariable] = scored.length >= operation.minimumScoredTrials
+        ? scored.filter((trial) => trial.correct === true).length / scored.length
+        : null;
+      summary.affectedCells += 1;
+    } else {
+      const sessionTrials = trialsBySessionId.get(String(row._cerise_session_id)) ?? [];
+      const reactionTimes = sessionTrials
+        .filter((trial) => (
+          (operation.includePractice || !trial.practice)
+          && (!operation.correctOnly || trial.correct === true)
+          && (!operation.excludeDeadlineExceeded || trial.deadline_exceeded !== true)
+          && typeof trial.reaction_time_ms === "number"
+          && Number.isFinite(trial.reaction_time_ms)
+          && trial.reaction_time_ms >= operation.minimumMilliseconds
+          && trial.reaction_time_ms <= operation.maximumMilliseconds
+        ))
+        .map((trial) => trial.reaction_time_ms as number);
+      row[operation.targetVariable] = reactionTimes.length >= operation.minimumValidTrials
+        ? operation.method === "mean"
+          ? reactionTimes.reduce((total, value) => total + value, 0) / reactionTimes.length
+          : median(reactionTimes)
+        : null;
+      summary.affectedCells += 1;
     }
   }
   const target = operationTarget(operation);
   if (target) summary.createdVariables = [target];
-  return { rows, summary };
+  return { rows, summary, excludedSessionIds: [] };
 }
 
 function missingCellCount(rows: PreparedResponseRow[], columns: string[]): number {
@@ -1052,6 +1311,115 @@ function trialColumns(): string[] {
   ];
 }
 
+const INCLUSION_LEDGER_COLUMNS = [
+  "_cerise_session_id",
+  "_cerise_condition_id",
+  "included",
+  "exclusion_operation_ids",
+] as const;
+
+const BEHAVIORAL_SUMMARY_COLUMNS: Array<keyof PreparedBehavioralSummaryRow> = [
+  "_cerise_session_id",
+  "_cerise_condition_id",
+  "included",
+  "attention_checks_expected",
+  "attention_checks_observed",
+  "attention_checks_correct",
+  "attention_checks_incorrect",
+  "visibility_hidden_events",
+  "window_blur_events",
+  "focus_loss_events",
+  "practice_trials",
+  "production_trials",
+  "scored_production_trials",
+  "correct_production_trials",
+  "incorrect_production_trials",
+  "deadline_exceeded_production_trials",
+  "valid_reaction_time_trials",
+  "mean_reaction_time_ms",
+  "median_reaction_time_ms",
+];
+
+function groupTrialsBySession(
+  trials: PreparedTrialRow[],
+): Map<string, PreparedTrialRow[]> {
+  const grouped = new Map<string, PreparedTrialRow[]>();
+  for (const trial of trials) {
+    const current = grouped.get(trial._cerise_session_id) ?? [];
+    current.push(trial);
+    grouped.set(trial._cerise_session_id, current);
+  }
+  return grouped;
+}
+
+function buildBehavioralSummaryRows(
+  parsed: ParsedProduction,
+  release: ExperimentRelease,
+  includedSessionIds: Set<string>,
+  trialsBySessionId: Map<string, PreparedTrialRow[]>,
+): PreparedBehavioralSummaryRow[] {
+  const attentionChecks = release.studio.blocks.filter((block) => (
+    block.type === "attention-check"
+    && Boolean(block.variableName)
+    && Boolean(block.correctAnswer?.trim())
+  ));
+  return parsed.rows.map((row) => {
+    const sessionId = String(row._cerise_session_id);
+    const sessionTrials = trialsBySessionId.get(sessionId) ?? [];
+    const productionTrials = sessionTrials.filter((trial) => !trial.practice);
+    const validReactionTimes = productionTrials
+      .map((trial) => trial.reaction_time_ms)
+      .filter((value): value is number => (
+        typeof value === "number" && Number.isFinite(value) && value > 0
+      ));
+    const attentionResults = attentionChecks.map((block) => {
+      const value = row[block.variableName] ?? null;
+      const observed = !isMissing(value);
+      return {
+        observed,
+        correct: observed
+          && String(value).trim().toLocaleLowerCase()
+            === String(block.correctAnswer).trim().toLocaleLowerCase(),
+      };
+    });
+    const eventTypes = parsed.eventTypesBySessionId.get(sessionId) ?? [];
+    const visibilityHiddenEvents = eventTypes.filter((type) => (
+      type === "visibility-hidden"
+    )).length;
+    const windowBlurEvents = eventTypes.filter((type) => type === "window-blur").length;
+    return {
+      _cerise_session_id: sessionId,
+      _cerise_condition_id: String(row._cerise_condition_id),
+      included: includedSessionIds.has(sessionId),
+      attention_checks_expected: attentionResults.length,
+      attention_checks_observed: attentionResults.filter((result) => result.observed).length,
+      attention_checks_correct: attentionResults.filter((result) => result.correct).length,
+      attention_checks_incorrect: attentionResults.filter((result) => (
+        result.observed && !result.correct
+      )).length,
+      visibility_hidden_events: visibilityHiddenEvents,
+      window_blur_events: windowBlurEvents,
+      focus_loss_events: visibilityHiddenEvents + windowBlurEvents,
+      practice_trials: sessionTrials.length - productionTrials.length,
+      production_trials: productionTrials.length,
+      scored_production_trials: productionTrials.filter((trial) => trial.correct !== null).length,
+      correct_production_trials: productionTrials.filter((trial) => trial.correct === true).length,
+      incorrect_production_trials: productionTrials.filter((trial) => trial.correct === false).length,
+      deadline_exceeded_production_trials: productionTrials.filter((trial) => (
+        trial.deadline_exceeded === true
+      )).length,
+      valid_reaction_time_trials: validReactionTimes.length,
+      mean_reaction_time_ms: validReactionTimes.length === 0
+        ? null
+        : validReactionTimes.reduce((total, value) => total + value, 0)
+          / validReactionTimes.length,
+      median_reaction_time_ms: validReactionTimes.length === 0
+        ? null
+        : median(validReactionTimes),
+    };
+  });
+}
+
 export async function buildDataPreparationPackage(
   input: BuildDataPreparationInput,
 ): Promise<BuildDataPreparationResult> {
@@ -1082,14 +1450,36 @@ export async function buildDataPreparationPackage(
   const analysisSourceColumns = collectExperimentVariables(release.studio)
     .map((variable) => variable.name);
   let rows = parsed.rows.map((row) => ({ ...row }));
+  const trialsBySessionId = groupTrialsBySession(parsed.trials);
+  const exclusionsBySessionId = new Map(
+    parsed.rows.map((row) => [String(row._cerise_session_id), [] as string[]]),
+  );
   const operationSummaries: PreparationOperationSummary[] = [];
   for (const operation of normalizedDocument.operations) {
-    const applied = applyOperation(rows, operation);
+    const applied = applyOperation(rows, operation, trialsBySessionId);
     rows = applied.rows;
     operationSummaries.push(applied.summary);
+    for (const sessionId of applied.excludedSessionIds) {
+      exclusionsBySessionId.get(sessionId)?.push(operation.id);
+    }
   }
   const keptSessionIds = new Set(rows.map((row) => String(row._cerise_session_id)));
   const trials = parsed.trials.filter((trial) => keptSessionIds.has(trial._cerise_session_id));
+  const inclusionLedgerRows: PreparedInclusionLedgerEntry[] = parsed.rows.map((row) => {
+    const sessionId = String(row._cerise_session_id);
+    return {
+      _cerise_session_id: sessionId,
+      _cerise_condition_id: String(row._cerise_condition_id),
+      included: keptSessionIds.has(sessionId),
+      exclusion_operation_ids: exclusionsBySessionId.get(sessionId) ?? [],
+    };
+  });
+  const behavioralSummaryRows = buildBehavioralSummaryRows(
+    parsed,
+    release,
+    keptSessionIds,
+    trialsBySessionId,
+  );
   const derivedColumns = normalizedDocument.operations
     .map(operationTarget)
     .filter((value): value is string => Boolean(value));
@@ -1099,6 +1489,14 @@ export async function buildDataPreparationPackage(
   const responseChecksum = await sha256Checksum({ columns: responseColumns, rows });
   const preparedTrialColumns = trialColumns();
   const trialChecksum = await sha256Checksum({ columns: preparedTrialColumns, rows: trials });
+  const inclusionLedgerChecksum = await sha256Checksum({
+    columns: INCLUSION_LEDGER_COLUMNS,
+    rows: inclusionLedgerRows,
+  });
+  const behavioralSummaryChecksum = await sha256Checksum({
+    columns: BEHAVIORAL_SUMMARY_COLUMNS,
+    rows: behavioralSummaryRows,
+  });
   const unsignedPackage = {
     packageVersion: DATA_PREPARATION_PACKAGE_VERSION,
     projectId: release.projectId,
@@ -1120,6 +1518,16 @@ export async function buildDataPreparationPackage(
     trialColumns: preparedTrialColumns,
     responses: rows,
     trials,
+    inclusionLedger: {
+      columns: INCLUSION_LEDGER_COLUMNS,
+      rows: inclusionLedgerRows,
+      checksum: inclusionLedgerChecksum,
+    },
+    behavioralSummary: {
+      columns: BEHAVIORAL_SUMMARY_COLUMNS,
+      rows: behavioralSummaryRows,
+      checksum: behavioralSummaryChecksum,
+    },
     integrity: {
       responseChecksum,
       trialChecksum,
@@ -1156,6 +1564,9 @@ export async function buildDataPreparationPackage(
     responseChecksum,
     trialChecksum,
     packageChecksum,
+    inclusionLedgerChecksum,
+    behavioralSummaryChecksum,
+    behavioralSummaryRows: behavioralSummaryRows.length,
   };
   const updated: DataPreparationDocument = {
     ...normalizedDocument,

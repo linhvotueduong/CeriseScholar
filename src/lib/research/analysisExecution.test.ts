@@ -314,8 +314,11 @@ async function referencePreparedPackage(
     columns: current.preparedPackage.responseColumns,
     rows,
   });
+  const legacyPackage = structuredClone(current.preparedPackage);
+  delete legacyPackage.inclusionLedger;
+  delete legacyPackage.behavioralSummary;
   const unsignedPackage = {
-    ...structuredClone(current.preparedPackage),
+    ...legacyPackage,
     responses: rows,
     integrity: {
       responseChecksum,
@@ -331,10 +334,14 @@ async function referencePreparedPackage(
     },
   };
   assert.ok(current.preparation.lastRun);
+  const legacyLastRun = structuredClone(current.preparation.lastRun);
+  delete legacyLastRun.inclusionLedgerChecksum;
+  delete legacyLastRun.behavioralSummaryChecksum;
+  delete legacyLastRun.behavioralSummaryRows;
   const preparation: DataPreparationDocument = {
     ...structuredClone(current.preparation),
     lastRun: {
-      ...current.preparation.lastRun,
+      ...legacyLastRun,
       inputRows: rows.length,
       outputRows: rows.length,
       responseChecksum,

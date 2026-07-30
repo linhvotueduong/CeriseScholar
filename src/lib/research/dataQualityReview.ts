@@ -26,7 +26,7 @@ export const MAX_DATA_QUALITY_DOCUMENT_BYTES = 512 * 1024;
 export const MAX_DATA_QUALITY_EXPORT_BYTES = 8 * 1024 * 1024;
 export const MAX_DATA_QUALITY_TEXT = 1_000;
 export const MAX_DATA_QUALITY_DECISION_NOTE = 500;
-export const MAX_DATA_QUALITY_FINDINGS = MAX_ANALYSIS_COLUMNS + 8;
+export const MAX_DATA_QUALITY_FINDINGS = MAX_ANALYSIS_COLUMNS + 10;
 
 export type DataQualityFindingSeverity = "review" | "information";
 export type DataQualityFindingCategory =
@@ -35,7 +35,9 @@ export type DataQualityFindingCategory =
   | "type-consistency"
   | "distribution"
   | "conditions"
-  | "trials";
+  | "trials"
+  | "inclusion"
+  | "behavioral";
 export type DataQualityDisposition =
   | "not-reviewed"
   | "accepted-as-described"
@@ -97,6 +99,11 @@ export interface DataQualityConditionCount {
   count: number;
 }
 
+export interface DataQualityInclusionRuleCount {
+  operationId: string;
+  excludedRows: number;
+}
+
 export interface DataQualityDatasetSummary {
   responseRows: number;
   responseVariables: number;
@@ -117,6 +124,32 @@ export interface DataQualityDatasetSummary {
   invalidReactionTimeRows: number;
   duplicateTrialKeyRows: number;
   reactionTimeSummary: DataQualityNumericSummary | null;
+  inclusionLedger: {
+    completedRows: number;
+    includedRows: number;
+    excludedRows: number;
+    exclusionRuleCounts: DataQualityInclusionRuleCount[];
+  };
+  behavioral: {
+    sessionsProfiled: number;
+    attentionChecksExpected: number;
+    attentionChecksObserved: number;
+    attentionChecksCorrect: number;
+    attentionChecksIncorrect: number;
+    attentionChecksMissing: number;
+    sessionsWithAttentionReviewCue: number;
+    focusLossEvents: number;
+    sessionsWithFocusLoss: number;
+    productionTrials: number;
+    scoredProductionTrials: number;
+    correctProductionTrials: number;
+    incorrectProductionTrials: number;
+    scoredAccuracyRate: number | null;
+    deadlineExceededProductionTrials: number;
+    sessionsWithDeadlineExceeded: number;
+    participantAccuracySummary: DataQualityNumericSummary | null;
+    participantMedianReactionTimeSummary: DataQualityNumericSummary | null;
+  };
   preparation: {
     sourceCompletedRows: number;
     outputRows: number;
@@ -593,6 +626,97 @@ function trialFinding(summary: DataQualityDatasetSummary): DataQualityFinding | 
   };
 }
 
+function inclusionFinding(summary: DataQualityDatasetSummary): DataQualityFinding | null {
+  if (summary.inclusionLedger.completedRows === 0) return null;
+  return {
+    id: "dataset:inclusion-ledger",
+    severity: summary.inclusionLedger.excludedRows > 0 ? "review" : "information",
+    category: "inclusion",
+    scope: "dataset",
+    variableName: "",
+    title: "Review the participant inclusion ledger",
+    detail: summary.inclusionLedger.excludedRows > 0
+      ? "The checksummed ledger links every completed production session to its final inclusion state and recorded exclusion operation IDs. Counts are shown here without participant identifiers; confirm each rule against its recorded rationale."
+      : "The checksummed ledger records every completed production session as included. Counts are shown here without participant identifiers, and no exclusion decision was invented by the quality engine.",
+    metrics: [
+      metric(
+        "completed",
+        "Completed production sessions",
+        summary.inclusionLedger.completedRows,
+        null,
+      ),
+      metric(
+        "included",
+        "Included sessions",
+        summary.inclusionLedger.includedRows,
+        summary.inclusionLedger.completedRows,
+      ),
+      metric(
+        "excluded",
+        "Excluded sessions",
+        summary.inclusionLedger.excludedRows,
+        summary.inclusionLedger.completedRows,
+      ),
+      ...summary.inclusionLedger.exclusionRuleCounts.slice(0, 5).map((item) => metric(
+        `rule-${item.operationId}`,
+        `Excluded by ${item.operationId}`,
+        item.excludedRows,
+        summary.inclusionLedger.completedRows,
+      )),
+    ],
+  };
+}
+
+function behavioralFinding(summary: DataQualityDatasetSummary): DataQualityFinding | null {
+  const behavioral = summary.behavioral;
+  if (behavioral.sessionsProfiled === 0) return null;
+  const hasReviewCue = behavioral.attentionChecksIncorrect > 0
+    || behavioral.attentionChecksMissing > 0
+    || behavioral.sessionsWithFocusLoss > 0
+    || behavioral.sessionsWithDeadlineExceeded > 0;
+  return {
+    id: "dataset:behavioral-checks",
+    severity: hasReviewCue ? "review" : "information",
+    category: "behavioral",
+    scope: "dataset",
+    variableName: "",
+    title: "Review behavioral checks and participant-level performance summaries",
+    detail: "Attention-check, focus-loss, accuracy, deadline, and RT summaries are descriptive review cues for the included analysis population. Cerise does not turn them into automatic exclusions or validity judgments.",
+    metrics: [
+      metric(
+        "attention-incorrect",
+        "Incorrect attention checks",
+        behavioral.attentionChecksIncorrect,
+        behavioral.attentionChecksExpected,
+      ),
+      metric(
+        "attention-missing",
+        "Missing attention checks",
+        behavioral.attentionChecksMissing,
+        behavioral.attentionChecksExpected,
+      ),
+      metric(
+        "focus-loss-sessions",
+        "Sessions with focus-loss events",
+        behavioral.sessionsWithFocusLoss,
+        behavioral.sessionsProfiled,
+      ),
+      metric(
+        "deadline-sessions",
+        "Sessions with deadline-exceeded trials",
+        behavioral.sessionsWithDeadlineExceeded,
+        behavioral.sessionsProfiled,
+      ),
+      metric(
+        "correct-trials",
+        "Correct scored production trials",
+        behavioral.correctProductionTrials,
+        behavioral.scoredProductionTrials,
+      ),
+    ],
+  };
+}
+
 export function buildDataQualityReport(
   preparedPackage: DataPreparationPackage,
   release: ExperimentRelease,
@@ -635,6 +759,39 @@ export function buildDataQualityReport(
     .filter((value): value is number => (
       typeof value === "number" && Number.isFinite(value) && value > 0
     ));
+  const inclusionLedgerRows = preparedPackage.inclusionLedger?.rows ?? [];
+  const exclusionRuleCounts = new Map<string, number>();
+  for (const row of inclusionLedgerRows) {
+    for (const operationId of row.exclusion_operation_ids) {
+      exclusionRuleCounts.set(operationId, (exclusionRuleCounts.get(operationId) ?? 0) + 1);
+    }
+  }
+  const behavioralRows = (preparedPackage.behavioralSummary?.rows ?? [])
+    .filter((row) => row.included);
+  const participantAccuracies = behavioralRows
+    .filter((row) => row.scored_production_trials > 0)
+    .map((row) => row.correct_production_trials / row.scored_production_trials);
+  const participantMedianReactionTimes = behavioralRows
+    .map((row) => row.median_reaction_time_ms)
+    .filter((value): value is number => (
+      typeof value === "number" && Number.isFinite(value)
+    ));
+  const scoredProductionTrials = behavioralRows.reduce(
+    (sum, row) => sum + row.scored_production_trials,
+    0,
+  );
+  const correctProductionTrials = behavioralRows.reduce(
+    (sum, row) => sum + row.correct_production_trials,
+    0,
+  );
+  const attentionChecksExpected = behavioralRows.reduce(
+    (sum, row) => sum + row.attention_checks_expected,
+    0,
+  );
+  const attentionChecksObserved = behavioralRows.reduce(
+    (sum, row) => sum + row.attention_checks_observed,
+    0,
+  );
   const summary: DataQualityDatasetSummary = {
     responseRows: preparedPackage.responses.length,
     responseVariables: variables.length,
@@ -668,6 +825,55 @@ export function buildDataQualityReport(
     )).length,
     duplicateTrialKeyRows: duplicateTrialKeys(preparedPackage.trials),
     reactionTimeSummary: numericSummary(validReactionTimes),
+    inclusionLedger: {
+      completedRows: inclusionLedgerRows.length || preparation.lastRun.sourceCompletedRows,
+      includedRows: inclusionLedgerRows.filter((row) => row.included).length
+        || preparation.lastRun.outputRows,
+      excludedRows: inclusionLedgerRows.filter((row) => !row.included).length
+        || preparation.lastRun.excludedRows,
+      exclusionRuleCounts: [...exclusionRuleCounts.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([operationId, excludedRows]) => ({ operationId, excludedRows })),
+    },
+    behavioral: {
+      sessionsProfiled: behavioralRows.length,
+      attentionChecksExpected,
+      attentionChecksObserved,
+      attentionChecksCorrect: behavioralRows.reduce(
+        (sum, row) => sum + row.attention_checks_correct,
+        0,
+      ),
+      attentionChecksIncorrect: behavioralRows.reduce(
+        (sum, row) => sum + row.attention_checks_incorrect,
+        0,
+      ),
+      attentionChecksMissing: attentionChecksExpected - attentionChecksObserved,
+      sessionsWithAttentionReviewCue: behavioralRows.filter((row) => (
+        row.attention_checks_incorrect > 0
+        || row.attention_checks_observed < row.attention_checks_expected
+      )).length,
+      focusLossEvents: behavioralRows.reduce((sum, row) => sum + row.focus_loss_events, 0),
+      sessionsWithFocusLoss: behavioralRows.filter((row) => row.focus_loss_events > 0).length,
+      productionTrials: behavioralRows.reduce((sum, row) => sum + row.production_trials, 0),
+      scoredProductionTrials,
+      correctProductionTrials,
+      incorrectProductionTrials: behavioralRows.reduce(
+        (sum, row) => sum + row.incorrect_production_trials,
+        0,
+      ),
+      scoredAccuracyRate: scoredProductionTrials === 0
+        ? null
+        : round(correctProductionTrials / scoredProductionTrials),
+      deadlineExceededProductionTrials: behavioralRows.reduce(
+        (sum, row) => sum + row.deadline_exceeded_production_trials,
+        0,
+      ),
+      sessionsWithDeadlineExceeded: behavioralRows.filter((row) => (
+        row.deadline_exceeded_production_trials > 0
+      )).length,
+      participantAccuracySummary: numericSummary(participantAccuracies),
+      participantMedianReactionTimeSummary: numericSummary(participantMedianReactionTimes),
+    },
     preparation: {
       sourceCompletedRows: preparation.lastRun.sourceCompletedRows,
       outputRows: preparation.lastRun.outputRows,
@@ -680,9 +886,13 @@ export function buildDataQualityReport(
   };
   const conditionReview = conditionFinding(summary);
   const trialReview = trialFinding(summary);
+  const inclusionReview = inclusionFinding(summary);
+  const behavioralReview = behavioralFinding(summary);
   const findings = [
     preparationFinding(summary),
     datasetFinding(summary),
+    ...(inclusionReview ? [inclusionReview] : []),
+    ...(behavioralReview ? [behavioralReview] : []),
     ...variables.map(profileFinding).filter((finding): finding is DataQualityFinding => (
       finding !== null
     )),

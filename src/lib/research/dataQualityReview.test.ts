@@ -61,7 +61,16 @@ async function fixture(): Promise<Fixture> {
   groupBlock.variableName = "group_assignment";
   groupBlock.internalName = "group_assignment";
   groupBlock.choices = ["A", "B"];
-  studio.blocks.splice(studio.blocks.length - 1, 0, predictorBlock, groupBlock);
+  const attentionBlock = createExperimentBlock("attention-check", "quality-attention");
+  attentionBlock.variableName = "attention_check";
+  attentionBlock.internalName = "attention_check";
+  studio.blocks.splice(
+    studio.blocks.length - 1,
+    0,
+    predictorBlock,
+    groupBlock,
+    attentionBlock,
+  );
   studio.conditions = [
     { id: "condition-a", name: "A", weight: 1 },
     { id: "condition-b", name: "B", weight: 1 },
@@ -155,7 +164,13 @@ async function fixture(): Promise<Fixture> {
       },
       responses: Object.fromEntries(normalizedPlan.variables.map((variable) => [
         variable.name,
-        variable.name === outcome
+        variable.name === attentionBlock.variableName
+          ? index === 7
+            ? null
+            : index === 6
+              ? "Incorrect attention response"
+              : attentionBlock.correctAnswer
+          : variable.name === outcome
           ? index === 7 ? null : 2 * x + 1
           : variable.name === predictor
             ? x
@@ -166,10 +181,79 @@ async function fixture(): Promise<Fixture> {
       audioResponses: {},
       videoResponses: {},
       timings: [],
-      events: [],
+      events: index === 0 ? [
+        {
+          type: "visibility-hidden",
+          at: "2026-07-29T13:00:10.000Z",
+          blockId: "quality-predictor",
+          screenIndex: 4,
+        },
+        {
+          type: "window-blur",
+          at: "2026-07-29T13:00:11.000Z",
+          blockId: "quality-predictor",
+          screenIndex: 4,
+        },
+      ] : [],
       history: [],
-      trials: [],
-      trialOrder: [],
+      trials: [
+        {
+          tableId: "quality-table",
+          tableName: "Quality trials",
+          loopBlockId: "quality-loop",
+          trialId: `production-a-${x}`,
+          sourceRowIndex: 0,
+          repetition: 1,
+          orderIndex: 0,
+          practice: false,
+          response: "f",
+          correctAnswer: "f",
+          correct: true,
+          reactionTimeMs: 300 + x * 10,
+          deadlineMs: 1_000,
+          deadlineExceeded: index === 0,
+          completionReason: "participant",
+        },
+        {
+          tableId: "quality-table",
+          tableName: "Quality trials",
+          loopBlockId: "quality-loop",
+          trialId: `production-b-${x}`,
+          sourceRowIndex: 1,
+          repetition: 1,
+          orderIndex: 1,
+          practice: false,
+          response: index % 2 === 0 ? "f" : "j",
+          correctAnswer: "f",
+          correct: index % 2 === 0,
+          reactionTimeMs: 500 + x * 10,
+          deadlineMs: 1_000,
+          deadlineExceeded: false,
+          completionReason: "participant",
+        },
+        {
+          tableId: "quality-table",
+          tableName: "Quality trials",
+          loopBlockId: "quality-loop",
+          trialId: `practice-${x}`,
+          sourceRowIndex: 2,
+          repetition: 1,
+          orderIndex: 2,
+          practice: true,
+          response: "f",
+          correctAnswer: "f",
+          correct: true,
+          reactionTimeMs: 700 + x * 10,
+          deadlineMs: 1_000,
+          deadlineExceeded: false,
+          completionReason: "participant",
+        },
+      ],
+      trialOrder: [
+        `quality-loop:production-a-${x}:1`,
+        `quality-loop:production-b-${x}:1`,
+        `quality-loop:practice-${x}:1`,
+      ],
       startedAt: `2026-07-29T13:${String(index).padStart(2, "0")}:00.000Z`,
       updatedAt: `2026-07-29T13:${String(index).padStart(2, "0")}:30.000Z`,
       executionMode: "production",
@@ -262,6 +346,21 @@ test("builds bounded aggregate profiles without participant-level value lists", 
   assert.ok(outcome.numericSummary);
   assert.ok(report.findings.some((finding) => finding.id === `variable:${current.outcome}`));
   assert.ok(report.findings.some((finding) => finding.id === "dataset:condition-allocation"));
+  assert.ok(report.findings.some((finding) => finding.id === "dataset:inclusion-ledger"));
+  assert.ok(report.findings.some((finding) => finding.id === "dataset:behavioral-checks"));
+  assert.equal(report.summary.inclusionLedger.includedRows, 8);
+  assert.equal(report.summary.inclusionLedger.excludedRows, 0);
+  assert.equal(report.summary.behavioral.sessionsProfiled, 8);
+  assert.equal(report.summary.behavioral.attentionChecksCorrect, 6);
+  assert.equal(report.summary.behavioral.attentionChecksIncorrect, 1);
+  assert.equal(report.summary.behavioral.attentionChecksMissing, 1);
+  assert.equal(report.summary.behavioral.sessionsWithFocusLoss, 1);
+  assert.equal(report.summary.behavioral.focusLossEvents, 2);
+  assert.equal(report.summary.behavioral.productionTrials, 16);
+  assert.equal(report.summary.behavioral.scoredAccuracyRate, 0.75);
+  assert.equal(report.summary.behavioral.sessionsWithDeadlineExceeded, 1);
+  assert.ok(report.summary.behavioral.participantAccuracySummary);
+  assert.ok(report.summary.behavioral.participantMedianReactionTimeSummary);
   const serialized = JSON.stringify(report);
   assert.equal(serialized.includes("quality-private-session-1"), false);
   assert.equal(serialized.includes('"_cerise_session_id"'), false);
@@ -387,5 +486,34 @@ test("rejects a changed Phase 8.3 row before quality aggregation", async () => {
       current.preparation,
     ),
     /checksum/,
+  );
+
+  const changedBehavioral = structuredClone(preparedEnvelope(current));
+  assert.ok(changedBehavioral.package.behavioralSummary);
+  changedBehavioral.package.behavioralSummary.rows[0].focus_loss_events += 1;
+  await assert.rejects(
+    runDataQualityReview(
+      created,
+      changedBehavioral,
+      current.release,
+      current.plan,
+      current.preparation,
+    ),
+    /expanded preparation dataset/,
+  );
+
+  const changedLedger = structuredClone(preparedEnvelope(current));
+  assert.ok(changedLedger.package.inclusionLedger);
+  changedLedger.package.inclusionLedger.rows[0].included = false;
+  changedLedger.package.inclusionLedger.rows[0].exclusion_operation_ids = ["forged-rule"];
+  await assert.rejects(
+    runDataQualityReview(
+      created,
+      changedLedger,
+      current.release,
+      current.plan,
+      current.preparation,
+    ),
+    /do not match the included response rows/,
   );
 });

@@ -9,6 +9,8 @@ import {
   type DataPreparationDocument,
   type DataPreparationPackage,
   type PreparationValue,
+  type PreparedBehavioralSummaryRow,
+  type PreparedInclusionLedgerEntry,
   type PreparedResponseRow,
 } from "./dataPreparation";
 import {
@@ -1748,6 +1750,149 @@ function validateTrialRows(value: unknown, columns: string[]): boolean {
   ));
 }
 
+const INCLUSION_LEDGER_COLUMNS = [
+  "_cerise_session_id",
+  "_cerise_condition_id",
+  "included",
+  "exclusion_operation_ids",
+] as const;
+
+const BEHAVIORAL_SUMMARY_COLUMNS: Array<keyof PreparedBehavioralSummaryRow> = [
+  "_cerise_session_id",
+  "_cerise_condition_id",
+  "included",
+  "attention_checks_expected",
+  "attention_checks_observed",
+  "attention_checks_correct",
+  "attention_checks_incorrect",
+  "visibility_hidden_events",
+  "window_blur_events",
+  "focus_loss_events",
+  "practice_trials",
+  "production_trials",
+  "scored_production_trials",
+  "correct_production_trials",
+  "incorrect_production_trials",
+  "deadline_exceeded_production_trials",
+  "valid_reaction_time_trials",
+  "mean_reaction_time_ms",
+  "median_reaction_time_ms",
+];
+
+function exactColumns(value: unknown, expected: readonly string[]): boolean {
+  return Array.isArray(value)
+    && value.length === expected.length
+    && value.every((column, index) => column === expected[index]);
+}
+
+function validateInclusionLedgerRows(value: unknown): PreparedInclusionLedgerEntry[] | null {
+  if (!Array.isArray(value) || value.length > MAX_DATA_INTAKE_SESSIONS) return null;
+  const sessionIds = new Set<string>();
+  for (const candidate of value) {
+    if (
+      !isRecord(candidate)
+      || Object.keys(candidate).some((key) => !INCLUSION_LEDGER_COLUMNS.includes(
+        key as (typeof INCLUSION_LEDGER_COLUMNS)[number],
+      ))
+      || typeof candidate._cerise_session_id !== "string"
+      || candidate._cerise_session_id.length === 0
+      || candidate._cerise_session_id.length > 200
+      || sessionIds.has(candidate._cerise_session_id)
+      || typeof candidate._cerise_condition_id !== "string"
+      || candidate._cerise_condition_id.length > 100
+      || typeof candidate.included !== "boolean"
+      || !Array.isArray(candidate.exclusion_operation_ids)
+      || candidate.exclusion_operation_ids.length > MAX_PREPARATION_OPERATIONS
+      || !candidate.exclusion_operation_ids.every((id) => (
+        typeof id === "string" && /^[a-z0-9][a-z0-9-]{0,79}$/.test(id)
+      ))
+      || new Set(candidate.exclusion_operation_ids).size
+        !== candidate.exclusion_operation_ids.length
+      || (candidate.included && candidate.exclusion_operation_ids.length > 0)
+      || (!candidate.included && candidate.exclusion_operation_ids.length === 0)
+    ) return null;
+    sessionIds.add(candidate._cerise_session_id);
+  }
+  return value as PreparedInclusionLedgerEntry[];
+}
+
+function validateBehavioralSummaryRows(value: unknown): PreparedBehavioralSummaryRow[] | null {
+  if (!Array.isArray(value) || value.length > MAX_DATA_INTAKE_SESSIONS) return null;
+  const integerFields: Array<keyof PreparedBehavioralSummaryRow> = [
+    "attention_checks_expected",
+    "attention_checks_observed",
+    "attention_checks_correct",
+    "attention_checks_incorrect",
+    "visibility_hidden_events",
+    "window_blur_events",
+    "focus_loss_events",
+    "practice_trials",
+    "production_trials",
+    "scored_production_trials",
+    "correct_production_trials",
+    "incorrect_production_trials",
+    "deadline_exceeded_production_trials",
+    "valid_reaction_time_trials",
+  ];
+  const sessionIds = new Set<string>();
+  for (const candidate of value) {
+    if (
+      !isRecord(candidate)
+      || Object.keys(candidate).some((key) => !BEHAVIORAL_SUMMARY_COLUMNS.includes(
+        key as keyof PreparedBehavioralSummaryRow,
+      ))
+      || !BEHAVIORAL_SUMMARY_COLUMNS.every((key) => key in candidate)
+      || typeof candidate._cerise_session_id !== "string"
+      || candidate._cerise_session_id.length === 0
+      || candidate._cerise_session_id.length > 200
+      || sessionIds.has(candidate._cerise_session_id)
+      || typeof candidate._cerise_condition_id !== "string"
+      || candidate._cerise_condition_id.length > 100
+      || typeof candidate.included !== "boolean"
+      || !integerFields.every((field) => finiteNonNegativeInteger(candidate[field]))
+      || (
+        candidate.mean_reaction_time_ms !== null
+        && !finiteNumber(candidate.mean_reaction_time_ms)
+      )
+      || (
+        candidate.median_reaction_time_ms !== null
+        && !finiteNumber(candidate.median_reaction_time_ms)
+      )
+      || Number(candidate.attention_checks_observed)
+        > Number(candidate.attention_checks_expected)
+      || Number(candidate.attention_checks_correct)
+        + Number(candidate.attention_checks_incorrect)
+        !== Number(candidate.attention_checks_observed)
+      || Number(candidate.visibility_hidden_events)
+        + Number(candidate.window_blur_events)
+        !== Number(candidate.focus_loss_events)
+      || Number(candidate.correct_production_trials)
+        + Number(candidate.incorrect_production_trials)
+        !== Number(candidate.scored_production_trials)
+      || Number(candidate.scored_production_trials) > Number(candidate.production_trials)
+      || Number(candidate.deadline_exceeded_production_trials)
+        > Number(candidate.production_trials)
+      || Number(candidate.valid_reaction_time_trials) > Number(candidate.production_trials)
+      || (
+        Number(candidate.valid_reaction_time_trials) === 0
+        && (
+          candidate.mean_reaction_time_ms !== null
+          || candidate.median_reaction_time_ms !== null
+        )
+      )
+      || (
+        Number(candidate.valid_reaction_time_trials) > 0
+        && (
+          !finiteNumber(candidate.mean_reaction_time_ms)
+          || !finiteNumber(candidate.median_reaction_time_ms)
+        )
+      )
+    ) return null;
+    sessionIds.add(candidate._cerise_session_id);
+  }
+  return value as PreparedBehavioralSummaryRow[];
+}
+
 export async function verifyPreparedAnalysisPackage(
   value: unknown,
   release: ExperimentRelease,
@@ -1794,6 +1939,74 @@ export async function verifyPreparedAnalysisPackage(
   const responses = validateResponseRows(candidate.responses, responseColumns);
   if (!responses || !validateTrialRows(candidate.trials, trialColumns)) {
     throw new Error("The derived package contains invalid or oversized response or trial rows.");
+  }
+  const hasInclusionLedger = candidate.inclusionLedger !== undefined;
+  const hasBehavioralSummary = candidate.behavioralSummary !== undefined;
+  if (hasInclusionLedger !== hasBehavioralSummary) {
+    throw new Error("The expanded preparation datasets are incomplete.");
+  }
+  let inclusionLedgerRows: PreparedInclusionLedgerEntry[] | null = null;
+  let behavioralSummaryRows: PreparedBehavioralSummaryRow[] | null = null;
+  if (hasInclusionLedger && hasBehavioralSummary) {
+    if (
+      !isRecord(candidate.inclusionLedger)
+      || !exactColumns(candidate.inclusionLedger.columns, INCLUSION_LEDGER_COLUMNS)
+      || !safeChecksum(candidate.inclusionLedger.checksum)
+      || !isRecord(candidate.behavioralSummary)
+      || !exactColumns(candidate.behavioralSummary.columns, BEHAVIORAL_SUMMARY_COLUMNS)
+      || !safeChecksum(candidate.behavioralSummary.checksum)
+    ) throw new Error("The expanded preparation dataset dictionaries are invalid.");
+    inclusionLedgerRows = validateInclusionLedgerRows(candidate.inclusionLedger.rows);
+    behavioralSummaryRows = validateBehavioralSummaryRows(candidate.behavioralSummary.rows);
+    if (
+      !inclusionLedgerRows
+      || !behavioralSummaryRows
+      || inclusionLedgerRows.length !== behavioralSummaryRows.length
+    ) throw new Error("The expanded preparation datasets contain invalid or oversized rows.");
+    const ledgerBySession = new Map(inclusionLedgerRows.map((row) => [
+      row._cerise_session_id,
+      row,
+    ]));
+    const responseIds = new Set(responses.map((row) => String(row._cerise_session_id)));
+    if (
+      inclusionLedgerRows.length !== preparation.lastRun.sourceCompletedRows
+      || responses.length !== preparation.lastRun.outputRows
+      || inclusionLedgerRows.filter((row) => row.included).length !== responses.length
+      || behavioralSummaryRows.some((row) => {
+        const ledger = ledgerBySession.get(row._cerise_session_id);
+        return !ledger
+          || ledger._cerise_condition_id !== row._cerise_condition_id
+          || ledger.included !== row.included;
+      })
+      || inclusionLedgerRows.some((row) => row.included !== responseIds.has(row._cerise_session_id))
+      || (candidate.trials as Array<Record<string, unknown>>).some((trial) => (
+        !responseIds.has(String(trial._cerise_session_id))
+      ))
+    ) throw new Error("The expanded preparation datasets do not match the included response rows.");
+    const inclusionLedgerChecksum = await sha256Checksum({
+      columns: INCLUSION_LEDGER_COLUMNS,
+      rows: inclusionLedgerRows,
+    });
+    const behavioralSummaryChecksum = await sha256Checksum({
+      columns: BEHAVIORAL_SUMMARY_COLUMNS,
+      rows: behavioralSummaryRows,
+    });
+    if (
+      inclusionLedgerChecksum !== candidate.inclusionLedger.checksum
+      || behavioralSummaryChecksum !== candidate.behavioralSummary.checksum
+      || (
+        preparation.lastRun.inclusionLedgerChecksum !== undefined
+        && preparation.lastRun.inclusionLedgerChecksum !== inclusionLedgerChecksum
+      )
+      || (
+        preparation.lastRun.behavioralSummaryChecksum !== undefined
+        && preparation.lastRun.behavioralSummaryChecksum !== behavioralSummaryChecksum
+      )
+      || (
+        preparation.lastRun.behavioralSummaryRows !== undefined
+        && preparation.lastRun.behavioralSummaryRows !== behavioralSummaryRows.length
+      )
+    ) throw new Error("The expanded preparation dataset checksum does not match its contents.");
   }
   const responseChecksum = await sha256Checksum({ columns: responseColumns, rows: responses });
   const trialChecksum = await sha256Checksum({ columns: trialColumns, rows: candidate.trials });

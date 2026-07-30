@@ -14,6 +14,8 @@ Status:
 - Phase 8.7B local Data-Quality and Descriptive Review implemented on
   2026-07-29.
 - Phase 8.7C Quantitative Engine Expansion batch 1 implemented on 2026-07-29.
+- Phase 8.7D Data Quality and Preparation Expansion batch 1 implemented on
+  2026-07-29.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
@@ -23,6 +25,8 @@ Phase 8.7B replaces the remaining generic Stage 06 quality-check canvas while
 preserving its persisted step ID.
 Phase 8.7C expands the existing Phase 8.4 execution and Phase 8.7A robustness
 registries without adding or renumbering a Research Path step.
+Phase 8.7D expands the existing Phase 8.3 preparation and Phase 8.7B quality
+contracts without adding or renumbering a Research Path step.
 
 ## Phase 8.0 outcome
 
@@ -566,6 +570,43 @@ automatic method selection, or cost-bearing service.
 See `phase-8.7c-quantitative-engine-expansion.md` for the complete method,
 reference-validation, robustness, privacy, compatibility, and exclusion
 boundary.
+
+## Phase 8.7D outcome
+
+Phase 8.7D is the first bounded Data Quality and Preparation Expansion batch.
+It extends the existing `/data-preparation/[projectId]` and
+`/data-quality-review/[projectId]` workspaces.
+
+Phase 8.3 adds two ordered, rationalized operations:
+
+- a participant scored-trial accuracy proportion with an explicit practice
+  choice and minimum scored-trial count; and
+- a participant browser-measured RT mean or median with explicit practice,
+  correctness, deadline, inclusive millisecond-bound, and minimum eligible
+  trial choices.
+
+Each new package also carries a checksummed inclusion ledger and a checksummed
+behavioral-summary dataset. The ledger links each completed production session
+to final inclusion and explicit exclusion-operation IDs. Behavioral rows
+derive frozen attention-check results, focus-loss events, accuracy, deadline
+counts, and positive RT summaries without preserving response values or event
+timestamps in the summary.
+
+Phase 8.7B aggregates the expanded datasets for the included analysis
+population and requires explicit researcher decisions for the new inclusion
+and behavioral findings. It still makes no automatic correction, exclusion,
+threshold, validity decision, or inferential claim.
+
+The package version remains version 1 with optional additive fields, so older
+version-1 Phase 8.3 packages remain verifiable. Expanded packages additionally
+verify their dataset dictionaries, row shapes, cross-dataset identities,
+inclusion state, and independent SHA-256 checksums. Participant-level expanded
+rows stay in tab memory and the classified local export; browser storage and
+the Phase 8.7B export remain aggregate-only.
+
+See `phase-8.7d-data-quality-preparation-expansion.md` for the complete
+transformation, ledger, behavioral, quality-review, integrity, privacy,
+compatibility, and scientific-exclusion boundary.
 
 The fixture at `docs/fixtures/phase-8-analysis-contract-v1.json` documents the
 minimum schema shape used for cross-runtime review.

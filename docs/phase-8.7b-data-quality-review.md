@@ -112,6 +112,27 @@ When trial rows exist, the report includes aggregate counts for:
 This does not certify physical stimulus onset, input-device latency, clock
 accuracy, trial independence, or fitness for a specific model.
 
+### Phase 8.7D inclusion and behavioral profile
+
+When the selected Phase 8.3 package contains the additive Phase 8.7D datasets,
+the report also includes:
+
+- completed, included, and excluded counts from the checksummed inclusion
+  ledger;
+- aggregate excluded counts by explicit preparation-operation ID;
+- attention-check expected, observed, correct, incorrect, and missing counts;
+- sessions and event counts for recorded visibility-hidden or window-blur
+  events;
+- scored, correct, incorrect, and deadline-exceeded production-trial counts;
+- overall scored production-trial accuracy;
+- participant accuracy center/spread/range; and
+- participant median positive browser-measured RT center/spread/range.
+
+Behavioral aggregates use only rows whose final ledger state is included, so
+they describe the derived analysis population. Ledger session IDs and
+participant behavioral rows remain withheld. These are review cues, not
+automatic attention, fraud, timing, exclusion, or validity decisions.
+
 ## Researcher decision gate
 
 Every deterministic finding receives one of five explicit dispositions:

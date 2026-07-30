@@ -37,7 +37,7 @@ OpenRouter. Replacing the source or closing the tab clears that memory boundary.
 ## Safe operation registry
 
 Phase 8.3 does not execute arbitrary JavaScript, SQL, Python, expressions, or
-uploaded formulas. The initial allowlist contains six declarative operations:
+uploaded formulas. The initial allowlist contained six declarative operations:
 
 1. map exact declared literals to missing;
 2. trim surrounding text whitespace;
@@ -45,6 +45,13 @@ uploaded formulas. The initial allowlist contains six declarative operations:
 4. create a reverse-scored variable using `minimum + maximum − value`;
 5. create a mean or sum with an explicit minimum-valid-input rule; and
 6. exclude a record with one explicit comparison.
+
+Phase 8.7D adds two bounded operations to this same ordered registry:
+
+7. create a participant scored-trial accuracy proportion with an explicit
+   practice choice and minimum scored-trial count; and
+8. create a participant RT mean or median with explicit practice, correctness,
+   deadline, inclusive millisecond-bound, and minimum eligible-trial choices.
 
 Operations are ordered and rerun from a fresh clone of the imported completed
 production rows. Every enabled operation requires a rationale. Derived-variable
@@ -81,6 +88,9 @@ containing:
 - normalized operation definitions and aggregate operation log;
 - a derived response table;
 - included trial rows;
+- an additive checksummed inclusion ledger for every completed production
+  session;
+- an additive checksummed participant behavioral-summary dataset;
 - response, trial, and complete-package SHA-256 checksums;
 - an explicit potentially-identifying-data classification; and
 - a declaration that the raw source was not mutated.

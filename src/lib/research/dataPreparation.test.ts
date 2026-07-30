@@ -28,7 +28,10 @@ import {
   type ExperimentRelease,
 } from "./experimentRelease";
 import { buildExperimentHostBundle } from "./experimentHostBundle";
-import { createExperimentStudioDocument } from "./experimentStudio";
+import {
+  createExperimentBlock,
+  createExperimentStudioDocument,
+} from "./experimentStudio";
 import { EMPTY_RESEARCH_PATH_DRAFT } from "./researchPathDraft";
 import { createStudyDesignDocument } from "./studyDesign";
 
@@ -40,6 +43,13 @@ async function fixture(): Promise<{
   production: Record<string, unknown>;
 }> {
   const studio = createExperimentStudioDocument("project-preparation");
+  const secondaryBlock = createExperimentBlock("rating", "block-secondary-rating");
+  secondaryBlock.variableName = "secondary_rating";
+  secondaryBlock.internalName = "secondary_rating";
+  const attentionBlock = createExperimentBlock("attention-check", "block-attention-check");
+  attentionBlock.variableName = "attention_check";
+  attentionBlock.internalName = "attention_check";
+  studio.blocks.splice(studio.blocks.length - 1, 0, secondaryBlock, attentionBlock);
   const design = createStudyDesignDocument("project-preparation", EMPTY_RESEARCH_PATH_DRAFT);
   design.spec.researchQuestions[0] = {
     ...design.spec.researchQuestions[0],
@@ -114,12 +124,21 @@ async function fixture(): Promise<{
     condition: release.studio.conditions[0],
     responses: Object.fromEntries(variables.map((name, index) => [
       name,
-      index === 0 ? " NA " : index === 1 ? "6" : "3",
+      name === attentionBlock.variableName
+        ? attentionBlock.correctAnswer
+        : index === 0
+          ? " NA "
+          : index === 1
+            ? "6"
+            : "3",
     ])),
     audioResponses: {},
     videoResponses: {},
     timings: [],
-    events: [],
+    events: [
+      { type: "visibility-hidden", at: "2026-07-28T21:11:00.000Z", blockId: "block-one", screenIndex: 1 },
+      { type: "window-blur", at: "2026-07-28T21:11:01.000Z", blockId: "block-one", screenIndex: 1 },
+    ],
     history: [],
     trials: [{
       tableId: "table-one",
@@ -143,6 +162,33 @@ async function fixture(): Promise<{
     updatedAt: "2026-07-28T21:12:00.000Z",
     executionMode: "production",
   };
+  const completedExcluded = {
+    ...completed,
+    idempotencyKey: "session-two:2",
+    sessionId: "session-two",
+    responses: Object.fromEntries(variables.map((name, index) => [
+      name,
+      name === attentionBlock.variableName
+        ? "Incorrect attention response"
+        : index === 0
+          ? "4"
+          : index === 1
+            ? "2"
+            : "1",
+    ])),
+    events: [],
+    trials: [{
+      ...completed.trials[0],
+      trialId: "trial-two",
+      response: "j",
+      correctAnswer: "f",
+      correct: false,
+      reactionTimeMs: 820,
+    }],
+    trialOrder: ["loop-one:trial-two:1"],
+    startedAt: "2026-07-28T21:20:00.000Z",
+    updatedAt: "2026-07-28T21:22:00.000Z",
+  };
   const incomplete = {
     ...completed,
     sessionId: "session-incomplete",
@@ -156,7 +202,7 @@ async function fixture(): Promise<{
     releaseChecksum: release.checksum,
     executionMode: "production",
     exportedAt: "2026-07-28T22:00:00.000Z",
-    sessions: [completed, incomplete],
+    sessions: [completed, completedExcluded, incomplete],
   };
   const pilot = {
     releaseId: release.releaseId,
@@ -254,11 +300,11 @@ test("builds a deterministic derived package without mutating the source export"
   });
 
   assert.deepEqual(production, original);
-  assert.equal(result.package.responses.length, 1);
-  assert.equal(result.package.trials.length, 1);
+  assert.equal(result.package.responses.length, 2);
+  assert.equal(result.package.trials.length, 2);
   assert.equal(result.document.lastRun?.sourceNonCompletedRows, 1);
-  assert.equal(result.document.lastRun?.inputRows, 1);
-  assert.equal(result.document.lastRun?.outputRows, 1);
+  assert.equal(result.document.lastRun?.inputRows, 2);
+  assert.equal(result.document.lastRun?.outputRows, 2);
   assert.equal(result.package.responses[0][plan.variables[0].name], null);
   assert.equal(result.package.responses[0][plan.variables[1].name], 6);
   assert.equal(
@@ -267,6 +313,113 @@ test("builds a deterministic derived package without mutating the source export"
   );
   assert.equal(result.package.responses[0].planned_composite, 4);
   assert.match(result.package.integrity.packageChecksum, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(result.package.inclusionLedger?.rows.length, 2);
+  assert.equal(result.package.behavioralSummary?.rows.length, 2);
+});
+
+test("derives explicit accuracy and RT summaries with an auditable inclusion ledger", async () => {
+  const { release, audit, sourceFiles, production } = await fixture();
+  const draft = createDataPreparationDocument(release, audit);
+  assert.ok(draft);
+  const operations: PreparationOperation[] = [
+    {
+      id: "participant-accuracy",
+      type: "summarize-trial-accuracy",
+      enabled: true,
+      rationale: "Summarize scored production trials before applying the prespecified threshold.",
+      targetVariable: "trial_accuracy",
+      includePractice: false,
+      minimumScoredTrials: 1,
+    },
+    {
+      id: "participant-rt",
+      type: "summarize-reaction-time",
+      enabled: true,
+      rationale: "Summarize bounded production-trial timing without practice or deadline rows.",
+      targetVariable: "median_reaction_time",
+      method: "median",
+      includePractice: false,
+      correctOnly: false,
+      excludeDeadlineExceeded: true,
+      minimumMilliseconds: 100,
+      maximumMilliseconds: 2_000,
+      minimumValidTrials: 1,
+    },
+    {
+      id: "accuracy-threshold",
+      type: "exclude-record",
+      enabled: true,
+      rationale: "Apply the protocol-defined minimum scored-trial accuracy.",
+      sourceVariable: "trial_accuracy",
+      comparator: "less-than",
+      comparisonValue: "0.5",
+    },
+  ];
+  const document = updateDataPreparationOperations(
+    draft,
+    operations,
+    release,
+    audit,
+  );
+  const result = await buildDataPreparationPackage({
+    production,
+    sourceFiles,
+    release,
+    auditReceipt: audit,
+    document,
+    preparedAt: "2026-07-28T23:10:00.000Z",
+  });
+
+  assert.equal(result.package.responses.length, 1);
+  assert.equal(result.package.responses[0].trial_accuracy, 1);
+  assert.equal(result.package.responses[0].median_reaction_time, 420);
+  assert.deepEqual(result.package.inclusionLedger?.rows, [
+    {
+      _cerise_session_id: "session-one",
+      _cerise_condition_id: release.studio.conditions[0].id,
+      included: true,
+      exclusion_operation_ids: [],
+    },
+    {
+      _cerise_session_id: "session-two",
+      _cerise_condition_id: release.studio.conditions[0].id,
+      included: false,
+      exclusion_operation_ids: ["accuracy-threshold"],
+    },
+  ]);
+  assert.deepEqual(
+    result.package.behavioralSummary?.rows.map((row) => ({
+      id: row._cerise_session_id,
+      included: row.included,
+      attentionCorrect: row.attention_checks_correct,
+      attentionIncorrect: row.attention_checks_incorrect,
+      focusLoss: row.focus_loss_events,
+      accuracy: [row.correct_production_trials, row.scored_production_trials],
+      medianRt: row.median_reaction_time_ms,
+    })),
+    [
+      {
+        id: "session-one",
+        included: true,
+        attentionCorrect: 1,
+        attentionIncorrect: 0,
+        focusLoss: 2,
+        accuracy: [1, 1],
+        medianRt: 420,
+      },
+      {
+        id: "session-two",
+        included: false,
+        attentionCorrect: 0,
+        attentionIncorrect: 1,
+        focusLoss: 0,
+        accuracy: [0, 1],
+        medianRt: 820,
+      },
+    ],
+  );
+  assert.match(result.document.lastRun?.inclusionLedgerChecksum ?? "", /^sha256:/);
+  assert.match(result.document.lastRun?.behavioralSummaryChecksum ?? "", /^sha256:/);
 });
 
 test("blocks source-checksum drift before participant rows are prepared", async () => {
@@ -327,7 +480,7 @@ test("stores only bounded provenance and becomes ready after review and export",
   );
   assert.equal(isDataPreparationReady(exported), true);
   const serialized = JSON.stringify(exported);
-  assert.doesNotMatch(serialized, /session-one|session-incomplete|" NA "|"6"/);
+  assert.doesNotMatch(serialized, /session-one|session-two|session-incomplete|" NA "|"6"/);
   assert.ok(normalizeDataPreparationDocument(exported, release, audit));
 });
 
