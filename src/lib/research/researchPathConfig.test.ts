@@ -56,6 +56,8 @@ test("Stage 6 adds release-bound analysis tools without shifting persisted step 
   assert.equal(stage.steps[2].canvas, "data-preparation-launcher");
   assert.equal(stage.steps[4].id, "stage-06-step-03");
   assert.equal(stage.steps[4].canvas, "analysis-execution-launcher");
+  assert.equal(stage.steps[6].id, "stage-06-step-05");
+  assert.equal(stage.steps[6].canvas, "analysis-results-launcher");
   assert.deepEqual(
     stage.steps.slice(2).map((step) => step.id),
     [

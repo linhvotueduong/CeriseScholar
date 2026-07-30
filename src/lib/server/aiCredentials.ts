@@ -122,6 +122,7 @@ export async function resolveAiCredentials(
 export async function requireByokAiCredentials(
   userId: string,
   supabase: SupabaseClient,
+  featureLabel = "Experimental Studio assistant",
 ): Promise<AiCredentials> {
   const { data, error } = await supabase
     .from("user_ai_settings")
@@ -135,12 +136,12 @@ export async function requireByokAiCredentials(
   }
   if (!data?.encrypted_key) {
     throw new ByokCredentialsError(
-      "Connect your OpenRouter key in Settings → API key before using the Experimental Studio assistant.",
+      `Connect your OpenRouter key in Settings → API key before using the ${featureLabel}.`,
       409,
     );
   }
   if ((data.provider ?? "openrouter") !== "openrouter") {
-    throw new ByokCredentialsError("The Experimental Studio assistant currently requires an OpenRouter key.", 409);
+    throw new ByokCredentialsError(`The ${featureLabel} currently requires an OpenRouter key.`, 409);
   }
 
   try {

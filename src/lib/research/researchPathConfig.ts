@@ -24,6 +24,7 @@ export type ResearchCanvasKind =
   | "data-intake-audit-launcher"
   | "data-preparation-launcher"
   | "analysis-execution-launcher"
+  | "analysis-results-launcher"
   | "guided";
 
 export interface ResearchPathStep {
@@ -289,8 +290,13 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
         id: "stage-06-step-04",
       },
       {
-        ...guided("Produce Tables, Figures, Themes, and a Results Record", "Results Record", "Create the stable results package used for interpretation and writing.", ["Which tables, figures, themes, or result summaries are final?", "Where are the analysis outputs and reproducible materials stored?"], ["Every key result has a stable output", "Captions, labels, and provenance are complete"]),
         id: "stage-06-step-05",
+        title: "Produce Tables, Figures, and a Results Record",
+        shortTitle: "Results Record",
+        description: "Link reviewed aggregate outputs to research-question answers, defensible claims, limitations, captions, and a verifiable Results Record.",
+        canvas: "analysis-results-launcher",
+        prompts: [],
+        checklist: [],
       },
     ],
   ),

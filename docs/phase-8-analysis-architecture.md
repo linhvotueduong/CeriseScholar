@@ -8,7 +8,8 @@ Status:
 - Phase 8.2 local Data Intake and Audit implemented on 2026-07-28.
 - Phase 8.3 local Reproducible Preparation implemented on 2026-07-28.
 - Phase 8.4 local Analysis Execution implemented on 2026-07-29.
-- Results interpretation and publication outputs are later approval boundaries.
+- Phase 8.5 aggregate Results and Interpretation implemented on 2026-07-29.
+- Reproducibility packaging remains a later approval boundary.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
@@ -324,16 +325,55 @@ Phase 8.4 is not:
   or
 - permission for AI to inspect participant-level data.
 
+## Phase 8.5 outcome
+
+Phase 8.5 adds a dedicated full-width Results and Interpretation workspace at
+`/analysis-results/[projectId]` and links it from the final Stage 06 Results
+Record step. It accepts only the exported Phase 8.4 aggregate-results package
+and independently verifies the complete release → contract → plan →
+preparation → result checksum chain before enabling interpretation.
+
+Each primary research question, and each non-primary question with an executed
+result, receives a bounded researcher-authored record containing:
+
+- a direct evidence-linked answer;
+- separate statistical and practical meaning;
+- a claim and claim-strength classification;
+- limitations and boundary conditions;
+- responses to Phase 8.4 advisory diagnostics;
+- explicit robustness or sensitivity status and evidence;
+- frozen-plan divergence impact;
+- an approved aggregate table; and
+- an approved confidence-interval figure.
+
+The robustness boundary is deliberately researcher-authored. Phase 8.5 records
+whether relevant checks were performed outside Cerise, were not performed, or
+were not applicable with a rationale. It does not run a sensitivity,
+reliability, robustness, or triangulation analysis, and it does not
+automatically complete the separate Stage 06 Robustness step.
+
+The optional Results Interpretation assistant uses the researcher's OpenRouter
+key and receives only the active reviewed aggregate result, bounded frozen-plan
+context, and current draft. It cannot change estimates, intervals, methods,
+variables, checksums, divergence records, or invent p-values or new analyses.
+Suggestions remain in memory and require an explicit researcher action before
+entering the editable draft.
+
+Browser storage contains bounded interpretation, result IDs, provenance,
+checksums, approval flags, and review/export timestamps—not the aggregate
+result payload or participant rows. The exported Results Record includes the
+reviewed aggregate output, interpretations, tables, figures, divergence
+register, and independent checksums, and explicitly records
+`participantRowsIncluded: false`.
+
+See `phase-8.5-results-interpretation.md` for the complete integrity, privacy,
+AI, robustness, export, and completion-gate contract.
+
 ## Recommended next boundaries
 
-Each boundary should be approved, built, and verified separately:
+The next boundary should be approved, built, and verified separately:
 
-1. **Phase 8.5 — Results and Interpretation**
-
-   RQ-linked tables, figures, claims, limitations, and divergence from the
-   frozen plan. AI may explain reviewed outputs but must not silently run or
-   change analyses.
-2. **Phase 8.6 — Reproducibility Package**
+1. **Phase 8.6 — Reproducibility Package**
 
    Data dictionary, contract, amendment log, operation log, results, figures,
    environment/version metadata, and a machine-readable manifest.
