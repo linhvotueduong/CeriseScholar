@@ -26,6 +26,9 @@ import {
 
 export const ANALYSIS_INTERPRETATION_SCHEMA_VERSION = 1 as const;
 export const RESULTS_RECORD_PACKAGE_VERSION = 1 as const;
+export const RESULTS_RECORD_EXPORT_TYPE = "cerise-results-record-package" as const;
+export const RESULTS_RECORD_EXPORT_BOUNDARY =
+  "Aggregate results and researcher-authored interpretations may remain sensitive. Store only in an approved location." as const;
 export const MAX_ANALYSIS_INTERPRETATION_BYTES = 512 * 1024;
 export const MAX_RESULTS_RECORD_PACKAGE_BYTES = 12 * 1024 * 1024;
 export const MAX_RESULTS_TEXT = 4_000;
@@ -214,6 +217,13 @@ export interface ResultsRecordPackage {
     "records-researcher-authored-evidence-but-does-not-run-sensitivity-analysis";
   scientificClaim:
     "results-record-not-validity-causality-reproducibility-or-publication-certification";
+}
+
+export interface ResultsRecordExport {
+  exportType: typeof RESULTS_RECORD_EXPORT_TYPE;
+  exportBoundary: typeof RESULTS_RECORD_EXPORT_BOUNDARY;
+  exportedAt: string;
+  package: ResultsRecordPackage;
 }
 
 interface StorageLike {
@@ -1332,6 +1342,137 @@ export async function buildResultsRecordPackage(
     throw new Error("The aggregate Results Record exceeds the Phase 8.5 size limit.");
   }
   return record;
+}
+
+export async function verifyResultsRecordExport(
+  value: unknown,
+  release: ExperimentRelease,
+  plan: AnalysisPlanDocument,
+  preparation: DataPreparationDocument,
+  execution: AnalysisExecutionDocument,
+  document: AnalysisInterpretationDocument,
+): Promise<ResultsRecordExport> {
+  if (
+    safeJsonByteLength(value) > MAX_RESULTS_RECORD_PACKAGE_BYTES
+    || !isRecord(value)
+    || !exactKeys(value, ["exportType", "exportBoundary", "exportedAt", "package"])
+    || value.exportType !== RESULTS_RECORD_EXPORT_TYPE
+    || value.exportBoundary !== RESULTS_RECORD_EXPORT_BOUNDARY
+    || !safeTimestamp(value.exportedAt)
+    || !isRecord(value.package)
+    || !isAnalysisExecutionReady(execution)
+    || !isAnalysisInterpretationReady(document)
+    || plan.readiness.status !== "ready"
+    || preparation.readiness.status !== "ready"
+    || !execution.lastRun
+    || !preparation.lastRun
+  ) {
+    throw new Error("Select the reviewed and exported Phase 8.5 Results Record.");
+  }
+  if (!await verifyExperimentRelease(release)) {
+    throw new Error("The selected immutable release no longer passes checksum verification.");
+  }
+
+  const candidate = value.package;
+  if (
+    candidate.packageVersion !== RESULTS_RECORD_PACKAGE_VERSION
+    || candidate.projectId !== release.projectId
+    || candidate.releaseId !== release.releaseId
+    || candidate.releaseNumber !== release.releaseNumber
+    || candidate.releaseChecksum !== release.checksum
+    || candidate.contractChecksum !== release.manifest.analysisContractChecksum
+    || candidate.analysisPlanUpdatedAt !== plan.updatedAt
+    || candidate.createdAt !== value.exportedAt
+    || value.exportedAt !== document.exportedAt
+    || !isRecord(candidate.source)
+    || !isRecord(candidate.aggregateAnalysis)
+    || !Array.isArray(candidate.aggregateAnalysis.specifications)
+    || candidate.aggregateAnalysis.specifications.length === 0
+    || candidate.aggregateAnalysis.specifications.length > MAX_ANALYSIS_SPECIFICATIONS
+    || !candidate.aggregateAnalysis.specifications.every(validateSpecification)
+    || !Array.isArray(candidate.aggregateAnalysis.results)
+    || candidate.aggregateAnalysis.results.length
+      !== candidate.aggregateAnalysis.specifications.length
+    || !candidate.aggregateAnalysis.results.every((result) => validateResult(result, plan))
+    || !validateMethodRegistry(candidate.aggregateAnalysis.methodRegistry)
+    || candidate.participantRowsIncluded !== false
+  ) {
+    throw new Error("The Results Record shape or frozen identity is invalid.");
+  }
+
+  const expectedSpecifications = execution.specifications.filter((item) => item.enabled);
+  const expectedMethodRegistry = [
+    ...new Set(candidate.aggregateAnalysis.results.map((result) => result.methodId)),
+  ].map((methodId) => {
+    const method = ANALYSIS_METHOD_REGISTRY.find((item) => item.id === methodId);
+    if (!method) throw new Error("The Results Record contains an unknown analysis method.");
+    return {
+      id: method.id,
+      label: method.label,
+      effectSize: method.effectSize,
+      confidenceInterval: method.confidenceInterval,
+      assumptions: [...method.assumptions],
+    };
+  });
+  const resultChecksum = await sha256Checksum(candidate.aggregateAnalysis.results);
+  if (
+    canonicalJson(candidate.aggregateAnalysis.specifications)
+      !== canonicalJson(expectedSpecifications)
+    || canonicalJson(candidate.aggregateAnalysis.methodRegistry)
+      !== canonicalJson(expectedMethodRegistry)
+    || candidate.source.analysisResultsPackageChecksum
+      !== execution.lastRun.packageChecksum
+    || candidate.source.analysisResultsPackageChecksum
+      !== document.source.packageChecksum
+    || candidate.source.resultChecksum !== execution.lastRun.resultChecksum
+    || candidate.source.resultChecksum !== document.source.resultChecksum
+    || candidate.source.resultChecksum !== resultChecksum
+    || candidate.source.preparationPackageChecksum
+      !== preparation.lastRun.packageChecksum
+    || candidate.source.executedAt !== execution.lastRun.runAt
+  ) {
+    throw new Error("The Results Record does not match the reviewed Phase 8 provenance chain.");
+  }
+
+  const embeddedResults: AnalysisResultsPackage = {
+    packageVersion: ANALYSIS_RESULTS_PACKAGE_VERSION,
+    projectId: release.projectId,
+    releaseId: release.releaseId,
+    releaseNumber: release.releaseNumber,
+    releaseChecksum: release.checksum,
+    contractChecksum: plan.contractChecksum,
+    analysisPlanUpdatedAt: plan.updatedAt,
+    executedAt: execution.lastRun.runAt,
+    source: {
+      preparationSchemaVersion: preparation.schemaVersion,
+      preparedAt: preparation.lastRun.preparedAt,
+      operationFingerprint: preparation.lastRun.operationFingerprint,
+      packageChecksum: preparation.lastRun.packageChecksum,
+      inputBoundary:
+        "verified-phase-8-3-derived-package-completed-production-sessions-only",
+    },
+    specifications: candidate.aggregateAnalysis.specifications,
+    results: candidate.aggregateAnalysis.results,
+    methodRegistry: candidate.aggregateAnalysis.methodRegistry,
+    integrity: {
+      sourcePackageChecksum: preparation.lastRun.packageChecksum,
+      resultChecksum,
+      packageChecksum: execution.lastRun.packageChecksum,
+    },
+    dataClassification: "aggregate-statistical-output-potentially-sensitive",
+    participantRowsIncluded: false,
+    executionBoundary:
+      "deterministic-browser-local-reviewed-registry-no-arbitrary-code-no-ai",
+  };
+  const expected = await buildResultsRecordPackage({
+    document,
+    resultsPackage: embeddedResults,
+    createdAt: value.exportedAt,
+  });
+  if (canonicalJson(candidate) !== canonicalJson(expected)) {
+    throw new Error("The Results Record contents or integrity checksums have changed.");
+  }
+  return value as unknown as ResultsRecordExport;
 }
 
 export function analysisInterpretationStorageKey(

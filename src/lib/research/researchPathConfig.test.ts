@@ -69,3 +69,20 @@ test("Stage 6 adds release-bound analysis tools without shifting persisted step 
     ],
   );
 });
+
+test("Stage 8 appends the reproducibility package without shifting persisted step ids", () => {
+  const stage = RESEARCH_PATH_STAGES.find((item) => item.id === "stage-08");
+
+  assert.ok(stage);
+  assert.deepEqual(
+    stage.steps.slice(0, 4).map((step) => step.id),
+    [
+      "stage-08-step-01",
+      "stage-08-step-02",
+      "stage-08-step-03",
+      "stage-08-step-04",
+    ],
+  );
+  assert.equal(stage.steps[4].id, "stage-08-reproducibility-package");
+  assert.equal(stage.steps[4].canvas, "reproducibility-package-launcher");
+});

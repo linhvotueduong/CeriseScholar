@@ -9,7 +9,7 @@ Status:
 - Phase 8.3 local Reproducible Preparation implemented on 2026-07-28.
 - Phase 8.4 local Analysis Execution implemented on 2026-07-29.
 - Phase 8.5 aggregate Results and Interpretation implemented on 2026-07-29.
-- Reproducibility packaging remains a later approval boundary.
+- Phase 8.6 local Reproducibility Package implemented on 2026-07-29.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
@@ -369,14 +369,44 @@ register, and independent checksums, and explicitly records
 See `phase-8.5-results-interpretation.md` for the complete integrity, privacy,
 AI, robustness, export, and completion-gate contract.
 
-## Recommended next boundaries
+## Phase 8.6 outcome
 
-The next boundary should be approved, built, and verified separately:
+Phase 8.6 adds a dedicated full-width Reproducibility Package workspace at
+`/reproducibility-package/[projectId]` and links it from a new final Stage 08
+step without shifting the IDs of the four existing Stage 08 steps.
 
-1. **Phase 8.6 — Reproducibility Package**
+The researcher must re-select the exact exported Phase 8.5 Results Record.
+Cerise verifies the complete Phase 8.0–8.5 local identity and checksum chain
+before allowing archive construction. The workspace then creates a
+deterministic 14-file USTAR package containing the reader guide, frozen release
+metadata, data dictionary, analysis contract and plan, aggregate intake audit,
+preparation operation log, Phase 8.4 method/configuration index, full aggregate
+Results Record, divergence register, environment and schema versions, bounded
+restricted-material references, verification report, and machine-readable
+manifest.
 
-   Data dictionary, contract, amendment log, operation log, results, figures,
-   environment/version metadata, and a machine-readable manifest.
+Participant and derived rows, raw media, and the combined SQLite database are
+never embedded. The complete frozen Studio specification and embedded media
+are also excluded; the release checksum is verified locally before packaging,
+but its metadata-only archive file cannot reconstruct that checksum.
+Researcher-selected external locations are descriptive references that Cerise
+does not open or validate.
+
+Each non-manifest file has a raw-byte SHA-256 checksum. Before export is
+enabled, Cerise parses the completed TAR again and verifies its headers, fixed
+file set, sizes, manifest, file checksums, embedded Results Record checksum,
+privacy declarations, and selected release identity. The recorded browser and
+device context describes archive construction, not the earlier Phase 8.4
+execution environment.
+
+This is a locally verifiable preservation handoff, not a signature, trusted
+timestamp, scientific-reproducibility finding, validity certification,
+repository deposit, venue-compliance result, or submission package. Nothing
+is uploaded automatically. Phase 8.6 adds no Supabase migration, AI call,
+participant-data network path, or cost-bearing infrastructure.
+
+See `phase-8.6-reproducibility-package.md` for the complete file, integrity,
+privacy, environment, and completion-gate contract.
 
 The fixture at `docs/fixtures/phase-8-analysis-contract-v1.json` documents the
 minimum schema shape used for cross-runtime review.

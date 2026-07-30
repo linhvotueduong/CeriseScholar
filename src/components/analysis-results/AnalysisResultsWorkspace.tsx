@@ -21,6 +21,8 @@ import {
 } from "@/lib/research/analysisExecution";
 import {
   MAX_RESULTS_TEXT,
+  RESULTS_RECORD_EXPORT_BOUNDARY,
+  RESULTS_RECORD_EXPORT_TYPE,
   buildResultsRecordPackage,
   createAnalysisInterpretationDocument,
   isAnalysisInterpretationReady,
@@ -509,9 +511,8 @@ export default function AnalysisResultsWorkspace({
       downloadJson(
         `${safeExportName(projectName)}-results-record-v${selectedRelease.releaseNumber}.json`,
         {
-          exportType: "cerise-results-record-package",
-          exportBoundary:
-            "Aggregate results and researcher-authored interpretations may remain sensitive. Store only in an approved location.",
+          exportType: RESULTS_RECORD_EXPORT_TYPE,
+          exportBoundary: RESULTS_RECORD_EXPORT_BOUNDARY,
           exportedAt,
           package: recordPackage,
         },

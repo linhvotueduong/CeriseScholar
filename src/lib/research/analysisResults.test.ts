@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  ANALYSIS_METHOD_REGISTRY,
   analysisConfigurationFingerprint,
   type AnalysisExecutionDocument,
   type AnalysisExecutionSpecification,
@@ -9,6 +10,8 @@ import {
 } from "./analysisExecution";
 import type { AnalysisPlanDocument } from "./analysisPlan";
 import {
+  RESULTS_RECORD_EXPORT_BOUNDARY,
+  RESULTS_RECORD_EXPORT_TYPE,
   buildResultsRecordPackage,
   createAnalysisInterpretationDocument,
   isAnalysisInterpretationReady,
@@ -16,6 +19,7 @@ import {
   markAnalysisInterpretationReviewed,
   updateAnalysisInterpretation,
   verifyAnalysisResultsPackage,
+  verifyResultsRecordExport,
   writeAnalysisInterpretationDocument,
 } from "./analysisResults";
 import type { DataPreparationDocument } from "./dataPreparation";
@@ -214,13 +218,15 @@ async function fixture(): Promise<Fixture> {
     },
     specifications: [specification],
     results: [result],
-    methodRegistry: [{
-      id: "simple-linear-regression" as const,
-      label: "Simple linear regression",
-      effectSize: "Unstandardized slope and R²",
-      confidenceInterval: "Student-t interval for the slope",
-      assumptions: ["Independent observations"],
-    }],
+    methodRegistry: ANALYSIS_METHOD_REGISTRY
+      .filter((method) => method.id === "simple-linear-regression")
+      .map((method) => ({
+        id: method.id,
+        label: method.label,
+        effectSize: method.effectSize,
+        confidenceInterval: method.confidenceInterval,
+        assumptions: [...method.assumptions],
+      })),
     integrity: {
       sourcePackageChecksum: preparationChecksum,
       resultChecksum,
@@ -396,6 +402,59 @@ test("requires RQ-linked meaning, diagnostics, robustness disclosure, and output
   assert.equal(resultsRecord.tables.length, 1);
   assert.equal(resultsRecord.figures.length, 1);
   assert.doesNotMatch(JSON.stringify(resultsRecord), /participant-1/);
+
+  const envelope = {
+    exportType: RESULTS_RECORD_EXPORT_TYPE,
+    exportBoundary: RESULTS_RECORD_EXPORT_BOUNDARY,
+    exportedAt: resultsRecord.createdAt,
+    package: resultsRecord,
+  };
+  const verified = await verifyResultsRecordExport(
+    envelope,
+    current.release,
+    current.plan,
+    current.preparation,
+    current.execution,
+    exported,
+  );
+  assert.equal(verified.package.integrity.packageChecksum, resultsRecord.integrity.packageChecksum);
+
+  const changed = structuredClone(envelope);
+  changed.package.tables[0].caption = "Changed after export.";
+  await assert.rejects(
+    verifyResultsRecordExport(
+      changed,
+      current.release,
+      current.plan,
+      current.preparation,
+      current.execution,
+      exported,
+    ),
+    /contents or integrity checksums/,
+  );
+
+  const changedRegistry = structuredClone(envelope);
+  changedRegistry.package.aggregateAnalysis.methodRegistry[0].label = "Changed method";
+  changedRegistry.package.integrity.packageChecksum = await sha256Checksum({
+    ...changedRegistry.package,
+    integrity: {
+      analysisResultsPackageChecksum:
+        changedRegistry.package.integrity.analysisResultsPackageChecksum,
+      interpretationChecksum:
+        changedRegistry.package.integrity.interpretationChecksum,
+    },
+  });
+  await assert.rejects(
+    verifyResultsRecordExport(
+      changedRegistry,
+      current.release,
+      current.plan,
+      current.preparation,
+      current.execution,
+      exported,
+    ),
+    /provenance chain/,
+  );
 });
 
 test("local persistence contains interpretation and provenance but no aggregate result payload", async () => {

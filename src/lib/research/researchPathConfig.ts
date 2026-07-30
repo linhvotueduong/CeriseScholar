@@ -25,6 +25,7 @@ export type ResearchCanvasKind =
   | "data-preparation-launcher"
   | "analysis-execution-launcher"
   | "analysis-results-launcher"
+  | "reproducibility-package-launcher"
   | "guided";
 
 export interface ResearchPathStep {
@@ -324,6 +325,15 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
       guided("Obtain Feedback and Revise", "Feedback and Revision", "Collect structured feedback and make traceable revision decisions.", ["Who reviewed the work and what did they recommend?", "Which revisions were made, declined, or deferred, and why?"], ["Feedback is consolidated", "Material revision decisions are documented"]),
       guided("Finalize, Submit, Publish, or Present", "Finalize and Submit", "Complete quality control and release the research through the selected channel.", ["What was finalized, submitted, published, or presented?", "What identifiers, dates, versions, or confirmation records should be preserved?"], ["Final files pass the venue checklist", "The released version and confirmation details are recorded"]),
       guided("Archive Materials and Create the Next-Study Roadmap", "Archive and Continue", "Preserve sources, data, code, materials, and decisions while capturing future research opportunities.", ["Where is the complete research package archived and under what access conditions?", "Which unanswered questions or follow-up studies should continue the work?"], ["The preservation package is complete and findable", "Future-study ideas are prioritized with enough context to resume"]),
+      {
+        id: "stage-08-reproducibility-package",
+        title: "Assemble and Verify the Reproducibility Package",
+        shortTitle: "Reproducibility Package",
+        description: "Create and independently verify a deterministic metadata-and-aggregate-output archive while keeping participant data, media, and SQLite outside the package.",
+        canvas: "reproducibility-package-launcher",
+        prompts: [],
+        checklist: [],
+      },
     ],
   ),
 ] as const;

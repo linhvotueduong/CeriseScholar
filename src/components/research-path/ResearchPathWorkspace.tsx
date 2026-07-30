@@ -81,6 +81,10 @@ const AnalysisResultsLauncher = dynamic(
   () => import("./AnalysisResultsLauncher"),
   { loading: () => <ToolLoading label="Results and Interpretation" />, ssr: false },
 );
+const ReproducibilityPackageLauncher = dynamic(
+  () => import("./ReproducibilityPackageLauncher"),
+  { loading: () => <ToolLoading label="Reproducibility Package" />, ssr: false },
+);
 
 interface ResearchPathWorkspaceProps {
   projectId: string;
@@ -608,6 +612,7 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
   const [dataPreparationReady, setDataPreparationReady] = useState(false);
   const [analysisExecutionReady, setAnalysisExecutionReady] = useState(false);
   const [analysisResultsReady, setAnalysisResultsReady] = useState(false);
+  const [reproducibilityPackageReady, setReproducibilityPackageReady] = useState(false);
   const saveTimer = useRef<number | null>(null);
   const cloudSaveTimer = useRef<number | null>(null);
   const studyDirty = useRef(false);
@@ -640,6 +645,9 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     activeStage.id === "stage-06" && activeStep.canvas === "analysis-execution-launcher";
   const isAnalysisResultsStep =
     activeStage.id === "stage-06" && activeStep.canvas === "analysis-results-launcher";
+  const isReproducibilityPackageStep =
+    activeStage.id === "stage-08"
+    && activeStep.canvas === "reproducibility-package-launcher";
   const activeIndex = RESEARCH_PATH_STEPS.findIndex((step) => step.id === activeStep.id);
   const previousStep = activeIndex > 0 ? RESEARCH_PATH_STEPS[activeIndex - 1] : null;
   const nextStep = activeIndex < RESEARCH_PATH_STEPS.length - 1 ? RESEARCH_PATH_STEPS[activeIndex + 1] : null;
@@ -848,6 +856,15 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
       setSaveState("Review and export the aggregate Results Record first");
       return;
     }
+    if (
+      activeStage.id === "stage-08"
+      && !activeDraft.completed
+      && isReproducibilityPackageStep
+      && !reproducibilityPackageReady
+    ) {
+      setSaveState("Build, verify, and export the reproducibility package locally first");
+      return;
+    }
     updateStepDraft(activeStep.id, (current) => ({ ...current, completed: !current.completed }));
   }, [
     activeDraft.completed,
@@ -862,10 +879,12 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     isAnalysisPlanStep,
     isAnalysisExecutionStep,
     isAnalysisResultsStep,
+    isReproducibilityPackageStep,
     isDataIntakeStep,
     isDataPreparationStep,
     isExperimentStudioStep,
     isStudyPlanningStep,
+    reproducibilityPackageReady,
     studyDesign.spec,
     updateStepDraft,
   ]);
@@ -1004,6 +1023,12 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
             {isAnalysisResultsStep ? (
               <AnalysisResultsLauncher
                 onReadyChange={setAnalysisResultsReady}
+                projectId={projectId}
+              />
+            ) : null}
+            {isReproducibilityPackageStep ? (
+              <ReproducibilityPackageLauncher
+                onReadyChange={setReproducibilityPackageReady}
                 projectId={projectId}
               />
             ) : null}
