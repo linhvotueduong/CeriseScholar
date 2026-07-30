@@ -77,6 +77,10 @@ const AnalysisExecutionLauncher = dynamic(
   () => import("./AnalysisExecutionLauncher"),
   { loading: () => <ToolLoading label="Analysis Execution" />, ssr: false },
 );
+const AnalysisRobustnessLauncher = dynamic(
+  () => import("./AnalysisRobustnessLauncher"),
+  { loading: () => <ToolLoading label="Robustness and Sensitivity" />, ssr: false },
+);
 const AnalysisResultsLauncher = dynamic(
   () => import("./AnalysisResultsLauncher"),
   { loading: () => <ToolLoading label="Results and Interpretation" />, ssr: false },
@@ -611,6 +615,7 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
   const [dataIntakeReady, setDataIntakeReady] = useState(false);
   const [dataPreparationReady, setDataPreparationReady] = useState(false);
   const [analysisExecutionReady, setAnalysisExecutionReady] = useState(false);
+  const [analysisRobustnessReady, setAnalysisRobustnessReady] = useState(false);
   const [analysisResultsReady, setAnalysisResultsReady] = useState(false);
   const [reproducibilityPackageReady, setReproducibilityPackageReady] = useState(false);
   const saveTimer = useRef<number | null>(null);
@@ -643,6 +648,8 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     activeStage.id === "stage-06" && activeStep.canvas === "data-preparation-launcher";
   const isAnalysisExecutionStep =
     activeStage.id === "stage-06" && activeStep.canvas === "analysis-execution-launcher";
+  const isAnalysisRobustnessStep =
+    activeStage.id === "stage-06" && activeStep.canvas === "analysis-robustness-launcher";
   const isAnalysisResultsStep =
     activeStage.id === "stage-06" && activeStep.canvas === "analysis-results-launcher";
   const isReproducibilityPackageStep =
@@ -850,6 +857,15 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     if (
       activeStage.id === "stage-06"
       && !activeDraft.completed
+      && isAnalysisRobustnessStep
+      && !analysisRobustnessReady
+    ) {
+      setSaveState("Review and export the aggregate robustness record first");
+      return;
+    }
+    if (
+      activeStage.id === "stage-06"
+      && !activeDraft.completed
       && isAnalysisResultsStep
       && !analysisResultsReady
     ) {
@@ -871,6 +887,7 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     activeStage.id,
     activeStep.id,
     analysisExecutionReady,
+    analysisRobustnessReady,
     analysisResultsReady,
     analysisPlanReady,
     dataIntakeReady,
@@ -878,6 +895,7 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     experimentStudioReady,
     isAnalysisPlanStep,
     isAnalysisExecutionStep,
+    isAnalysisRobustnessStep,
     isAnalysisResultsStep,
     isReproducibilityPackageStep,
     isDataIntakeStep,
@@ -1017,6 +1035,12 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
             {isAnalysisExecutionStep ? (
               <AnalysisExecutionLauncher
                 onReadyChange={setAnalysisExecutionReady}
+                projectId={projectId}
+              />
+            ) : null}
+            {isAnalysisRobustnessStep ? (
+              <AnalysisRobustnessLauncher
+                onReadyChange={setAnalysisRobustnessReady}
                 projectId={projectId}
               />
             ) : null}

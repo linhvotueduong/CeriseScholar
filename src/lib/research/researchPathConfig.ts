@@ -24,6 +24,7 @@ export type ResearchCanvasKind =
   | "data-intake-audit-launcher"
   | "data-preparation-launcher"
   | "analysis-execution-launcher"
+  | "analysis-robustness-launcher"
   | "analysis-results-launcher"
   | "reproducibility-package-launcher"
   | "guided";
@@ -287,8 +288,13 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
         checklist: [],
       },
       {
-        ...guided("Test Reliability, Robustness, Sensitivity, or Triangulation", "Robustness", "Challenge the findings with the quality tests appropriate to the methodology.", ["Which robustness, sensitivity, reliability, or triangulation checks were used?", "Which conclusions changed, weakened, or strengthened?"], ["Relevant quality tests are complete", "Differences from the primary result are explained"]),
         id: "stage-06-step-04",
+        title: "Run Reviewed Robustness and Sensitivity Checks",
+        shortTitle: "Robustness",
+        description: "Reproduce primary estimates, inspect bounded method-specific alternatives and leave-one-out influence ranges, and export a researcher-reviewed aggregate robustness record.",
+        canvas: "analysis-robustness-launcher",
+        prompts: [],
+        checklist: [],
       },
       {
         id: "stage-06-step-05",

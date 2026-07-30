@@ -74,9 +74,10 @@ analyses. It records one of:
 
 The researcher must identify the external evidence when a check was performed,
 or state the limitation when it was not. The separate Stage 06 Robustness step
-remains a guided researcher workflow and is not automatically completed by
-Phase 8.4 or Phase 8.5. A future reviewed sensitivity registry remains a
-separate scientific approval boundary.
+is implemented by Phase 8.7A as a reviewed, bounded method-specific registry.
+It is not automatically completed by Phase 8.4 or Phase 8.5. A researcher may
+cite the separately exported Phase 8.7A robustness record in this evidence
+field, but Phase 8.5 does not automatically import or merge that later record.
 
 ## Tables, figures, and export
 

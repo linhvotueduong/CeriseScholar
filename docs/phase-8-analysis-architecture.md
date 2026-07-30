@@ -10,10 +10,12 @@ Status:
 - Phase 8.4 local Analysis Execution implemented on 2026-07-29.
 - Phase 8.5 aggregate Results and Interpretation implemented on 2026-07-29.
 - Phase 8.6 local Reproducibility Package implemented on 2026-07-29.
+- Phase 8.7A reviewed Robustness and Sensitivity implemented on 2026-07-29.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
-stage.
+stage. Phase 8.6 connects the analysis record to that later Stage 08
+preservation work; Phase 8.7A fills the dedicated Stage 06 robustness step.
 
 ## Phase 8.0 outcome
 
@@ -407,6 +409,47 @@ participant-data network path, or cost-bearing infrastructure.
 
 See `phase-8.6-reproducibility-package.md` for the complete file, integrity,
 privacy, environment, and completion-gate contract.
+
+## Phase 8.7A outcome
+
+Phase 8.7A adds a dedicated full-width Reviewed Robustness and Sensitivity
+workspace at `/analysis-robustness/[projectId]`. It replaces the generic
+canvas behind the existing Stage 06 robustness step without changing the
+persisted `stage-06-step-04` ID.
+
+The researcher must re-select the exact Phase 8.3 derived-data package and the
+exact Phase 8.4 aggregate-results package. Cerise verifies their complete
+source chain, confirms that they share the same preparation checksum, and
+independently recomputes every Phase 8.4 primary estimate and complete-case
+sample size before producing a comparison.
+
+The bounded registry adds:
+
+- median, 20% trimmed mean, and leave-one-out mean checks for descriptive
+  analyses;
+- Spearman rank correlation and a leave-one-out Pearson range for correlation;
+- median-difference, trimmed-mean-difference, and leave-one-out raw
+  mean-difference checks for two-group analyses; and
+- an HC3 slope interval and leave-one-out OLS slope range for simple
+  regression.
+
+The checks never automatically exclude an observation. The researcher must
+classify the impact on each conclusion, write an interpretation and remaining
+limits, acknowledge every assessment, confirm the overall record, and export
+it before the Stage 06 step can be completed.
+
+Participant rows remain in the active tab only. Browser storage and the
+exported robustness record contain bounded provenance, aggregate outputs,
+reviews, timestamps, and checksums—not participant rows. Phase 8.7A uses no AI,
+adds no migration or cloud participant-data path, and is not proof of
+robustness, validity, causal identification, or reproducibility.
+
+The Phase 8.6 archive remains the approved fixed 14-file format. The separate
+Phase 8.7A export is not silently inserted into it; a future archive integration
+requires an explicit versioned update.
+
+See `phase-8.7a-reviewed-robustness.md` for the complete method, integrity,
+privacy, review, export, and scientific-boundary contract.
 
 The fixture at `docs/fixtures/phase-8-analysis-contract-v1.json` documents the
 minimum schema shape used for cross-runtime review.
