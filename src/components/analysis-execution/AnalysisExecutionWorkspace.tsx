@@ -118,6 +118,22 @@ function methodForSpecification(specification: AnalysisExecutionSpecification | 
     : ANALYSIS_METHOD_REGISTRY.find((method) => method.id === specification?.methodId) ?? null;
 }
 
+function predictorFieldCopy(methodId: AnalysisMethodId | "not-selected" | undefined): {
+  label: string;
+  placeholder: string;
+} {
+  if (methodId === "two-group-mean-difference") {
+    return { label: "Group variable", placeholder: "Select group variable" };
+  }
+  if (methodId === "paired-samples-mean-difference") {
+    return { label: "Paired variable", placeholder: "Select paired variable" };
+  }
+  if (methodId === "pearson-correlation" || methodId === "spearman-rank-correlation") {
+    return { label: "Second variable", placeholder: "Select second variable" };
+  }
+  return { label: "Predictor variable", placeholder: "Select predictor" };
+}
+
 function GateItem({ complete, label }: { complete: boolean; label: string }) {
   return (
     <li className={complete ? styles.gateComplete : ""}>
@@ -199,6 +215,7 @@ export default function AnalysisExecutionWorkspace({
     [activeSpecification, results],
   );
   const selectedMethod = methodForSpecification(activeSpecification);
+  const predictorCopy = predictorFieldCopy(activeSpecification?.methodId);
   const alignment = useMemo(
     () => activeSpecification && activeQuestion
       ? analysisSpecificationAlignment(activeSpecification, activeQuestion)
@@ -717,7 +734,7 @@ export default function AnalysisExecutionWorkspace({
                     </select>
                   </label>
                   <label>
-                    <span>{activeSpecification?.methodId === "two-group-mean-difference" ? "Group variable" : "Predictor variable"}</span>
+                    <span>{predictorCopy.label}</span>
                     <select
                       disabled={!selectedMethod?.requiresPredictor}
                       onChange={(event) => updateActiveSpecification((current) => ({
@@ -727,7 +744,7 @@ export default function AnalysisExecutionWorkspace({
                       value={activeSpecification?.predictorVariable ?? ""}
                     >
                       <option value="">
-                        {selectedMethod?.requiresPredictor ? "Select predictor" : "Not used"}
+                        {selectedMethod?.requiresPredictor ? predictorCopy.placeholder : "Not used"}
                       </option>
                       {variableOptions.map((name) => <option key={name} value={name}>{name}</option>)}
                     </select>

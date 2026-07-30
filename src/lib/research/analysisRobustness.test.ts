@@ -361,8 +361,8 @@ test("runs the bounded method-specific registry against independently recomputed
   const cases: Array<{
     methodId: AnalysisMethodId;
     alternative: number;
-    influenceMinimum: number;
-    influenceMaximum: number;
+    influenceMinimum: number | null;
+    influenceMaximum: number | null;
   }> = [
     {
       methodId: "descriptive-summary",
@@ -377,10 +377,22 @@ test("runs the bounded method-specific registry against independently recomputed
       influenceMaximum: 0.96908565,
     },
     {
+      methodId: "spearman-rank-correlation",
+      alternative: 0.95709586,
+      influenceMinimum: null,
+      influenceMaximum: null,
+    },
+    {
       methodId: "two-group-mean-difference",
       alternative: -9,
       influenceMinimum: -11.95,
       influenceMaximum: -8.7,
+    },
+    {
+      methodId: "paired-samples-mean-difference",
+      alternative: 6,
+      influenceMinimum: 5.55555556,
+      influenceMaximum: 6.88888889,
     },
     {
       methodId: "simple-linear-regression",
@@ -413,8 +425,12 @@ test("runs the bounded method-specific registry against independently recomputed
     const analysis = run.analyses[0];
     assert.equal(analysis.methodId, expected.methodId);
     assert.ok(Math.abs((analysis.alternatives[0].estimate ?? 0) - expected.alternative) < 1e-7);
-    assert.equal(analysis.influence?.minimumEstimate, expected.influenceMinimum);
-    assert.equal(analysis.influence?.maximumEstimate, expected.influenceMaximum);
+    if (expected.influenceMinimum === null || expected.influenceMaximum === null) {
+      assert.equal(analysis.influence, null);
+    } else {
+      assert.equal(analysis.influence?.minimumEstimate, expected.influenceMinimum);
+      assert.equal(analysis.influence?.maximumEstimate, expected.influenceMaximum);
+    }
     assert.equal(analysis.requiresAttention, false);
     if (expected.methodId === "simple-linear-regression") {
       assert.deepEqual(analysis.alternatives[0].interval, {

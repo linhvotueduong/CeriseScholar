@@ -241,10 +241,20 @@ const ROBUSTNESS_REGISTRY: Readonly<Record<AnalysisMethodId, {
     influenceCheck: "Leave-one-out Pearson-r range",
     boundary: "Rank correlation changes the association estimand and is not a replacement model.",
   },
+  "spearman-rank-correlation": {
+    primaryCheck: "Pearson linear-correlation comparison",
+    influenceCheck: "No automatic rank-influence check in this batch",
+    boundary: "Pearson correlation changes the association estimand; rank-specific influence review remains external.",
+  },
   "two-group-mean-difference": {
     primaryCheck: "Median and 20% trimmed-mean group contrasts",
     influenceCheck: "Leave-one-out raw mean-difference range",
     boundary: "Robust-center contrasts do not replace a prespecified inferential model.",
+  },
+  "paired-samples-mean-difference": {
+    primaryCheck: "Median and 20% trimmed paired-difference comparison",
+    influenceCheck: "Leave-one-out paired mean-difference range",
+    boundary: "Robust paired centers change the estimand and do not repair invalid pairing or dependence.",
   },
   "simple-linear-regression": {
     primaryCheck: "HC3 heteroskedasticity-consistent slope interval",
@@ -823,6 +833,48 @@ function correlationRobustness(
   );
 }
 
+function spearmanRobustness(
+  rows: PreparedResponseRow[],
+  result: AnalysisMethodResult,
+): RobustnessAnalysisResult {
+  const pairs = numericPairs(rows, result.predictorVariable, result.outcomeVariable);
+  const primary = spearman(pairs.x, pairs.y);
+  if (primary === null) throw new Error(`${result.researchQuestionId}: Spearman rho is not estimable.`);
+  primaryMatches(result, primary, pairs.x.length);
+  const linear = pearson(pairs.x, pairs.y);
+  const consistent = linear !== null && directionConsistent(primary, linear);
+  return commonResult(
+    result,
+    [
+      alternative(
+        "pearson-linear-correlation",
+        "Pearson linear correlation",
+        linear,
+        "Pearson correlation of the same complete numeric pairs without rank transformation.",
+      ),
+    ],
+    null,
+    linear === null
+      ? "not-estimable"
+      : consistent
+        ? "direction-consistent"
+        : "direction-different",
+    linear === null
+      ? "The linear comparison is not estimable because at least one raw variable has zero variance."
+      : consistent
+        ? "Spearman and Pearson estimates have the same observed direction."
+        : "Spearman and Pearson estimates have different observed directions and require explanation.",
+    [
+      "The primary Spearman coefficient was independently recomputed from deterministic average ranks.",
+      "The Pearson comparison uses the exact same complete pairs without rank transformation.",
+    ],
+    [
+      "Pearson correlation assesses linear association and is not a replacement for the prespecified monotonic estimand.",
+      "This batch does not calculate a rank-specific leave-one-out range; influence, clustered data, and missing-data mechanisms remain external review items.",
+    ],
+  );
+}
+
 function meanDifferenceRobustness(
   rows: PreparedResponseRow[],
   result: AnalysisMethodResult,
@@ -869,6 +921,54 @@ function meanDifferenceRobustness(
     [
       "Median and trimmed-mean differences change the estimand and do not replace Welch inference.",
       "These checks do not address dependence, clustering, multiplicity, or missing-data mechanisms.",
+    ],
+  );
+}
+
+function pairedMeanDifferenceRobustness(
+  rows: PreparedResponseRow[],
+  result: AnalysisMethodResult,
+): RobustnessAnalysisResult {
+  const pairs = numericPairs(rows, result.predictorVariable, result.outcomeVariable);
+  const differences = pairs.y.map((outcome, index) => outcome - pairs.x[index]);
+  if (differences.length < 2) {
+    throw new Error(`${result.researchQuestionId}: At least two complete pairs are required.`);
+  }
+  const primary = mean(differences);
+  primaryMatches(result, primary, differences.length);
+  const medianDifference = median(differences);
+  const trimmedDifference = trimmedMean(differences);
+  const comparisonEstimate = trimmedDifference ?? medianDifference;
+  const consistent = directionConsistent(primary, comparisonEstimate);
+  const influence = leaveOneOutMean(differences, primary);
+  return commonResult(
+    result,
+    [
+      alternative(
+        "paired-median-difference",
+        "Median paired difference",
+        medianDifference,
+        "Observed median of the same complete within-row differences.",
+      ),
+      alternative(
+        "paired-trimmed-mean-difference",
+        "20% trimmed paired mean difference",
+        trimmedDifference,
+        "Equal trimming from both tails of the paired-difference distribution; no source row is deleted.",
+      ),
+    ],
+    influence,
+    consistent ? "direction-consistent" : "direction-different",
+    consistent
+      ? "The primary and selected robust paired-difference centers have the same observed direction."
+      : "The primary and selected robust paired-difference centers have different observed directions.",
+    [
+      "The primary paired mean difference was independently recomputed as outcome minus paired variable within each complete row.",
+      "Both alternatives retain the same complete-pair boundary and signed variable order.",
+    ],
+    [
+      "Median and trimmed paired differences change the estimand and do not replace paired Student-t inference.",
+      "These checks do not validate pairing, independence across units, carryover, clustering, multiplicity, or missing-data mechanisms.",
     ],
   );
 }
@@ -946,8 +1046,14 @@ export function buildRobustnessAnalysisResults(
     if (result.methodId === "pearson-correlation") {
       return correlationRobustness(preparedPackage.responses, result);
     }
+    if (result.methodId === "spearman-rank-correlation") {
+      return spearmanRobustness(preparedPackage.responses, result);
+    }
     if (result.methodId === "two-group-mean-difference") {
       return meanDifferenceRobustness(preparedPackage.responses, result);
+    }
+    if (result.methodId === "paired-samples-mean-difference") {
+      return pairedMeanDifferenceRobustness(preparedPackage.responses, result);
     }
     return regressionRobustness(preparedPackage.responses, result);
   });

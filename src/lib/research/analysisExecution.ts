@@ -37,7 +37,9 @@ export type AnalysisConfidenceLevel = (typeof ANALYSIS_CONFIDENCE_LEVELS)[number
 export type AnalysisMethodId =
   | "descriptive-summary"
   | "pearson-correlation"
+  | "spearman-rank-correlation"
   | "two-group-mean-difference"
+  | "paired-samples-mean-difference"
   | "simple-linear-regression";
 
 export type AnalysisDiagnosticSeverity = "pass" | "advisory" | "blocking";
@@ -86,6 +88,21 @@ export const ANALYSIS_METHOD_REGISTRY: ReadonlyArray<AnalysisMethodDefinition> =
     requiresPredictor: true,
   },
   {
+    id: "spearman-rank-correlation",
+    label: "Spearman rank correlation",
+    shortLabel: "Spearman",
+    description: "Estimate monotonic association between two numeric variables using deterministic average ranks.",
+    effectSize: "Spearman rho",
+    confidenceInterval: "Bonett–Wright Fisher-z interval for rho",
+    assumptions: [
+      "Both variables are numeric, meaningfully ordered, and have non-zero rank variance.",
+      "The association is monotonic and complete pairs are independent.",
+      "The Bonett–Wright interval is a large-sample approximation and requires extra caution for small samples or correlations near ±1.",
+    ],
+    minimumSample: 4,
+    requiresPredictor: true,
+  },
+  {
     id: "two-group-mean-difference",
     label: "Two-group mean difference",
     shortLabel: "Mean difference",
@@ -98,6 +115,21 @@ export const ANALYSIS_METHOD_REGISTRY: ReadonlyArray<AnalysisMethodDefinition> =
       "Welch inference allows unequal variances but remains sensitive to strong skew at small samples.",
     ],
     minimumSample: 4,
+    requiresPredictor: true,
+  },
+  {
+    id: "paired-samples-mean-difference",
+    label: "Paired-samples mean difference",
+    shortLabel: "Paired difference",
+    description: "Estimate the mean within-row difference between two numeric measurements using paired Student-t inference.",
+    effectSize: "Raw paired mean difference and Cohen’s dz",
+    confidenceInterval: "Student-t interval for the paired mean difference",
+    assumptions: [
+      "The two selected variables are numeric measurements paired within the declared unit of analysis.",
+      "Complete paired differences are independent across units.",
+      "The paired-difference interval assumes an approximately normal sampling distribution and is sensitive to strong skew at small samples.",
+    ],
+    minimumSample: 2,
     requiresPredictor: true,
   },
   {
@@ -549,12 +581,23 @@ function commonDiagnostics(
 function planMethodMatches(methodId: AnalysisMethodId, plannedMethod: string): boolean {
   const normalized = plannedMethod.toLocaleLowerCase();
   if (methodId === "descriptive-summary") {
+    if (/(difference|paired|welch|t[- ]?test|regression|correlation)/.test(normalized)) {
+      return false;
+    }
     return /(descriptive|summary|mean|median)/.test(normalized);
   }
+  if (methodId === "spearman-rank-correlation") {
+    return /(spearman|rank[- ]?(order )?correlation|monotonic association)/.test(normalized);
+  }
   if (methodId === "pearson-correlation") {
+    if (/(spearman|rank[- ]?(order )?correlation)/.test(normalized)) return false;
     return /(pearson|correlation|correlational)/.test(normalized);
   }
+  if (methodId === "paired-samples-mean-difference") {
+    return /(paired|dependent|matched|within[- ]subject).*(t[- ]?test|mean difference|comparison)|paired[- ]samples/.test(normalized);
+  }
   if (methodId === "two-group-mean-difference") {
+    if (/(paired|dependent|matched|within[- ]subject)/.test(normalized)) return false;
     return /(welch|independent.*t|t[- ]?test|mean difference|two[- ]?group)/.test(normalized);
   }
   return /(simple linear|linear regression|linear model|ordinary least squares|ols)/.test(normalized);
@@ -707,6 +750,35 @@ function pearsonCoefficient(x: number[], y: number[]): number {
   return covariance / Math.sqrt(sumSquaresX * sumSquaresY);
 }
 
+function averageRanks(values: number[]): {
+  ranks: number[];
+  tiedGroups: number;
+  tiedObservations: number;
+} {
+  const indexed = values
+    .map((value, index) => ({ value, index }))
+    .sort((left, right) => left.value - right.value || left.index - right.index);
+  const ranks = Array<number>(values.length);
+  let tiedGroups = 0;
+  let tiedObservations = 0;
+  let start = 0;
+  while (start < indexed.length) {
+    let end = start + 1;
+    while (end < indexed.length && indexed[end].value === indexed[start].value) end += 1;
+    const groupSize = end - start;
+    if (groupSize > 1) {
+      tiedGroups += 1;
+      tiedObservations += groupSize;
+    }
+    const averageRank = (start + 1 + end) / 2;
+    for (let index = start; index < end; index += 1) {
+      ranks[indexed[index].index] = averageRank;
+    }
+    start = end;
+  }
+  return { ranks, tiedGroups, tiedObservations };
+}
+
 function buildCorrelationResult(
   rows: PreparedResponseRow[],
   specification: AnalysisExecutionSpecification,
@@ -784,6 +856,114 @@ function buildCorrelationResult(
       "Only rows with both selected variables present and numeric are analyzed.",
       "The interval uses the Fisher-z approximation and requires at least four complete pairs.",
       "No causal or non-linear interpretation is implied.",
+    ],
+  };
+}
+
+function buildSpearmanResult(
+  rows: PreparedResponseRow[],
+  specification: AnalysisExecutionSpecification,
+  question: AnalysisPlanResearchQuestion,
+): AnalysisMethodResult {
+  const pairs = numericPairs(
+    rows,
+    specification.predictorVariable,
+    specification.outcomeVariable,
+  );
+  const diagnostics = commonDiagnostics(rows.length, pairs.x.length, pairs.invalid, 4);
+  const predictorRanks = averageRanks(pairs.x);
+  const outcomeRanks = averageRanks(pairs.y);
+  const correlation = pearsonCoefficient(predictorRanks.ranks, outcomeRanks.ranks);
+  diagnostics.push({
+    id: "rank-variance-present",
+    severity: Number.isFinite(correlation) ? "pass" : "blocking",
+    label: "Rank variance present",
+    detail: Number.isFinite(correlation)
+      ? "Both selected variables have non-zero observed rank variance."
+      : "At least one selected variable has zero rank variance, so Spearman rho is undefined.",
+  });
+  const tiedGroups = predictorRanks.tiedGroups + outcomeRanks.tiedGroups;
+  const tiedObservations = predictorRanks.tiedObservations + outcomeRanks.tiedObservations;
+  diagnostics.push({
+    id: "rank-ties",
+    severity: "pass",
+    label: "Deterministic tie handling",
+    detail: tiedGroups === 0
+      ? "No tied rank group was observed across the two selected variables."
+      : `${tiedGroups} tied rank group(s) covering ${tiedObservations} variable-observation entries use average ranks.`,
+  });
+  diagnostics.push({
+    id: "monotonicity-review",
+    severity: "advisory",
+    label: "Monotonicity and influence review",
+    detail: "Spearman rho summarizes monotonic rank association. Inspect the paired pattern and plausible influential cases in approved statistical software.",
+  });
+  diagnostics.push({
+    id: "interval-approximation",
+    severity: pairs.x.length >= 20 && Math.abs(correlation) < 0.95
+      ? "pass"
+      : "advisory",
+    label: "Interval approximation",
+    detail: pairs.x.length >= 20 && Math.abs(correlation) < 0.95
+      ? "The complete-pair count and observed rho are within this registry’s preferred Bonett–Wright approximation range."
+      : "The Bonett–Wright interval is a large-sample approximation; small samples or |rho| near 1 require extra caution and external review.",
+  });
+  const blocking = blockingDiagnostic(diagnostics);
+  if (blocking) throw new Error(`${question.id}: ${blocking.detail}`);
+  const boundedCorrelation = Math.max(-0.999999, Math.min(0.999999, correlation));
+  const fisher = Math.atanh(boundedCorrelation);
+  const fisherStandardError = Math.sqrt(
+    (1 + (boundedCorrelation ** 2) / 2) / (pairs.x.length - 3),
+  );
+  const standardError = (1 - boundedCorrelation ** 2) * fisherStandardError;
+  const margin = normalCritical(specification.confidenceLevel) * fisherStandardError;
+  const lower = Math.tanh(fisher - margin);
+  const upper = Math.tanh(fisher + margin);
+  const planAlignment = analysisSpecificationAlignment(specification, question).aligned
+    ? "aligned"
+    : "deviation-recorded";
+  return {
+    analysisId: specification.id,
+    researchQuestionId: question.id,
+    researchQuestion: question.question,
+    methodId: "spearman-rank-correlation",
+    methodLabel: methodDefinition("spearman-rank-correlation").label,
+    outcomeVariable: specification.outcomeVariable,
+    predictorVariable: specification.predictorVariable,
+    planAlignment,
+    completeSampleSize: pairs.x.length,
+    excludedMissingOrInvalid: pairs.missing + pairs.invalid,
+    primaryEstimate: createMetric("spearman-rho", "Spearman rho", correlation),
+    metrics: [
+      createMetric("spearman-rho", "Spearman rho", correlation),
+      createMetric("spearman-se", "Approximate SE", standardError),
+      createMetric(
+        "complete-rate",
+        "Complete pairs",
+        (pairs.x.length / rows.length) * 100,
+        1,
+      ),
+      createMetric(
+        "missing-rate",
+        "Missing / invalid",
+        ((pairs.missing + pairs.invalid) / rows.length) * 100,
+        1,
+      ),
+    ],
+    interval: {
+      label: "Spearman rho confidence interval",
+      level: specification.confidenceLevel,
+      lower: round(lower),
+      upper: round(upper),
+      method: "Two-sided Bonett–Wright Fisher-z interval for Spearman rho.",
+    },
+    diagnostics,
+    assumptions: [...methodDefinition("spearman-rank-correlation").assumptions],
+    computationNotes: [
+      "Only rows with both selected variables present and numeric are analyzed.",
+      "Spearman rho is Pearson correlation applied to deterministic average ranks, including tied values.",
+      "The interval uses the Bonett–Wright variance approximation on the Fisher-z scale; no p-value is calculated.",
+      "No causal, linear, or untied-rank interpretation is implied.",
     ],
   };
 }
@@ -923,6 +1103,107 @@ function buildMeanDifferenceResult(
         ? "Hedges g is omitted because the pooled sample standard deviation is zero."
         : "Hedges g uses the pooled sample standard deviation with a small-sample correction.",
       "No multiplicity adjustment is applied automatically.",
+    ],
+  };
+}
+
+function buildPairedMeanDifferenceResult(
+  rows: PreparedResponseRow[],
+  specification: AnalysisExecutionSpecification,
+  question: AnalysisPlanResearchQuestion,
+): AnalysisMethodResult {
+  const pairs = numericPairs(
+    rows,
+    specification.predictorVariable,
+    specification.outcomeVariable,
+  );
+  const diagnostics = commonDiagnostics(rows.length, pairs.x.length, pairs.invalid, 2);
+  const independenceDiagnostic = diagnostics.find(
+    (diagnostic) => diagnostic.id === "independence-review",
+  );
+  if (independenceDiagnostic) {
+    independenceDiagnostic.label = "Pairing and independence require researcher review";
+    independenceDiagnostic.detail = "Each row must represent one valid pair for the declared unit of analysis, and complete pairs must be independent across units.";
+  }
+  const differences = pairs.y.map((outcome, index) => outcome - pairs.x[index]);
+  const averageDifference = differences.length > 0 ? mean(differences) : 0;
+  const differenceVariance = differences.length > 1
+    ? sampleVariance(differences, averageDifference)
+    : 0;
+  const differenceStandardDeviation = Math.sqrt(differenceVariance);
+  diagnostics.push({
+    id: "difference-variance",
+    severity: differenceStandardDeviation > 0 ? "pass" : "advisory",
+    label: "Paired-difference variance",
+    detail: differenceStandardDeviation > 0
+      ? "The complete paired differences have non-zero observed variance."
+      : "Every complete paired difference is identical. The raw difference remains descriptive, but Cohen’s dz is undefined and the interval is degenerate.",
+  });
+  diagnostics.push({
+    id: "difference-distribution-review",
+    severity: differences.length >= 30 ? "pass" : "advisory",
+    label: "Paired-difference distribution review",
+    detail: differences.length >= 30
+      ? "At least 30 complete pairs are available; still inspect the paired-difference shape and design assumptions."
+      : "Fewer than 30 complete pairs are available. Strong skew or influential paired differences can materially affect Student-t inference.",
+  });
+  const blocking = blockingDiagnostic(diagnostics);
+  if (blocking) throw new Error(`${question.id}: ${blocking.detail}`);
+  const degreesOfFreedom = differences.length - 1;
+  const standardError = differenceStandardDeviation / Math.sqrt(differences.length);
+  const critical = studentTCritical(specification.confidenceLevel, degreesOfFreedom);
+  const margin = critical * standardError;
+  const cohensDz = differenceStandardDeviation === 0
+    ? null
+    : averageDifference / differenceStandardDeviation;
+  const tStatistic = standardError === 0 ? null : averageDifference / standardError;
+  const planAlignment = analysisSpecificationAlignment(specification, question).aligned
+    ? "aligned"
+    : "deviation-recorded";
+  const signedLabel = `${specification.outcomeVariable} − ${specification.predictorVariable}`;
+  return {
+    analysisId: specification.id,
+    researchQuestionId: question.id,
+    researchQuestion: question.question,
+    methodId: "paired-samples-mean-difference",
+    methodLabel: methodDefinition("paired-samples-mean-difference").label,
+    outcomeVariable: specification.outcomeVariable,
+    predictorVariable: specification.predictorVariable,
+    planAlignment,
+    completeSampleSize: differences.length,
+    excludedMissingOrInvalid: pairs.missing + pairs.invalid,
+    primaryEstimate: createMetric("paired-mean-difference", signedLabel, averageDifference),
+    metrics: [
+      createMetric("paired-mean-difference", signedLabel, averageDifference),
+      createMetric("outcome-mean", `${specification.outcomeVariable} mean`, mean(pairs.y)),
+      createMetric("paired-variable-mean", `${specification.predictorVariable} mean`, mean(pairs.x)),
+      createMetric("difference-sd", "Paired-difference SD", differenceStandardDeviation),
+      ...(cohensDz === null ? [] : [createMetric("cohens-dz", "Cohen’s dz", cohensDz)]),
+      ...(tStatistic === null ? [] : [createMetric("paired-t", "Paired t", tStatistic)]),
+      createMetric("paired-df", "Paired df", degreesOfFreedom, 0),
+      createMetric(
+        "missing-rate",
+        "Missing / invalid",
+        ((pairs.missing + pairs.invalid) / rows.length) * 100,
+        1,
+      ),
+    ],
+    interval: {
+      label: "Paired mean-difference confidence interval",
+      level: specification.confidenceLevel,
+      lower: round(averageDifference - margin),
+      upper: round(averageDifference + margin),
+      method: "Two-sided Student-t interval for the mean of complete within-row differences.",
+    },
+    diagnostics,
+    assumptions: [...methodDefinition("paired-samples-mean-difference").assumptions],
+    computationNotes: [
+      `The signed estimate is ${specification.outcomeVariable} minus ${specification.predictorVariable} within each complete row.`,
+      "Missing or invalid values remove the complete pair, not one measurement independently.",
+      cohensDz === null
+        ? "Cohen’s dz is omitted because the paired-difference sample standard deviation is zero."
+        : "Cohen’s dz divides the paired mean difference by the sample standard deviation of paired differences.",
+      "No p-value, multiplicity adjustment, carryover correction, clustering adjustment, or automatic exclusion is applied.",
     ],
   };
 }
@@ -1071,8 +1352,14 @@ function executeSpecification(
   if (specification.methodId === "pearson-correlation") {
     return buildCorrelationResult(rows, specification, question);
   }
+  if (specification.methodId === "spearman-rank-correlation") {
+    return buildSpearmanResult(rows, specification, question);
+  }
   if (specification.methodId === "two-group-mean-difference") {
     return buildMeanDifferenceResult(rows, specification, question);
+  }
+  if (specification.methodId === "paired-samples-mean-difference") {
+    return buildPairedMeanDifferenceResult(rows, specification, question);
   }
   return buildRegressionResult(rows, specification, question);
 }

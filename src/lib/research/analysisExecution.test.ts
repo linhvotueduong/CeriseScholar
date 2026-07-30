@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   buildAnalysisResultsPackage,
@@ -55,6 +56,29 @@ interface Fixture {
   outcome: string;
   predictor: string;
   group: string;
+}
+
+interface QuantitativeReference {
+  id: string;
+  methodId: AnalysisMethodId;
+  confidenceLevel: 0.95;
+  predictor?: number[];
+  pairedVariable?: number[];
+  outcome: number[];
+  expected: {
+    completeSampleSize: number;
+    estimate?: number;
+    standardError?: number;
+    meanDifference?: number;
+    tStatistic?: number;
+    degreesOfFreedom?: number;
+    lower: number;
+    upper: number;
+  };
+  effectSizeCheck?: {
+    differenceStandardDeviation: number;
+    cohensDz: number;
+  };
 }
 
 async function fixture(): Promise<Fixture> {
@@ -268,6 +292,58 @@ function configure(
   };
 }
 
+async function referencePreparedPackage(
+  current: Fixture,
+  reference: QuantitativeReference,
+): Promise<{
+  preparation: DataPreparationDocument;
+  preparedPackage: DataPreparationPackage;
+}> {
+  const predictorValues = reference.predictor ?? reference.pairedVariable;
+  assert.ok(predictorValues);
+  assert.equal(predictorValues.length, reference.outcome.length);
+  const rows = reference.outcome.map((outcomeValue, index) => ({
+    ...structuredClone(
+      current.preparedPackage.responses[index % current.preparedPackage.responses.length],
+    ),
+    _cerise_session_id: `reference-session-${index + 1}`,
+    [current.outcome]: outcomeValue,
+    [current.predictor]: predictorValues[index],
+  }));
+  const responseChecksum = await sha256Checksum({
+    columns: current.preparedPackage.responseColumns,
+    rows,
+  });
+  const unsignedPackage = {
+    ...structuredClone(current.preparedPackage),
+    responses: rows,
+    integrity: {
+      responseChecksum,
+      trialChecksum: current.preparedPackage.integrity.trialChecksum,
+    },
+  };
+  const packageChecksum = await sha256Checksum(unsignedPackage);
+  const preparedPackage: DataPreparationPackage = {
+    ...unsignedPackage,
+    integrity: {
+      ...unsignedPackage.integrity,
+      packageChecksum,
+    },
+  };
+  assert.ok(current.preparation.lastRun);
+  const preparation: DataPreparationDocument = {
+    ...structuredClone(current.preparation),
+    lastRun: {
+      ...current.preparation.lastRun,
+      inputRows: rows.length,
+      outputRows: rows.length,
+      responseChecksum,
+      packageChecksum,
+    },
+  };
+  return { preparation, preparedPackage };
+}
+
 test("student-t critical values match standard reference values", () => {
   assert.ok(Math.abs(studentTCritical(0.95, 10) - 2.228139) < 0.00001);
   assert.ok(Math.abs(studentTCritical(0.95, 30) - 2.042272) < 0.00001);
@@ -312,7 +388,9 @@ test("executes every reviewed registry method with deterministic aggregate outpu
   }> = [
     { method: "descriptive-summary", predictor: "", estimate: 12 },
     { method: "pearson-correlation", predictor: current.predictor, estimate: 1 },
+    { method: "spearman-rank-correlation", predictor: current.predictor, estimate: 1 },
     { method: "two-group-mean-difference", predictor: current.group, estimate: -10 },
+    { method: "paired-samples-mean-difference", predictor: current.predictor, estimate: 6.5 },
     { method: "simple-linear-regression", predictor: current.predictor, estimate: 2 },
   ];
   for (const item of cases) {
@@ -355,6 +433,122 @@ test("executes every reviewed registry method with deterministic aggregate outpu
     assert.equal(result.package.participantRowsIncluded, false);
     assert.equal(result.document.readiness.status, "needs-review");
   }
+});
+
+test("matches independent R reference results for the Phase 8.7C method batch", async () => {
+  const source = await readFile(
+    new URL(
+      "../../../docs/fixtures/phase-8.7c-quantitative-engine-reference-v1.json",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const fixtureDocument = JSON.parse(source) as {
+    schemaVersion: number;
+    references: QuantitativeReference[];
+  };
+  assert.equal(fixtureDocument.schemaVersion, 1);
+  assert.equal(fixtureDocument.references.length, 2);
+
+  for (const reference of fixtureDocument.references) {
+    const current = await fixture();
+    const referencePackage = await referencePreparedPackage(current, reference);
+    const envelope = {
+      exportType: "cerise-derived-data-package",
+      exportBoundary: "Potentially identifying local research data.",
+      exportedAt: referencePackage.preparation.exportedAt,
+      package: referencePackage.preparedPackage,
+    };
+    const verifiedPackage = await verifyPreparedAnalysisPackage(
+      envelope,
+      current.release,
+      current.plan,
+      referencePackage.preparation,
+    );
+    const created = createAnalysisExecutionDocument(
+      current.release,
+      current.plan,
+      referencePackage.preparation,
+      "2026-07-29T17:00:00.000Z",
+    );
+    assert.ok(created);
+    const configured = updateAnalysisSpecifications(
+      created,
+      [{
+        ...configure(
+          created.specifications[0],
+          reference.methodId,
+          current.outcome,
+          current.predictor,
+        ),
+        confidenceLevel: reference.confidenceLevel,
+      }],
+      current.release,
+      current.plan,
+      referencePackage.preparation,
+      "2026-07-29T17:10:00.000Z",
+    );
+    const run = await buildAnalysisResultsPackage({
+      document: configured,
+      preparedPackage: verifiedPackage,
+      release: current.release,
+      plan: current.plan,
+      preparation: referencePackage.preparation,
+      executedAt: "2026-07-29T17:20:00.000Z",
+    });
+    const result = run.package.results[0];
+    assert.equal(result.completeSampleSize, reference.expected.completeSampleSize);
+    const expectedEstimate = reference.expected.estimate
+      ?? reference.expected.meanDifference;
+    assert.ok(expectedEstimate !== undefined);
+    assert.ok(Math.abs(result.primaryEstimate.value - expectedEstimate) < 1e-6);
+    assert.ok(Math.abs(result.interval.lower - reference.expected.lower) < 1e-6);
+    assert.ok(Math.abs(result.interval.upper - reference.expected.upper) < 1e-6);
+
+    if (reference.methodId === "spearman-rank-correlation") {
+      const standardError = result.metrics.find((metric) => metric.id === "spearman-se");
+      assert.ok(standardError && reference.expected.standardError !== undefined);
+      assert.ok(Math.abs(standardError.value - reference.expected.standardError) < 1e-6);
+    } else {
+      const tStatistic = result.metrics.find((metric) => metric.id === "paired-t");
+      const degreesOfFreedom = result.metrics.find((metric) => metric.id === "paired-df");
+      const differenceSd = result.metrics.find((metric) => metric.id === "difference-sd");
+      const cohensDz = result.metrics.find((metric) => metric.id === "cohens-dz");
+      assert.ok(tStatistic && reference.expected.tStatistic !== undefined);
+      assert.ok(degreesOfFreedom && reference.expected.degreesOfFreedom !== undefined);
+      assert.ok(differenceSd && cohensDz && reference.effectSizeCheck);
+      assert.ok(Math.abs(tStatistic.value - reference.expected.tStatistic) < 1e-6);
+      assert.equal(degreesOfFreedom.value, reference.expected.degreesOfFreedom);
+      assert.ok(
+        Math.abs(
+          differenceSd.value - reference.effectSizeCheck.differenceStandardDeviation
+        ) < 1e-6,
+      );
+      assert.ok(Math.abs(cohensDz.value - reference.effectSizeCheck.cohensDz) < 1e-6);
+    }
+    assert.equal(run.package.participantRowsIncluded, false);
+  }
+});
+
+test("infers the expanded methods without confusing paired and independent plans", async () => {
+  const current = await fixture();
+  const spearmanPlan = structuredClone(current.plan);
+  spearmanPlan.researchQuestions[0].plannedMethod = "Spearman rank correlation";
+  const spearman = createAnalysisExecutionDocument(
+    current.release,
+    spearmanPlan,
+    current.preparation,
+  );
+  assert.equal(spearman?.specifications[0].methodId, "spearman-rank-correlation");
+
+  const pairedPlan = structuredClone(current.plan);
+  pairedPlan.researchQuestions[0].plannedMethod = "Paired-samples t-test";
+  const paired = createAnalysisExecutionDocument(
+    current.release,
+    pairedPlan,
+    current.preparation,
+  );
+  assert.equal(paired?.specifications[0].methodId, "paired-samples-mean-difference");
 });
 
 test("persists only execution metadata and reaches the reviewed/exported gate", async () => {

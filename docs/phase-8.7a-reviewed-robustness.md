@@ -35,15 +35,20 @@ or provenance field fails closed.
 
 ## Reviewed method-specific registry
 
-Phase 8.7A supports only the four Phase 8.4 registry methods:
+Phase 8.7A supports the six reviewed Phase 8.4/8.7C registry methods:
 
 - **Descriptive mean:** observed median, 20% trimmed mean, and leave-one-out
   mean range.
 - **Pearson correlation:** Spearman correlation using deterministic average
   ranks and a leave-one-out Pearson-correlation range.
+- **Spearman rank correlation:** independently recomputed Spearman rho and a
+  same-pair Pearson linear-correlation comparison. Batch 1 deliberately leaves
+  rank-specific influence analysis as an explicit limitation.
 - **Two-group Welch analysis:** group median difference, group 20% trimmed-mean
   difference, and a leave-one-out raw mean-difference range. Group order
   remains the deterministic lexical order used for the primary estimate.
+- **Paired-samples mean difference:** median and 20% trimmed paired-difference
+  comparisons plus a leave-one-pair-out mean-difference range.
 - **Simple OLS regression:** the same OLS slope with an HC3
   leverage-adjusted heteroskedasticity-consistent interval and a leave-one-out
   OLS slope range.
@@ -125,7 +130,7 @@ Phase 8.7A is not general statistical software. It does not add:
 - AI access to participant or aggregate robustness data.
 
 Those methods require separate scientific and engineering approval rather than
-being inferred from the current four-method registry.
+being inferred from the current six-method registry.
 
 ## Relationship to Phase 8.5 and Phase 8.6
 

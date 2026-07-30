@@ -13,6 +13,7 @@ Status:
 - Phase 8.7A reviewed Robustness and Sensitivity implemented on 2026-07-29.
 - Phase 8.7B local Data-Quality and Descriptive Review implemented on
   2026-07-29.
+- Phase 8.7C Quantitative Engine Expansion batch 1 implemented on 2026-07-29.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
@@ -20,6 +21,8 @@ stage. Phase 8.6 connects the analysis record to that later Stage 08
 preservation work; Phase 8.7A fills the dedicated Stage 06 robustness step.
 Phase 8.7B replaces the remaining generic Stage 06 quality-check canvas while
 preserving its persisted step ID.
+Phase 8.7C expands the existing Phase 8.4 execution and Phase 8.7A robustness
+registries without adding or renumbering a Research Path step.
 
 ## Phase 8.0 outcome
 
@@ -272,11 +275,16 @@ Any changed cell, checksum, release, or preparation receipt fails closed.
 
 ### Reviewed method registry
 
-The initial bounded registry contains:
+The initial bounded registry contained four methods. Phase 8.7C expands the
+same registry to six:
 
 - descriptive summary with a Student-t confidence interval for the mean;
 - Pearson correlation with a Fisher-z confidence interval;
-- a two-group raw mean difference using Welch inference, plus Hedges g; and
+- Spearman rank correlation with deterministic average ranks and a
+  Bonett–Wright Fisher-z interval;
+- a two-group raw mean difference using Welch inference, plus Hedges g;
+- a paired-samples raw mean difference with a Student-t interval and Cohen’s
+  dz when estimable; and
 - simple ordinary-least-squares regression with an unstandardized slope
   interval and R-squared.
 
@@ -506,6 +514,58 @@ requires an explicit versioned archive update.
 
 See `phase-8.7b-data-quality-review.md` for the complete aggregation, integrity,
 privacy, decision, export, and scientific-boundary contract.
+
+## Phase 8.7C outcome
+
+Phase 8.7C is the first bounded Quantitative Engine Expansion batch. It extends
+the existing `/analysis-execution/[projectId]` workspace rather than adding a
+new route or Research Path step.
+
+The Phase 8.4 reviewed registry now adds:
+
+- **Spearman rank correlation:** complete numeric pairs are converted to
+  deterministic average ranks, including ties. The engine reports Spearman
+  rho and the Bonett–Wright large-sample Fisher-z interval without producing a
+  p-value. Small samples and correlations near ±1 remain explicit interval
+  advisories.
+- **Paired-samples mean difference:** the engine forms complete within-row
+  differences in the signed order `outcome − paired variable`, then reports
+  the raw paired mean difference, Student-t interval, paired-difference sample
+  standard deviation, paired t statistic, and Cohen’s dz when the difference
+  variance is non-zero.
+
+Plan-method inference distinguishes Spearman from generic Pearson wording and
+paired/dependent/within-subject wording from independent-group comparisons.
+Any selected method or variable that does not align with the frozen plan still
+requires a written deviation rationale.
+
+Phase 8.7A is extended at the same time so the new primary methods do not break
+the Stage 06 robustness workflow:
+
+- Spearman receives an independently recomputed primary estimate and a
+  same-pair Pearson comparison. Rank-specific influence analysis remains an
+  explicit unperformed limitation in this batch.
+- The paired method receives median and 20% trimmed paired-difference
+  comparisons plus a leave-one-pair-out mean-difference range.
+
+Golden-result tests use a frozen R `statpsych::ci.spear` example and R’s
+documented paired `stats::t.test` example on the `sleep` dataset. The fixture
+records the reference commands, inputs, versions, and expected estimates,
+standard errors, intervals, t statistic, degrees of freedom, and effect-size
+components. These engineering checks establish agreement for the reviewed
+fixtures; they are not a scientific validation of a researcher’s design or
+data.
+
+The existing Phase 8.3 verification, Phase 8.4 result-package schema, browser
+storage boundary, aggregate-only export, Phase 8.5 interpretation flow, and
+Phase 8.6 fixed archive contract remain unchanged. Participant rows stay in
+the active tab and are never sent to AI or cloud storage. Phase 8.7C adds no
+Supabase migration, new infrastructure, arbitrary code, p-value search,
+automatic method selection, or cost-bearing service.
+
+See `phase-8.7c-quantitative-engine-expansion.md` for the complete method,
+reference-validation, robustness, privacy, compatibility, and exclusion
+boundary.
 
 The fixture at `docs/fixtures/phase-8-analysis-contract-v1.json` documents the
 minimum schema shape used for cross-runtime review.
