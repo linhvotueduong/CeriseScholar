@@ -28,6 +28,7 @@ export type ResearchCanvasKind =
   | "analysis-robustness-launcher"
   | "analysis-results-launcher"
   | "analysis-reviewer-launcher"
+  | "qualitative-analysis-launcher"
   | "reproducibility-package-launcher"
   | "guided";
 
@@ -318,6 +319,15 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
         shortTitle: "AI Reviewer",
         description: "Review frozen planning, primary, interpretation, and robustness evidence through an aggregate-only AI boundary, then decide every suggestion in a researcher-owned ledger.",
         canvas: "analysis-reviewer-launcher",
+        prompts: [],
+        checklist: [],
+      },
+      {
+        id: "stage-06-qualitative-analysis",
+        title: "Analyze Qualitative and Mixed-Methods Evidence",
+        shortTitle: "Qualitative Lane",
+        description: "Code local transcripts, preserve codebook and memo history, develop evidence-backed themes, review negative cases and quotations, and document triangulation or mixed-method integration.",
+        canvas: "qualitative-analysis-launcher",
         prompts: [],
         checklist: [],
       },

@@ -640,5 +640,56 @@ only and never changes an upstream artifact.
 See `phase-8.8-ai-analysis-reviewer.md` for the complete input, API, evidence,
 decision-ledger, privacy, export, completion, and scientific-boundary contract.
 
+## Phase 8.9 outcome
+
+Phase 8.9 appends a separate Qualitative and Mixed-Methods workspace at
+`/qualitative-analysis/[projectId]`. It does not add qualitative analysis to
+the quantitative method registry or force qualitative work through a
+statistical execution interface.
+
+The browser imports bounded UTF-8 TXT, Markdown, SRT, and VTT transcript files.
+Transcript text stays only in the active tab; Local Storage and the export
+retain source metadata, size, checksum, collection context, consent scope,
+segment offsets, and selected-text checksums. Media is never opened. Optional
+media references and segment times are researcher-authored labels.
+
+The workspace supports:
+
+- manual segment selection and coding;
+- current codes with definition, inclusion/exclusion criteria, and a-priori or
+  emergent origin;
+- sequential, checksummed codebook snapshots;
+- study, source, segment, and theme memos;
+- deterministic code-by-source matrices;
+- evidence-backed themes with boundaries and negative-case review;
+- explicit quotation-use, consent-scope, redaction, and safe-excerpt gates;
+- reviewed triangulation records; and
+- mixed-method designs, aggregate quantitative references, and researcher-owned
+  joint displays.
+
+Mixed-method mode preserves separate qualitative, quantitative, and
+integration records. The lane records traceable aggregate quantitative
+findings but executes no statistics and does not independently certify an
+external reference. Qualitative-only work does not have to complete an
+integration record. Quantitative-only projects can export a reviewed
+not-applicable decision.
+
+The `cerise-qualitative-analysis-package` export contains source, codebook,
+analysis, integration, and conclusion ledgers with independent checksums. It
+contains no raw transcript or media and explicitly records that automatic
+transcription, automatic human-state inference, and quantitative execution
+were not used. Approved reporting excerpts are intentionally included and may
+remain identifiable, so the export is classified as potentially identifiable
+local research material.
+
+Phase 8.9 adds no AI processing, automatic coding or themes, emotion/face/
+personality/behavioral inference, transcription, media upload, arbitrary code,
+Supabase migration, paid infrastructure, or change to the fixed Phase 8.6
+archive.
+
+See `phase-8.9-qualitative-mixed-methods.md` for the complete source, coding,
+codebook, memo, theme, quotation, triangulation, integration, privacy, export,
+completion, and scientific-boundary contract.
+
 The fixture at `docs/fixtures/phase-8-analysis-contract-v1.json` documents the
 minimum schema shape used for cross-runtime review.

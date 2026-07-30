@@ -93,6 +93,10 @@ const AnalysisReviewerLauncher = dynamic(
   () => import("./AnalysisReviewerLauncher"),
   { loading: () => <ToolLoading label="AI Analysis Reviewer" />, ssr: false },
 );
+const QualitativeAnalysisLauncher = dynamic(
+  () => import("./QualitativeAnalysisLauncher"),
+  { loading: () => <ToolLoading label="Qualitative & Mixed-Methods Analysis" />, ssr: false },
+);
 const ReproducibilityPackageLauncher = dynamic(
   () => import("./ReproducibilityPackageLauncher"),
   { loading: () => <ToolLoading label="Reproducibility Package" />, ssr: false },
@@ -627,6 +631,7 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
   const [analysisRobustnessReady, setAnalysisRobustnessReady] = useState(false);
   const [analysisResultsReady, setAnalysisResultsReady] = useState(false);
   const [analysisReviewerReady, setAnalysisReviewerReady] = useState(false);
+  const [qualitativeAnalysisReady, setQualitativeAnalysisReady] = useState(false);
   const [reproducibilityPackageReady, setReproducibilityPackageReady] = useState(false);
   const saveTimer = useRef<number | null>(null);
   const cloudSaveTimer = useRef<number | null>(null);
@@ -666,6 +671,8 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     activeStage.id === "stage-06" && activeStep.canvas === "analysis-results-launcher";
   const isAnalysisReviewerStep =
     activeStage.id === "stage-06" && activeStep.canvas === "analysis-reviewer-launcher";
+  const isQualitativeAnalysisStep =
+    activeStage.id === "stage-06" && activeStep.canvas === "qualitative-analysis-launcher";
   const isReproducibilityPackageStep =
     activeStage.id === "stage-08"
     && activeStep.canvas === "reproducibility-package-launcher";
@@ -905,6 +912,15 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
       return;
     }
     if (
+      activeStage.id === "stage-06"
+      && !activeDraft.completed
+      && isQualitativeAnalysisStep
+      && !qualitativeAnalysisReady
+    ) {
+      setSaveState("Review and export the qualitative-lane record first");
+      return;
+    }
+    if (
       activeStage.id === "stage-08"
       && !activeDraft.completed
       && isReproducibilityPackageStep
@@ -932,12 +948,14 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     isAnalysisRobustnessStep,
     isAnalysisResultsStep,
     isAnalysisReviewerStep,
+    isQualitativeAnalysisStep,
     isReproducibilityPackageStep,
     isDataIntakeStep,
     isDataPreparationStep,
     isDataQualityReviewStep,
     isExperimentStudioStep,
     isStudyPlanningStep,
+    qualitativeAnalysisReady,
     reproducibilityPackageReady,
     studyDesign.spec,
     updateStepDraft,
@@ -1095,6 +1113,12 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
             {isAnalysisReviewerStep ? (
               <AnalysisReviewerLauncher
                 onReadyChange={setAnalysisReviewerReady}
+                projectId={projectId}
+              />
+            ) : null}
+            {isQualitativeAnalysisStep ? (
+              <QualitativeAnalysisLauncher
+                onReadyChange={setQualitativeAnalysisReady}
                 projectId={projectId}
               />
             ) : null}
