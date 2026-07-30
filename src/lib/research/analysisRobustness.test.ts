@@ -18,6 +18,7 @@ import {
   markAnalysisRobustnessReviewed,
   runAnalysisRobustness,
   updateAnalysisRobustnessAssessment,
+  verifyAggregateRobustnessRecordExport,
   verifyRobustnessRecordExport,
   writeAnalysisRobustnessDocument,
 } from "./analysisRobustness";
@@ -517,6 +518,18 @@ test("requires explicit assessment, exports no participant rows, and rejects tam
     current.execution,
   );
   assert.equal(verified.integrity.packageChecksum, exported.document.lastExportChecksum);
+  const aggregateVerified = await verifyAggregateRobustnessRecordExport(
+    exported.export,
+    exported.document,
+    current.release,
+    current.plan,
+    current.preparation,
+    current.execution,
+  );
+  assert.equal(
+    aggregateVerified.integrity.packageChecksum,
+    exported.document.lastExportChecksum,
+  );
 
   const changed = structuredClone(exported.export);
   changed.package.analyses[0].alternatives[0].estimate = 0.5;
@@ -525,6 +538,17 @@ test("requires explicit assessment, exports no participant rows, and rejects tam
       changed,
       current.preparedExport,
       current.resultsExport,
+      exported.document,
+      current.release,
+      current.plan,
+      current.preparation,
+      current.execution,
+    ),
+    /changed/,
+  );
+  await assert.rejects(
+    verifyAggregateRobustnessRecordExport(
+      changed,
       exported.document,
       current.release,
       current.plan,

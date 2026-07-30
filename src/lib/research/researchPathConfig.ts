@@ -27,6 +27,7 @@ export type ResearchCanvasKind =
   | "analysis-execution-launcher"
   | "analysis-robustness-launcher"
   | "analysis-results-launcher"
+  | "analysis-reviewer-launcher"
   | "reproducibility-package-launcher"
   | "guided";
 
@@ -308,6 +309,15 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
         shortTitle: "Results Record",
         description: "Link reviewed aggregate outputs to research-question answers, defensible claims, limitations, captions, and a verifiable Results Record.",
         canvas: "analysis-results-launcher",
+        prompts: [],
+        checklist: [],
+      },
+      {
+        id: "stage-06-ai-reviewer",
+        title: "Review the Aggregate Analysis with AI",
+        shortTitle: "AI Reviewer",
+        description: "Review frozen planning, primary, interpretation, and robustness evidence through an aggregate-only AI boundary, then decide every suggestion in a researcher-owned ledger.",
+        canvas: "analysis-reviewer-launcher",
         prompts: [],
         checklist: [],
       },

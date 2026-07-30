@@ -1858,6 +1858,92 @@ export async function verifyRobustnessRecordExport(
   return candidate;
 }
 
+export async function verifyAggregateRobustnessRecordExport(
+  value: unknown,
+  localDocument: AnalysisRobustnessDocument,
+  release: ExperimentRelease,
+  plan: AnalysisPlanDocument,
+  preparation: DataPreparationDocument,
+  execution: AnalysisExecutionDocument,
+): Promise<RobustnessRecordPackage> {
+  if (
+    safeJsonByteLength(value) > MAX_ROBUSTNESS_RECORD_BYTES
+    || !isRecord(value)
+    || !exactKeys(value, ["exportType", "exportBoundary", "exportedAt", "package"])
+    || value.exportType !== ROBUSTNESS_RECORD_EXPORT_TYPE
+    || value.exportBoundary !== ROBUSTNESS_RECORD_EXPORT_BOUNDARY
+    || !safeTimestamp(value.exportedAt)
+    || !validateRobustnessPackageShape(value.package)
+    || !await verifyExperimentRelease(release)
+  ) {
+    throw new Error("Select the exported Phase 8.7A aggregate robustness record.");
+  }
+  const normalizedDocument = normalizeAnalysisRobustnessDocument(
+    localDocument,
+    release,
+    plan,
+    preparation,
+    execution,
+  );
+  if (
+    !normalizedDocument
+    || normalizedDocument.readiness.status !== "ready"
+    || !normalizedDocument.lastRun
+    || !execution.lastRun
+    || !preparation.lastRun
+  ) {
+    throw new Error("The local reviewed Phase 8.7A receipt is not ready.");
+  }
+  const candidate = value.package;
+  const reviewPayload = {
+    reviews: normalizedDocument.reviews,
+    overallConclusion: normalizedDocument.overallConclusion,
+    unperformedChecks: normalizedDocument.unperformedChecks,
+  };
+  const reviewChecksum = await sha256Checksum(reviewPayload);
+  const unsignedPackage = {
+    ...candidate,
+    integrity: {
+      preparedPackageChecksum: candidate.integrity.preparedPackageChecksum,
+      analysisResultsPackageChecksum: candidate.integrity.analysisResultsPackageChecksum,
+      checkChecksum: candidate.integrity.checkChecksum,
+      reviewChecksum: candidate.integrity.reviewChecksum,
+    },
+  };
+  const packageChecksum = await sha256Checksum(unsignedPackage);
+  if (
+    candidate.projectId !== release.projectId
+    || candidate.releaseId !== release.releaseId
+    || candidate.releaseNumber !== release.releaseNumber
+    || candidate.releaseChecksum !== release.checksum
+    || candidate.contractChecksum !== release.manifest.analysisContractChecksum
+    || candidate.analysisPlanUpdatedAt !== plan.updatedAt
+    || candidate.robustnessRunAt !== normalizedDocument.lastRun.runAt
+    || candidate.reviewedAt !== normalizedDocument.reviewedAt
+    || candidate.source.preparedAt !== preparation.lastRun.preparedAt
+    || candidate.source.operationFingerprint !== preparation.lastRun.operationFingerprint
+    || candidate.source.preparedPackageChecksum !== preparation.lastRun.packageChecksum
+    || candidate.source.primaryAnalysisRunAt !== execution.lastRun.runAt
+    || candidate.source.primaryConfigurationFingerprint
+      !== execution.lastRun.configurationFingerprint
+    || candidate.source.primaryResultChecksum !== execution.lastRun.resultChecksum
+    || candidate.source.analysisResultsPackageChecksum !== execution.lastRun.packageChecksum
+    || canonicalJson(candidate.reviews) !== canonicalJson(normalizedDocument.reviews)
+    || candidate.overallConclusion !== normalizedDocument.overallConclusion
+    || candidate.unperformedChecks !== normalizedDocument.unperformedChecks
+    || candidate.integrity.preparedPackageChecksum !== preparation.lastRun.packageChecksum
+    || candidate.integrity.analysisResultsPackageChecksum !== execution.lastRun.packageChecksum
+    || candidate.integrity.checkChecksum !== normalizedDocument.lastRun.checkChecksum
+    || candidate.integrity.reviewChecksum !== reviewChecksum
+    || candidate.integrity.packageChecksum !== packageChecksum
+    || normalizedDocument.lastExportChecksum !== packageChecksum
+    || value.exportedAt !== normalizedDocument.exportedAt
+  ) {
+    throw new Error("The aggregate robustness record or its source-chain checksums have changed.");
+  }
+  return candidate;
+}
+
 export function analysisRobustnessStorageKey(projectId: string, releaseId: string): string {
   return `cerise-analysis-robustness:${projectId}:${releaseId}:v${ANALYSIS_ROBUSTNESS_SCHEMA_VERSION}`;
 }

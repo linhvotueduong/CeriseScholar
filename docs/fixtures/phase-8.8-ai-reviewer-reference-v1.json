@@ -1,0 +1,70 @@
+{
+  "fixtureVersion": 1,
+  "description": "Independent response-boundary fixture for the Phase 8.8 aggregate-only AI Analysis Reviewer.",
+  "allowedEvidenceIds": [
+    "plan:rq-1",
+    "result:analysis-rq-1",
+    "diagnostic:analysis-rq-1:independence-review",
+    "interpretation:result-rq-1",
+    "robustness:analysis-rq-1"
+  ],
+  "response": {
+    "summary": "The reviewed claim should remain associational, and the independence boundary should stay explicit.",
+    "suggestions": [
+      {
+        "category": "causal-overclaim",
+        "priority": "important",
+        "title": "Preserve the associational claim boundary",
+        "observation": "The approved Results Record describes an association and the deterministic engine does not establish causality.",
+        "evidenceReferences": [
+          "interpretation:result-rq-1",
+          "result:analysis-rq-1"
+        ],
+        "recommendation": "Retain associational wording in the results paragraph.",
+        "limitation": "This advice does not establish causality or scientific validity."
+      },
+      {
+        "category": "diagnostic-explanation",
+        "priority": "consider",
+        "title": "Explain the independence boundary",
+        "observation": "The primary result contains an advisory stating that observation independence requires researcher review.",
+        "evidenceReferences": [
+          "diagnostic:analysis-rq-1:independence-review"
+        ],
+        "recommendation": "State how the declared participant-level unit was reviewed and keep any unresolved dependence as a limitation.",
+        "limitation": "Aggregate output cannot verify participant-level independence."
+      },
+      {
+        "category": "scientific-validity",
+        "priority": "important",
+        "title": "Invalid certification request",
+        "observation": "This category is outside the reviewer allowlist.",
+        "evidenceReferences": [
+          "plan:rq-1"
+        ],
+        "recommendation": "Certify the analysis.",
+        "limitation": "None."
+      },
+      {
+        "category": "sensitivity-analysis",
+        "priority": "consider",
+        "title": "Unknown evidence reference",
+        "observation": "This suggestion cites a nonexistent source.",
+        "evidenceReferences": [
+          "participant-row:participant-1"
+        ],
+        "recommendation": "Use participant-level data.",
+        "limitation": "None."
+      }
+    ]
+  },
+  "expected": {
+    "retainedSuggestionCount": 2,
+    "retainedCategories": [
+      "causal-overclaim",
+      "diagnostic-explanation"
+    ],
+    "participantRowsIncluded": false,
+    "scientificValidityCertificationAllowed": false
+  }
+}

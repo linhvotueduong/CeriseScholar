@@ -16,6 +16,7 @@ Status:
 - Phase 8.7C Quantitative Engine Expansion batch 1 implemented on 2026-07-29.
 - Phase 8.7D Data Quality and Preparation Expansion batch 1 implemented on
   2026-07-29.
+- Phase 8.8 aggregate-only AI Analysis Reviewer implemented on 2026-07-29.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
@@ -27,6 +28,8 @@ Phase 8.7C expands the existing Phase 8.4 execution and Phase 8.7A robustness
 registries without adding or renumbering a Research Path step.
 Phase 8.7D expands the existing Phase 8.3 preparation and Phase 8.7B quality
 contracts without adding or renumbering a Research Path step.
+Phase 8.8 appends a new stable Stage 06 AI Reviewer step after the Results
+Record without renumbering any existing persisted step ID.
 
 ## Phase 8.0 outcome
 
@@ -607,6 +610,35 @@ the Phase 8.7B export remain aggregate-only.
 See `phase-8.7d-data-quality-preparation-expansion.md` for the complete
 transformation, ledger, behavioral, quality-review, integrity, privacy,
 compatibility, and scientific-exclusion boundary.
+
+## Phase 8.8 outcome
+
+Phase 8.8 appends an AI Analysis Reviewer workspace at
+`/analysis-review/[projectId]`. It unlocks only after the deterministic
+Phase 8.5 Results Record and Phase 8.7A Robustness Record are ready for the same
+immutable release, then requires the researcher to re-select and verify both
+aggregate exports.
+
+The reviewer receives one research question at a time. Its bounded context
+contains frozen plan decisions, reviewed aggregate estimates and intervals,
+diagnostics, researcher-approved interpretation, recorded deviations, and
+reviewed robustness comparisons. Participant rows, identifiers, response and
+trial values, media, local source files, API-key material, other research
+questions, and arbitrary code are excluded.
+
+Responses are structured, evidence-linked suggestions. Every evidence
+reference must match an allowlisted ID in the verified request; unknown
+categories or evidence IDs are discarded. Suggestions cannot mutate plans,
+exclusions, methods, results, interpretations, or robustness records.
+
+Every suggestion enters a researcher-owned decision ledger as pending. The
+researcher must accept or decline it with a rationale, record the overall
+conclusion and remaining limitations, confirm the review, and export the
+checksummed aggregate ledger. Accepted advice is recorded for consideration
+only and never changes an upstream artifact.
+
+See `phase-8.8-ai-analysis-reviewer.md` for the complete input, API, evidence,
+decision-ledger, privacy, export, completion, and scientific-boundary contract.
 
 The fixture at `docs/fixtures/phase-8-analysis-contract-v1.json` documents the
 minimum schema shape used for cross-runtime review.
