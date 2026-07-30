@@ -23,6 +23,7 @@ export type ResearchCanvasKind =
   | "analysis-plan-launcher"
   | "data-intake-audit-launcher"
   | "data-preparation-launcher"
+  | "data-quality-review-launcher"
   | "analysis-execution-launcher"
   | "analysis-robustness-launcher"
   | "analysis-results-launcher"
@@ -275,8 +276,13 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
         checklist: [],
       },
       {
-        ...guided("Conduct Data-Quality and Descriptive Checks", "Quality Checks", "Understand completeness, distributions, inconsistencies, and missingness before primary analysis.", ["What do the descriptive and quality checks show?", "Which issues require correction, exclusion, or sensitivity analysis?"], ["Planned quality checks are complete", "Material quality issues have documented decisions"]),
         id: "stage-06-step-02",
+        title: "Conduct Data-Quality and Descriptive Checks",
+        shortTitle: "Quality Checks",
+        description: "Review bounded aggregate completeness, type, distribution, condition, and trial summaries from the exact derived package, document every cue, and export a verified quality record.",
+        canvas: "data-quality-review-launcher",
+        prompts: [],
+        checklist: [],
       },
       {
         id: "stage-06-step-03",

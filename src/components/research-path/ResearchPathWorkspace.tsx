@@ -73,6 +73,10 @@ const DataPreparationLauncher = dynamic(
   () => import("./DataPreparationLauncher"),
   { loading: () => <ToolLoading label="Reproducible Preparation" />, ssr: false },
 );
+const DataQualityReviewLauncher = dynamic(
+  () => import("./DataQualityReviewLauncher"),
+  { loading: () => <ToolLoading label="Data-Quality Review" />, ssr: false },
+);
 const AnalysisExecutionLauncher = dynamic(
   () => import("./AnalysisExecutionLauncher"),
   { loading: () => <ToolLoading label="Analysis Execution" />, ssr: false },
@@ -614,6 +618,7 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
   const [analysisPlanReady, setAnalysisPlanReady] = useState(false);
   const [dataIntakeReady, setDataIntakeReady] = useState(false);
   const [dataPreparationReady, setDataPreparationReady] = useState(false);
+  const [dataQualityReviewReady, setDataQualityReviewReady] = useState(false);
   const [analysisExecutionReady, setAnalysisExecutionReady] = useState(false);
   const [analysisRobustnessReady, setAnalysisRobustnessReady] = useState(false);
   const [analysisResultsReady, setAnalysisResultsReady] = useState(false);
@@ -646,6 +651,8 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     activeStage.id === "stage-06" && activeStep.canvas === "data-intake-audit-launcher";
   const isDataPreparationStep =
     activeStage.id === "stage-06" && activeStep.canvas === "data-preparation-launcher";
+  const isDataQualityReviewStep =
+    activeStage.id === "stage-06" && activeStep.canvas === "data-quality-review-launcher";
   const isAnalysisExecutionStep =
     activeStage.id === "stage-06" && activeStep.canvas === "analysis-execution-launcher";
   const isAnalysisRobustnessStep =
@@ -848,6 +855,15 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     if (
       activeStage.id === "stage-06"
       && !activeDraft.completed
+      && isDataQualityReviewStep
+      && !dataQualityReviewReady
+    ) {
+      setSaveState("Review and export the aggregate data-quality record first");
+      return;
+    }
+    if (
+      activeStage.id === "stage-06"
+      && !activeDraft.completed
       && isAnalysisExecutionStep
       && !analysisExecutionReady
     ) {
@@ -892,6 +908,7 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     analysisPlanReady,
     dataIntakeReady,
     dataPreparationReady,
+    dataQualityReviewReady,
     experimentStudioReady,
     isAnalysisPlanStep,
     isAnalysisExecutionStep,
@@ -900,6 +917,7 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
     isReproducibilityPackageStep,
     isDataIntakeStep,
     isDataPreparationStep,
+    isDataQualityReviewStep,
     isExperimentStudioStep,
     isStudyPlanningStep,
     reproducibilityPackageReady,
@@ -1029,6 +1047,12 @@ export default function ResearchPathWorkspace({ projectId, projectName }: Resear
             {isDataPreparationStep ? (
               <DataPreparationLauncher
                 onReadyChange={setDataPreparationReady}
+                projectId={projectId}
+              />
+            ) : null}
+            {isDataQualityReviewStep ? (
+              <DataQualityReviewLauncher
+                onReadyChange={setDataQualityReviewReady}
                 projectId={projectId}
               />
             ) : null}

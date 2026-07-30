@@ -54,6 +54,8 @@ test("Stage 6 adds release-bound analysis tools without shifting persisted step 
   assert.equal(stage.steps[1].canvas, "data-intake-audit-launcher");
   assert.equal(stage.steps[2].id, "stage-06-step-01");
   assert.equal(stage.steps[2].canvas, "data-preparation-launcher");
+  assert.equal(stage.steps[3].id, "stage-06-step-02");
+  assert.equal(stage.steps[3].canvas, "data-quality-review-launcher");
   assert.equal(stage.steps[4].id, "stage-06-step-03");
   assert.equal(stage.steps[4].canvas, "analysis-execution-launcher");
   assert.equal(stage.steps[5].id, "stage-06-step-04");

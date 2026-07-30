@@ -11,11 +11,15 @@ Status:
 - Phase 8.5 aggregate Results and Interpretation implemented on 2026-07-29.
 - Phase 8.6 local Reproducibility Package implemented on 2026-07-29.
 - Phase 8.7A reviewed Robustness and Sensitivity implemented on 2026-07-29.
+- Phase 8.7B local Data-Quality and Descriptive Review implemented on
+  2026-07-29.
 
 Phase 8 maps to **Stage 06: Prepare and Analyze** in the Research Path. It does
 not replace Stage 08, which is the later review, sharing, and preservation
 stage. Phase 8.6 connects the analysis record to that later Stage 08
 preservation work; Phase 8.7A fills the dedicated Stage 06 robustness step.
+Phase 8.7B replaces the remaining generic Stage 06 quality-check canvas while
+preserving its persisted step ID.
 
 ## Phase 8.0 outcome
 
@@ -450,6 +454,58 @@ requires an explicit versioned update.
 
 See `phase-8.7a-reviewed-robustness.md` for the complete method, integrity,
 privacy, review, export, and scientific-boundary contract.
+
+## Phase 8.7B outcome
+
+Phase 8.7B adds a dedicated full-width Data-Quality and Descriptive Review
+workspace at `/data-quality-review/[projectId]`. It replaces the generic
+canvas behind the existing Stage 06 quality-check step without changing the
+persisted `stage-06-step-02` ID.
+
+The researcher re-selects the exact exported Phase 8.3 derived-data package.
+Cerise independently verifies the complete release, contract, plan,
+preparation, response, trial, and package checksum chain before aggregating
+anything. Participant response and trial rows remain in the active tab only.
+
+The bounded deterministic engine reports:
+
+- response-row completeness across the derived analysis columns;
+- per-variable observed, missing, scalar-type, distinct-level, singleton-level,
+  and consistently numeric center/spread/range summaries;
+- repeated response-pattern counts without exposing the matching rows;
+- frozen-condition allocation counts and unexpected or missing condition IDs;
+- preparation input/output, explicit-exclusion, missing-cell, and trial-row
+  deltas; and
+- aggregate practice/production, response, correctness, deadline, duplicate-key,
+  and positive browser-measured reaction-time summaries for trial rows.
+
+No observed category or free-text value, participant identifier, trial value,
+or row preview is rendered or exported. Numeric summaries are produced only
+when every observed value in a variable is already numeric. Review cues are
+descriptive conditions, not automatic scientific thresholds.
+
+Every deterministic finding requires a researcher disposition, explanation,
+and acknowledgment. The researcher must also record the study-level quality
+conclusion and remaining limitations, confirm the complete review, and export
+an independently reconstructed aggregate quality record before the Stage 06
+step can be completed.
+
+Browser storage contains only source identity, checksums, aggregate run counts,
+finding IDs, researcher-authored decisions, timestamps, and the export receipt.
+The exported record explicitly declares that it includes no participant rows
+or participant-level value lists and applies no automatic corrections or
+exclusions. It contains no
+inferential statistics and uses no AI.
+
+Phase 8.7B does not make Phase 8.4 a general statistics system or silently
+change its package checksum. Direct Phase 8.4 verification remains compatible
+with existing reviewed Phase 8.3 exports; the Research Path separately gates
+the quality-review step. The fixed Phase 8.6 14-file archive also remains
+unchanged. Adding the separate 8.7B record to a future preservation archive
+requires an explicit versioned archive update.
+
+See `phase-8.7b-data-quality-review.md` for the complete aggregation, integrity,
+privacy, decision, export, and scientific-boundary contract.
 
 The fixture at `docs/fixtures/phase-8-analysis-contract-v1.json` documents the
 minimum schema shape used for cross-runtime review.
