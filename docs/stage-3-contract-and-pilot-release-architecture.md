@@ -2,21 +2,27 @@
 
 Status: proposed; awaiting implementation approval
 
-Scope: Stage 03, Steps 05 and 06, plus their handoff contracts
+Scope: Stage 03, visible Steps 06 and 07, plus their handoff contracts
 
 Product code changed by this proposal: none
 
 Visual review board: [Cerise Scholar Stage 3 Architecture](https://www.figma.com/board/PjKGE6Rt5mivhrKs7wq9ub)
 
+Consent-step companion:
+[Stage 3 consent and participant-rights architecture](./stage-3-consent-and-participant-rights-architecture.md)
+
 ## Decision summary
 
-Stage 03 should keep its existing six stable step IDs, but Steps 05 and 06
-should stop using the generic guided canvas.
+Stage 03 should keep its existing six stable step IDs, add the explicit
+`stage-03-consent` ID, and stop using the generic guided canvas for the two
+downstream responsibilities.
 
-- Step 05 becomes **Verify Data and Analysis Contract**. It compares the
+- Visible Step 06 becomes **Verify Data and Analysis Contract** while retaining
+  persisted ID `stage-03-step-05`. It compares the
   conceptual study design with the runnable Experimental Studio document and
-  makes unresolved mismatches explicit.
-- Step 06 becomes **Create Pilot Release Candidate**. It runs bounded
+  frozen consent artifact and makes unresolved mismatches explicit.
+- Visible Step 07 becomes **Create Pilot Release Candidate** while retaining
+  persisted ID `stage-03-step-06`. It runs bounded
   preflight and rehearsal checks, shows the release diff, and delegates the
   actual immutable freeze/export operation to the existing Release Center.
 - Stage 04 orchestrates ethics review, expert feedback, pilot authorization and
@@ -35,7 +41,7 @@ The resulting progression is:
 
 `design intent → runnable study → verified contract → pilot candidate → governance and local-pilot cycle → approved and operationally ready release → production collection → analysis plan → archive`
 
-## Why the current Steps 05 and 06 feel redundant
+## Why the two current generic steps feel redundant
 
 Both steps currently use `GuidedCanvas`, which renders two free-text areas,
 self-attestation checkboxes, and generic handoff notes. Their titles differ,
@@ -44,18 +50,18 @@ release, or analysis-contract models already present in the application.
 
 The duplication is architectural rather than merely visual:
 
-1. Step 04 already authors variables, runtime checks, diagnostics, and releases.
-2. Step 05 asks the researcher to describe the same procedure and analysis
+1. Build Study already authors variables, runtime checks, diagnostics, and releases.
+2. The current persisted Step 05 asks the researcher to describe the same procedure and analysis
    relationship again in prose.
-3. Step 06 asks the researcher to describe checks and release contents again,
+3. The current persisted Step 06 asks the researcher to describe checks and release contents again,
    while the existing Release Center already performs those operations.
-4. Completion for Steps 05 and 06 is currently manual even though the relevant
+4. Completion for both generic steps is currently manual even though the relevant
    readiness signals can be derived.
 
 The redesign assigns each screen a distinct artifact and transition rather
 than deleting either step.
 
-## Target six-step responsibility model
+## Target seven-step responsibility model
 
 | Step | Stable responsibility | Primary artifact | Completion rule |
 | --- | --- | --- | --- |
@@ -63,32 +69,35 @@ than deleting either step.
 | 02 Map Measures | Define research questions, constructs, hypotheses or qualitative purposes, and measures | Conceptual evidence model inside `StudyDesignDocument` | Existing structured readiness |
 | 03 Plan Participants | Specify sampling, assignment, inclusion, accessibility, and power rationale | Participant plan inside `StudyDesignDocument` | Existing structured readiness |
 | 04 Build Study | Author screens, tasks, stimuli, branching, scoring, and produced variables | `ExperimentStudioDocument` | Existing Studio diagnostics |
-| 05 Verify Contract | Reconcile design intent with implemented evidence and analysis commitments | Mutable `StudyContractDraft` plus derived readiness | No unresolved blocking contract issue |
-| 06 Create Pilot Candidate | Rehearse, validate, diff, freeze, version, and export a pilot-ready package | Immutable `ExperimentRelease` and checksum | Verified candidate created from the current inputs |
+| 05 Design Consent | Author and bind versioned consent and participant-rights artifacts | `ConsentProtocolDraft` and frozen consent artifact | Ready for human review with no structural blocker |
+| 06 Verify Contract | Reconcile design intent, implemented evidence, consent, and analysis commitments | Mutable `StudyContractDraft` plus derived readiness | No unresolved blocking contract issue |
+| 07 Create Pilot Candidate | Rehearse, validate, diff, freeze, version, and export a pilot-ready package | Immutable `ExperimentRelease` and checksum | Verified candidate created from the current inputs |
 
 The stable persisted IDs `stage-03-step-01` through `stage-03-step-06` must not
-be renamed or renumbered.
+be renamed. The inserted visible Step 05 uses `stage-03-consent`; the existing
+`stage-03-step-05` and `stage-03-step-06` IDs become visible Steps 06 and 07.
 
 ## Architecture boundaries
 
-### Step 02 versus Step 05
+### Step 02 versus visible Step 06
 
 Step 02 answers, “What do we intend to learn and how will it be measured?”
-Step 05 answers, “Does the runnable study actually produce the evidence the
-intent requires, and is the planned interpretation specified enough to
-freeze?”
+Visible Step 06 answers, “Do the runnable study and consent artifact actually
+implement the intended evidence and participant-rights contract, and is the
+planned interpretation specified enough to freeze?”
 
-Step 05 may link back to Step 02 to repair a conceptual gap and to Step 04 to
-repair an implementation gap. It must not silently invent either one.
+Visible Step 06 may link back to Step 02 to repair a conceptual gap, Step 04 to
+repair an implementation gap, and Step 05 to repair a consent gap. It must not
+silently invent any of them.
 
-### Step 05 versus the Stage 06 Analysis Plan
+### Visible Step 06 versus the Stage 06 Analysis Plan
 
-The Step 05 contract is a prospective, design-time contract. It captures the
+The visible Step 06 contract is a prospective, design-time contract. It captures the
 minimum commitments needed to make the study and its evidence traceable before
 collection. The Stage 06 Analysis Plan is a release-bound operational plan
 used after collection and before analysis execution.
 
-The Stage 06 editor should be seeded from the frozen Step 05 contract, but it
+The Stage 06 editor should be seeded from the frozen design-time contract, but it
 may require more detail. If a researcher changes a frozen commitment, the
 analysis layer records the changed value, reason, timing, and data-access
 declaration as a deviation or amendment. It never rewrites the release.
@@ -96,9 +105,9 @@ declaration as a deviation or amendment. It never rewrites the release.
 Cerise must not call either artifact a preregistration unless a future feature
 adds the necessary external timestamp, publication, and governance guarantees.
 
-### Step 06 versus Stage 04
+### Visible Step 07 versus Stage 04
 
-Step 06 establishes that a package is technically and scientifically coherent
+Visible Step 07 establishes that a package is technically and scientifically coherent
 enough to be reviewed and piloted. It does not grant ethics approval, certify
 validity, or authorize production collection.
 
@@ -118,9 +127,9 @@ metadata bound to:
 Changing the study creates a new release checksum and makes earlier approval
 records inapplicable to the new candidate without deleting their history.
 
-### Step 06 versus the Local Research Host
+### Visible Step 07 versus the Local Research Host
 
-Step 06 may run browser-side preflight and participant-flow rehearsal, but it
+Visible Step 07 may run browser-side preflight and participant-flow rehearsal, but it
 cannot claim that representative participants or target hardware were piloted.
 The Local Research Host already stores `launch-readiness.json`, bound to the
 release checksum, and blocks production until its pilot and operational checks
@@ -143,13 +152,14 @@ never copy participant rows or media into the web application.
 
 ```mermaid
 flowchart LR
-  S2["Step 02\nConceptual evidence model"] --> C["Step 05\nContract compiler and verifier"]
+  S2["Step 02\nConceptual evidence model"] --> C["Step 06\nContract compiler and verifier"]
   S4["Step 04\nRunnable Studio document"] --> C
+  S5["Step 05\nConsent and participant rights"] --> C
   C --> D["Mutable study-contract draft"]
   D --> G{"Blocking issues resolved?"}
   G -- No --> S2
   G -- No --> S4
-  G -- Yes --> R["Step 06\nRelease preflight and candidate action"]
+  G -- Yes --> R["Step 07\nRelease preflight and candidate action"]
   R --> F["Immutable release + contract checksum"]
   F --> A["Stage 04\nReview, pilot authorization, and revisions"]
   A --> H["Local Research Host\nPilot evidence and operational readiness"]
@@ -347,7 +357,7 @@ type StudyContractReadiness = {
 };
 ```
 
-Completion of Step 05 is derived from `blockingCount === 0`. A researcher may
+Completion of visible Step 06 is derived from `blockingCount === 0`. A researcher may
 acknowledge a warning with a reason, but cannot dismiss a structural blocking
 issue. Acknowledgements are recorded; they do not delete the issue.
 
@@ -367,14 +377,14 @@ issues.
 7. Add new source entities as unresolved rows.
 8. Recompute method-lane requirements.
 9. Recompute issue severity, counts, and readiness.
-10. Return a change summary used by both Step 05 and Step 06.
+10. Return a change summary used by visible Steps 06 and 07.
 
 The compiler should be idempotent: compiling the same normalized sources and
 prior decisions twice produces the same semantic document.
 
-## Step 05 interaction design
+## Visible Step 06 interaction design
 
-### Step 05 page structure
+### Visible Step 06 page structure
 
 1. **Source summary** — Study Design version, Studio version, last update,
    method lane, and drift status.
@@ -386,7 +396,7 @@ prior decisions twice produces the same semantic document.
    source links and unused/orphaned evidence warnings.
 5. **Method-lane plan** — quantitative, qualitative, or mixed-method controls.
 6. **Issues rail** — grouped issues with repair actions that open Step 02,
-   Step 04, or the relevant Step 05 section.
+   Step 04, Step 05, or the relevant Step 06 section.
 7. **Decision notes and history** — bounded researcher rationale and the latest
    source reconciliation summary.
 
@@ -398,7 +408,7 @@ prior decisions twice produces the same semantic document.
   it does not override readiness.
 - Blank required decisions are visible as unresolved cells, not placeholder
   prose in a large text area.
-- Repair links retain project context and return the researcher to Step 05.
+- Repair links retain project context and return the researcher to Step 06.
 - Accessibility requires keyboard-operable tables, semantic row headings,
   persistent text labels in addition to color, and issue summaries announced
   after reconciliation.
@@ -423,12 +433,12 @@ prior decisions twice produces the same semantic document.
 +-----------------------------------------------------------------------+
 ```
 
-## Step 06 interaction design
+## Visible Step 07 interaction design
 
-Step 06 is an orchestration surface over existing diagnostics and release
+Visible Step 07 is an orchestration surface over existing diagnostics and release
 functions. It must not implement a second release serializer.
 
-### Step 06 page structure
+### Visible Step 07 page structure
 
 1. **Candidate summary** — current Study Design, Studio, contract, and latest
    release identities.
@@ -451,13 +461,13 @@ functions. It must not implement a second release serializer.
 The action is enabled only when:
 
 - the existing Studio freeze gate passes;
-- the Step 05 contract has no blocking issue;
+- the Step 06 contract has no blocking issue;
 - the source fingerprint still matches the current Study Design and Studio;
 - required browser-side rehearsals have a current pass record;
 - required researcher attestations are current;
 - no asynchronous checksum or persistence operation is pending.
 
-After creation, Step 06 shows the immutable release ID and checksum, export
+After creation, Step 07 shows the immutable release ID and checksum, export
 actions, change summary, and the explicit next action: submit this exact
 candidate for Stage 04 review.
 
@@ -563,7 +573,7 @@ verified contract is still preserved remotely when it becomes part of the
 existing immutable release manifest. Adding editable cloud sync later requires
 an explicit conflict-resolution and schema-migration design.
 
-### Existing generic Step 05 and Step 06 content
+### Existing generic persisted Step 05 and Step 06 content
 
 Do not delete prior user text or check states. On first opening a redesigned
 step:
@@ -602,11 +612,11 @@ conventions.
 
 ### New or replaced UI modules
 
-- `src/components/research-path/StudyContractLauncher.tsx` — Step 05 entry and
+- `src/components/research-path/StudyContractLauncher.tsx` — visible Step 06 entry and
   workspace shell.
 - `src/components/study-contract/ContractWorkspace.tsx` — matrix, method lanes,
   ledger, issue rail, and reconciliation state.
-- `src/components/research-path/PilotCandidateLauncher.tsx` — Step 06 entry and
+- `src/components/research-path/PilotCandidateLauncher.tsx` — visible Step 07 entry and
   candidate orchestration.
 - `src/components/experimental-studio/ExperimentPackagePanel.tsx` — extract
   reusable release actions/panels; keep one implementation of freeze/export.
@@ -637,7 +647,7 @@ verify it independently. Recommended order:
 2. implement and self-test native verification;
 3. add web Host-bundle format 6 export;
 4. run cross-runtime checksum fixtures;
-5. enable the Step 06 Host export action.
+5. enable the Step 07 Host export action.
 
 Plain release export may be enabled earlier because it does not claim native
 compatibility.
@@ -646,6 +656,11 @@ compatibility.
 
 Each slice should be independently reviewable and leave the current workflow
 usable.
+
+The consent companion's Consent A–D slices must precede or land with the
+contract foundation and candidate-release work below. Contract schema 2 and
+release format 6 should be designed once to include consent identity, rather
+than upgraded twice in quick succession.
 
 ### Slice A — Contract domain foundation
 
@@ -659,13 +674,13 @@ usable.
 Exit criterion: the same normalized inputs always produce the same derived
 contract core and issues, and schema 1 fixtures remain valid.
 
-### Slice B — Step 05 workspace
+### Slice B — Visible Step 06 workspace
 
 - Add the dedicated canvas kind and launcher.
 - Implement the RQ matrix, variable/evidence ledger, lane panels, issue rail,
   autosave, legacy-notes panel, and repair navigation.
-- Derive Step 05 completion from current readiness.
-- Keep Step 06 on its old screen until this slice is accepted.
+- Derive Step 06 completion from current readiness.
+- Keep Step 07 on its old screen until this slice is accepted.
 
 Exit criterion: a user can reconcile quantitative, qualitative, and mixed
 fixtures without editing raw JSON, and source changes invalidate completion.
@@ -680,16 +695,16 @@ fixtures without editing raw JSON, and source changes invalidate completion.
 Exit criterion: format 6 candidate creation is deterministic and old releases
 remain readable without mutation.
 
-### Slice D — Step 06 workspace
+### Slice D — Visible Step 07 workspace
 
 - Replace the generic canvas with rehearsal, preflight, diff, package preview,
   attestations, and one candidate action.
 - Reuse the existing Release Center operations.
-- Derive Step 06 completion from a persisted candidate whose source identities
+- Derive Step 07 completion from a persisted candidate whose source identities
   still match.
 - Preserve legacy notes.
 
-Exit criterion: there is exactly one release creation path and Step 06 cannot
+Exit criterion: there is exactly one release creation path and Step 07 cannot
 claim completion after design or Studio drift.
 
 ### Slice E — Native Host format 6
@@ -771,7 +786,7 @@ the immutable release and contract it used.
    data remains isolated and production remains gated.
 7. Open the Stage 06 Analysis Plan and verify contract identity plus recorded
    deviation behavior.
-8. Load legacy Step 05/06 notes and releases without data loss.
+8. Load legacy persisted Step 05/06 notes and releases without data loss.
 
 ### Quality gates per slice
 
@@ -817,7 +832,7 @@ the immutable release and contract it used.
 
 ## Acceptance criteria for the complete architecture
 
-1. Steps 05 and 06 have distinct structured artifacts and no longer render the
+1. Visible Steps 06 and 07 have distinct structured artifacts and no longer render the
    generic two-textarea canvas.
 2. Every research question has a traceable path to implemented evidence and an
    applicable interpretation or analysis approach.
