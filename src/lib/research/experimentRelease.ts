@@ -19,6 +19,9 @@ import {
   type AnalysisContract,
 } from "./analysisContract";
 import type { StudyDesignDocument } from "./studyDesign";
+import { sha256Checksum } from "./artifactIdentity";
+
+export { canonicalJson, sha256Checksum } from "./artifactIdentity";
 
 export const EXPERIMENT_RELEASE_FORMAT_VERSION = 5 as const;
 export const MAX_EXPERIMENT_RELEASE_NOTES_LENGTH = 2_000;
@@ -418,23 +421,6 @@ export function createCompletedExperimentReleaseReview(): ExperimentReleaseRevie
     conditionAndVariableReview: true,
     pilotDataPlanConfirmed: true,
   };
-}
-
-export function canonicalJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map((item) => canonicalJson(item)).join(",")}]`;
-  const object = value as Record<string, unknown>;
-  return `{${Object.keys(object)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${canonicalJson(object[key])}`)
-    .join(",")}}`;
-}
-
-export async function sha256Checksum(value: unknown): Promise<string> {
-  const bytes = new TextEncoder().encode(canonicalJson(value));
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
-  const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-  return `sha256:${hex}`;
 }
 
 export function experimentReleasePayload(

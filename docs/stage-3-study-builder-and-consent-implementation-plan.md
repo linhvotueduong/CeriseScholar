@@ -1,6 +1,6 @@
 # Stage 3 — Study Builder and Consent Implementation Plan
 
-Status: proposed; awaiting phase-by-phase implementation approval
+Status: active; Phases 0–1 implemented, later phases awaiting separate approval
 
 Research review date: July 31, 2026
 
@@ -8,7 +8,9 @@ Scope: implementation sequence for the generative study builder, design and
 setting variants, consent and assent form families, AI assistance, participant
 runtime, contract verification, and pilot-candidate release gates
 
-Product code changed by this plan: none
+Product code changed by this plan: Phase 0 authority/safety foundations and
+Phase 1 artifact/compiler foundations are implemented; no Stage 3 UI or runtime
+was added
 
 Companion architecture:
 
@@ -18,6 +20,14 @@ Companion architecture:
 
 Visual architecture board:
 [Cerise Scholar Stage 3 Architecture](https://www.figma.com/board/PjKGE6Rt5mivhrKs7wq9ub)
+
+## Implementation status
+
+| Phase | Status | Evidence |
+| --- | --- | --- |
+| 0 — Authority registry and safety boundary | Complete | Versioned generic/UCSF metadata manifests, source checksums, clause policies, capability boundaries, normalization, and safety tests |
+| 1 — Shared compiler and artifact foundations | Complete | Strict canonical identity, legacy-compatible SHA-256 API, envelopes/migration, semantic diff/apply preview, dependency invalidation graph, bounded Study Build and Consent schemas |
+| 2–11 | Not started | Require separate phase approval |
 
 ## Executive recommendation
 
@@ -452,6 +462,8 @@ product stages.
 
 ### Phase 0 — Authority registry and safety boundary
 
+Implementation status: complete
+
 **Goal:** establish trustworthy sources, product claims, and template policies
 before building form generation.
 
@@ -487,6 +499,8 @@ Exit gate:
   shipped; otherwise only metadata, structure, and user-import flow ship.
 
 ### Phase 1 — Shared compiler and artifact foundations
+
+Implementation status: complete
 
 **Goal:** create the deterministic substrate used by both Study Build and
 Consent.
@@ -1007,6 +1021,6 @@ Approve implementation one phase at a time in this order:
 11. Phase 10 — Participant runtime and receipts.
 12. Phase 11 — Contract, release, Stage 4, and hardening.
 
-No phase in this document is approved for implementation merely by approving
-the architecture. Each phase should receive explicit build approval after its
-predecessor's verification evidence is reviewed.
+Phases 0 and 1 were explicitly approved and implemented. Phases 2–11 remain
+unapproved: each should receive explicit build approval after its predecessor's
+verification evidence is reviewed.
