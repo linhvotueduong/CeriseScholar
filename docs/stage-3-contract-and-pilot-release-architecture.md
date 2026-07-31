@@ -11,6 +11,9 @@ Visual review board: [Cerise Scholar Stage 3 Architecture](https://www.figma.com
 Consent-step companion:
 [Stage 3 consent and participant-rights architecture](./stage-3-consent-and-participant-rights-architecture.md)
 
+Generative-builder companion:
+[Stage 3 generative study-builder and dependency architecture](./stage-3-generative-study-builder-architecture.md)
+
 ## Decision summary
 
 Stage 03 should keep its existing six stable step IDs, add the explicit

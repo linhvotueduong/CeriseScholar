@@ -11,6 +11,9 @@ Product code changed by this proposal: none
 Related proposal:
 [Stage 3 verified-contract and pilot-candidate architecture](./stage-3-contract-and-pilot-release-architecture.md)
 
+Generative-builder companion:
+[Stage 3 generative study-builder and dependency architecture](./stage-3-generative-study-builder-architecture.md)
+
 Visual review board:
 [Cerise Scholar Stage 3 Architecture](https://www.figma.com/board/PjKGE6Rt5mivhrKs7wq9ub)
 
