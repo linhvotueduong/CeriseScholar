@@ -14,6 +14,9 @@ Consent-step companion:
 Generative-builder companion:
 [Stage 3 generative study-builder and dependency architecture](./stage-3-generative-study-builder-architecture.md)
 
+Implementation phases companion:
+[Stage 3 study-builder and consent implementation plan](./stage-3-study-builder-and-consent-implementation-plan.md)
+
 ## Decision summary
 
 Stage 03 should keep its existing six stable step IDs, add the explicit

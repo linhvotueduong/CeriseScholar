@@ -14,6 +14,7 @@ Related proposals:
 
 - [Stage 3 consent and participant-rights architecture](./stage-3-consent-and-participant-rights-architecture.md)
 - [Stage 3 verified-contract and pilot-candidate architecture](./stage-3-contract-and-pilot-release-architecture.md)
+- [Stage 3 study-builder and consent implementation phases](./stage-3-study-builder-and-consent-implementation-plan.md)
 
 ## Decision summary
 

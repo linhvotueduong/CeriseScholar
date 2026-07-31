@@ -14,6 +14,9 @@ Related proposal:
 Generative-builder companion:
 [Stage 3 generative study-builder and dependency architecture](./stage-3-generative-study-builder-architecture.md)
 
+Research-backed implementation phases:
+[Stage 3 study-builder and consent implementation plan](./stage-3-study-builder-and-consent-implementation-plan.md)
+
 Visual review board:
 [Cerise Scholar Stage 3 Architecture](https://www.figma.com/board/PjKGE6Rt5mivhrKs7wq9ub)
 
