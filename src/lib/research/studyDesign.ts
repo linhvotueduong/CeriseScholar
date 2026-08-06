@@ -1,4 +1,5 @@
 import { readStepDraft, type ResearchPathDraft } from "./researchPathDraft";
+import { selectedResearchQuestionsFromDraft } from "./researchPathwayPhase2Model";
 
 export const STUDY_DESIGN_SCHEMA_VERSION = 1 as const;
 
@@ -11,6 +12,7 @@ export type StudyDesignGoal =
   | "explore-experience";
 
 export type StudySetting = "" | "online" | "laboratory" | "field" | "hybrid";
+export type HybridStudySetting = Exclude<StudySetting, "" | "hybrid">;
 
 export type StudyDesignKind =
   | ""
@@ -28,6 +30,7 @@ export type ConstructRole = "" | "predictor" | "outcome" | "mediator" | "moderat
 export interface StudyDesignDecision {
   goal: StudyDesignGoal;
   setting: StudySetting;
+  hybridSettings: HybridStudySetting[];
   constraints: string;
   availableDevices: string;
   selectedDesign: StudyDesignKind;
@@ -146,6 +149,7 @@ export const STUDY_DESIGN_OPTIONS: ReadonlyArray<{
 const EMPTY_DESIGN: StudyDesignDecision = {
   goal: "",
   setting: "",
+  hybridSettings: [],
   constraints: "",
   availableDevices: "",
   selectedDesign: "",
@@ -188,8 +192,8 @@ function makeQuestionPlan(question: string, index: number): ResearchQuestionPlan
 }
 
 export function collectPathwayResearchQuestions(pathway: ResearchPathDraft): string[] {
-  const questionDraft = readStepDraft(pathway, "stage-01-step-03");
-  return Array.from({ length: 4 }, (_, index) => questionDraft.fields[`key-question-${index}`]?.trim() ?? "");
+  const selected = selectedResearchQuestionsFromDraft(pathway, 4);
+  return Array.from({ length: 4 }, (_, index) => selected[index] ?? "");
 }
 
 function collectLegacyNotes(pathway: ResearchPathDraft): Record<string, string> {
@@ -250,6 +254,14 @@ function enumValue<T extends string>(value: unknown, allowed: readonly T[], fall
   return typeof value === "string" && allowed.includes(value as T) ? value as T : fallback;
 }
 
+function hybridSettingsValue(value: unknown): HybridStudySetting[] {
+  if (!Array.isArray(value)) return [];
+  const allowed = ["online", "laboratory", "field"] as const;
+  return [...new Set(value.filter((item): item is HybridStudySetting => (
+    typeof item === "string" && allowed.includes(item as HybridStudySetting)
+  )))];
+}
+
 export function normalizeStudyDesignDocument(
   value: unknown,
   projectId: string,
@@ -298,6 +310,7 @@ export function normalizeStudyDesignDocument(
           "",
         ),
         setting: enumValue(designValue.setting, ["", "online", "laboratory", "field", "hybrid"] as const, ""),
+        hybridSettings: hybridSettingsValue(designValue.hybridSettings),
         constraints: stringValue(designValue.constraints),
         availableDevices: stringValue(designValue.availableDevices),
         selectedDesign: enumValue(
@@ -374,8 +387,14 @@ export function validateStudyStep(spec: StudySpecification, stepId: string): Stu
       !spec.design.goal
         ? { id: "design-goal", severity: "required", message: "Choose what the study must establish." }
         : null,
+      !spec.design.setting
+        ? { id: "design-setting", severity: "required", message: "Choose where participants or researchers will complete the study." }
+        : null,
       !spec.design.selectedDesign
         ? { id: "design-kind", severity: "required", message: "Select a study design." }
+        : null,
+      spec.design.setting === "hybrid" && spec.design.hybridSettings.length < 2
+        ? { id: "design-hybrid-settings", severity: "required", message: "Choose at least two concrete settings for the hybrid study." }
         : null,
       !spec.design.selectionRationale.trim()
         ? { id: "design-rationale", severity: "required", message: "Explain why the selected design can answer the research questions." }

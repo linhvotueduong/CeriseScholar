@@ -202,7 +202,7 @@ struct ReadinessView: View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
                 .fontWeight(.semibold)
-            Text("\(counts.completed) completed · \(counts.started) incomplete · \(counts.withdrawn) withdrawn")
+            Text("\(counts.completed) completed · \(counts.started) incomplete · \(counts.refused) refused · \(counts.withdrawn) withdrawn")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

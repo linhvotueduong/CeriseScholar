@@ -21,6 +21,8 @@ export type StudyCapabilityStatus =
   | "authoring-export-only"
   | "unsupported";
 export type StudyBuildRecommendationStatus = "required" | "recommended" | "optional" | "unsupported";
+export type StudyBuildProfileVariant = "guided" | "minimal-compatible" | "blank-with-requirements";
+export type StudyBuildSelectionDefault = "include" | "configure" | "exclude";
 
 export interface StudyBuildCapabilitySelection {
   id: string;
@@ -32,6 +34,7 @@ export interface StudyBuildModuleRecommendation {
   id: string;
   moduleKind: string;
   status: StudyBuildRecommendationStatus;
+  selectionDefault: StudyBuildSelectionDefault;
   sourceReferences: ResearchArtifactReference[];
   proposedBlockRoles: string[];
   proposedVariableRoles: string[];
@@ -74,6 +77,7 @@ export interface StudyBuildProfile {
   sourceFingerprint: ResearchArtifactSourceFingerprint;
   designKind: Exclude<StudyDesignKind, "">;
   setting: Exclude<StudySetting, "">;
+  variant: StudyBuildProfileVariant;
   methodLanes: Array<"quantitative" | "qualitative">;
   capabilities: StudyBuildCapabilitySelection[];
   modules: StudyBuildModuleRecommendation[];
@@ -94,6 +98,8 @@ const DESIGNS = STUDY_DESIGN_OPTIONS.map((option) => option.id);
 const SETTINGS = ["online", "laboratory", "field", "hybrid"] as const;
 const CAPABILITY_STATUSES = ["supported", "supported-with-limits", "authoring-export-only", "unsupported"] as const;
 const RECOMMENDATION_STATUSES = ["required", "recommended", "optional", "unsupported"] as const;
+const PROFILE_VARIANTS = ["guided", "minimal-compatible", "blank-with-requirements"] as const;
+const SELECTION_DEFAULTS = ["include", "configure", "exclude"] as const;
 const REPAIR_TARGETS = ["design", "measures", "participants", "studio"] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -148,12 +154,16 @@ function normalizeModules(value: unknown): StudyBuildModuleRecommendation[] | nu
     const id = token(item.id);
     const moduleKind = token(item.moduleKind);
     const status = enumValue(item.status, RECOMMENDATION_STATUSES);
+    const selectionDefault = enumValue(item.selectionDefault, SELECTION_DEFAULTS)
+      ?? (item.selectionDefault === undefined && status
+        ? status === "required" || status === "recommended" ? "include" : "exclude"
+        : null);
     const sourceReferences = references(item.sourceReferences);
     const proposedBlockRoles = tokens(item.proposedBlockRoles);
     const proposedVariableRoles = tokens(item.proposedVariableRoles);
     const rationale = text(item.rationale);
-    return id && moduleKind && status && sourceReferences && proposedBlockRoles && proposedVariableRoles && rationale
-      ? { id, moduleKind, status, sourceReferences, proposedBlockRoles, proposedVariableRoles, rationale }
+    return id && moduleKind && status && selectionDefault && sourceReferences && proposedBlockRoles && proposedVariableRoles && rationale
+      ? { id, moduleKind, status, selectionDefault, sourceReferences, proposedBlockRoles, proposedVariableRoles, rationale }
       : null;
   });
   return normalized.some((item) => item === null) ? null : normalized as StudyBuildModuleRecommendation[];
@@ -229,6 +239,8 @@ export function normalizeStudyBuildProfile(value: unknown, projectId: string): S
   const sourceFingerprint = normalizeResearchArtifactSourceFingerprint(value.sourceFingerprint);
   const designKind = enumValue(value.designKind, DESIGNS);
   const setting = enumValue(value.setting, SETTINGS);
+  const variant = enumValue(value.variant, PROFILE_VARIANTS)
+    ?? (value.variant === undefined ? "guided" : null);
   const methodLanes = Array.isArray(value.methodLanes)
     ? value.methodLanes.map((lane) => enumValue(lane, ["quantitative", "qualitative"] as const))
     : null;
@@ -246,6 +258,7 @@ export function normalizeStudyBuildProfile(value: unknown, projectId: string): S
     || !sourceFingerprint
     || !designKind
     || !setting
+    || !variant
     || !methodLanes
     || methodLanes.some((lane) => lane === null)
     || methodLanes.length === 0
@@ -272,6 +285,7 @@ export function normalizeStudyBuildProfile(value: unknown, projectId: string): S
     sourceFingerprint,
     designKind,
     setting,
+    variant,
     methodLanes: methodLanes as Array<"quantitative" | "qualitative">,
     capabilities,
     modules,

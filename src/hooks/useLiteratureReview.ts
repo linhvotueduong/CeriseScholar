@@ -108,7 +108,8 @@ export function useLiteratureReview(projectId?: string) {
   }, [projectId, syncAnnotations]);
 
   useEffect(() => {
-    fetchEntries();
+    const timer = window.setTimeout(() => void fetchEntries(), 0);
+    return () => window.clearTimeout(timer);
   }, [fetchEntries]);
 
   const updateEntry = useCallback(

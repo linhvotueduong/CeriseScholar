@@ -1,12 +1,15 @@
 # Stage 3 — Consent and Participant Rights Architecture
 
-Status: proposed; awaiting implementation approval
+Status: Phases 0–10 implemented; contract, pilot-candidate, and Stage 4 integration remain proposed
 
 Scope: a new Stage 03 consent-authoring step, its AI copilot, deterministic
 verification, runnable-study integration, release identity, and Stage 04
 handoff
 
-Product code changed by this proposal: none
+Product code changed by this proposal: the Phase 5–10 consent authoring,
+source-reconciliation, specialized-family, review, export, and bounded AI
+copilot slices are implemented, together with the adult English participant
+runtime, receipt, refusal, and withdrawal boundary
 
 Related proposal:
 [Stage 3 verified-contract and pilot-candidate architecture](./stage-3-contract-and-pilot-release-architecture.md)
@@ -28,15 +31,15 @@ Contract**.
 
 The revised visible order should be:
 
-| Visible step | Responsibility | Persisted ID |
-| --- | --- | --- |
-| 01 Select Design | Choose and justify the study design | `stage-03-step-01` |
-| 02 Map Measures | Define research questions, constructs, and evidence | `stage-03-step-02` |
-| 03 Plan Participants | Define population, sampling, assignment, and accessibility | `stage-03-step-03` |
-| 04 Build Study | Implement the participant procedure and data-producing screens | `stage-03-step-04` |
+| Visible step                             | Responsibility                                                                                                 | Persisted ID       |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------ |
+| 01 Select Design                         | Choose and justify the study design                                                                            | `stage-03-step-01` |
+| 02 Map Measures                          | Define research questions, constructs, and evidence                                                            | `stage-03-step-02` |
+| 03 Plan Participants                     | Define population, sampling, assignment, and accessibility                                                     | `stage-03-step-03` |
+| 04 Build Study                           | Implement the participant procedure and data-producing screens                                                 | `stage-03-step-04` |
 | 05 Design Consent and Participant Rights | Compile study facts, author forms, review participant rights, and bind the reviewed draft to the runnable flow | `stage-03-consent` |
-| 06 Verify Data and Analysis Contract | Reconcile intent, implementation, consent, variables, and analysis commitments | `stage-03-step-05` |
-| 07 Create Pilot Candidate | Rehearse, preflight, freeze, checksum, version, and export | `stage-03-step-06` |
+| 06 Verify Data and Analysis Contract     | Reconcile intent, implementation, consent, variables, and analysis commitments                                 | `stage-03-step-05` |
+| 07 Create Pilot Candidate                | Rehearse, preflight, freeze, checksum, version, and export                                                     | `stage-03-step-06` |
 
 The current Step 05 and Step 06 persisted IDs remain unchanged. Their visible
 numbers move to 06 and 07 because `ResearchPathStep.id` is already independent
@@ -270,10 +273,7 @@ type ConsentClause = {
   kind: ConsentClauseKind;
   text: string;
   source:
-    | "researcher"
-    | "institution-template"
-    | "study-derived"
-    | "ai-suggestion";
+    "researcher" | "institution-template" | "study-derived" | "ai-suggestion";
   applicability: "required" | "included" | "not-applicable" | "unresolved";
   rationale: string;
   lastReviewedAt: string | null;
@@ -787,6 +787,10 @@ editing JSON, and upstream drift invalidates readiness.
 
 ### Consent C — AI copilot
 
+Status: complete on August 1, 2026. See
+`stage-3-phase-9-ai-consent-copilot.md` and
+`stage-3-phase-9-verification-report.md`.
+
 - Add the dedicated API route, redacted context builder, system boundary,
   structured parser, per-suggestion apply flow, and final advisory review.
 - Reuse BYOK spending, guardrail, no-store, and metadata-only usage controls.
@@ -795,6 +799,10 @@ Exit criterion: malformed or adversarial model output cannot change protected
 fields, and no suggestion applies without a researcher action.
 
 ### Consent D — Studio and runner integration
+
+Status: complete on August 1, 2026. See
+`stage-3-phase-10-participant-consent-runtime.md` and
+`stage-3-phase-10-verification-report.md`.
 
 - Add the dedicated consent-form reference.
 - Render semantic forms and explicit decisions.
@@ -910,17 +918,17 @@ the supported accessibility matrix, and integrity failures fail closed.
 12. Cerise never claims legal compliance, ethics approval, participant
     capacity, or institutional acceptance.
 
-## Decisions requested before implementation
+## Decisions and current disposition
 
-1. Approve the visible label **Design Consent and Participant Rights**.
-2. Approve placement after Build Study and before Verify Contract.
-3. Approve the stable ID `stage-03-consent` while preserving all six existing
-   Stage 03 IDs.
-4. Approve a dedicated structured `consent-form` runtime block rather than
-   overloading the current generic consent prompt.
-5. Approve a dedicated BYOK consent-assistant route with redaction and no bulk
-   apply.
-6. Approve inclusion of the frozen consent artifact in the already proposed
-   release format 6.
-7. Confirm that cloud sync, electronic signatures, identity proofing, and
-   jurisdiction-specific compliance packs remain separate future phases.
+1. **Implemented:** visible label **Design Consent and Participant Rights**.
+2. **Implemented:** placement after Build Study and before Verify Contract.
+3. **Implemented:** stable ID `stage-03-consent` while preserving all six
+   existing Stage 03 IDs.
+4. **Implemented in Phase 10:** a structured `consent-form` runtime block
+   rather than overloading the generic consent prompt.
+5. **Implemented in Phase 9:** dedicated BYOK consent-assistant route with
+   redaction and no bulk apply.
+6. **Deferred to separately approved Phase 11:** frozen consent in release
+   format 6.
+7. **Boundary retained:** electronic signatures, identity proofing, and
+   jurisdiction-specific compliance packs remain separate capabilities.

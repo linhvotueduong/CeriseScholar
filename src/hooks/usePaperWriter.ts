@@ -34,7 +34,8 @@ export function usePaperWriter(projectId: string) {
   }, [projectId]);
 
   useEffect(() => {
-    fetchSections();
+    const timer = window.setTimeout(() => void fetchSections(), 0);
+    return () => window.clearTimeout(timer);
   }, [fetchSections]);
 
   // Save a section (debounced — auto-saves 1 second after you stop typing)

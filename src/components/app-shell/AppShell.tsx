@@ -42,7 +42,7 @@ export default function AppShell({
         </div>
       </div>
       {/* Mounted once for the whole User Dashboard shell so any surface (ScholarAsk's
-          "Save as my pathway", the PDF viewer's Finish button, etc.) can call
+          canonical pathway saves, the PDF viewer's Finish button, etc.) can call
           showToast() from src/components/app-ui/Toast.tsx without prop-drilling. */}
       <ToastViewport />
     </div>

@@ -119,9 +119,10 @@ struct HostSession: Identifiable, Equatable {
 struct HostSessionCounts: Equatable {
     var started = 0
     var completed = 0
+    var refused = 0
     var withdrawn = 0
 
-    var total: Int { started + completed + withdrawn }
+    var total: Int { started + completed + refused + withdrawn }
 }
 
 struct HostLaunchReadiness: Codable, Equatable {

@@ -190,7 +190,7 @@ final class LocalResponseDatabase: @unchecked Sendable {
               integer(payload["releaseNumber"]) == releaseNumber,
               payload["releaseChecksum"] as? String == releaseChecksum,
               let status = payload["status"] as? String,
-              ["started", "completed", "withdrawn"].contains(status),
+              ["started", "completed", "refused", "withdrawn"].contains(status),
               let executionMode = payload["executionMode"] as? String,
               ["pilot", "production"].contains(executionMode),
               executionMode == expectedExecutionMode,
@@ -201,7 +201,7 @@ final class LocalResponseDatabase: @unchecked Sendable {
             throw HostError.storage("The participant checkpoint did not match the frozen release contract.")
         }
 
-        if status == "withdrawn" {
+        if status == "withdrawn" || status == "refused" {
             payload["responses"] = [String: Any]()
             payload["audioResponses"] = [String: Any]()
             payload["videoResponses"] = [String: Any]()
@@ -225,7 +225,7 @@ final class LocalResponseDatabase: @unchecked Sendable {
         let inserted = try locked {
             try executeUnlocked("BEGIN IMMEDIATE")
             do {
-                if status == "withdrawn" {
+                if status == "withdrawn" || status == "refused" {
                     try executePrepared(
                         "DELETE FROM checkpoints WHERE session_id = ?",
                         bindings: [.text(sessionId)]
@@ -279,7 +279,7 @@ final class LocalResponseDatabase: @unchecked Sendable {
                 throw error
             }
         }
-        if status == "withdrawn" {
+        if status == "withdrawn" || status == "refused" {
             try removeMediaDirectory(for: sessionId)
         }
         return inserted
@@ -815,6 +815,7 @@ final class LocalResponseDatabase: @unchecked Sendable {
         return sessions.reduce(into: HostSessionCounts()) { counts, session in
             switch session.status {
             case "completed": counts.completed += 1
+            case "refused": counts.refused += 1
             case "withdrawn": counts.withdrawn += 1
             default: counts.started += 1
             }

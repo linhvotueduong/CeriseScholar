@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import type { ResearchPathStep } from "@/lib/research/researchPathConfig";
 import type { ResearchPathDraft } from "@/lib/research/researchPathDraft";
+import type { ProposalHandoffPackage, ProposalHandoffTarget } from "@/lib/research/proposalHandoffPhase7";
+import type { ReviewedProposalBaselinePackage } from "@/lib/research/proposalReviewPhase9";
 import {
   STUDY_DESIGN_OPTIONS,
   collectPathwayResearchQuestions,
@@ -11,6 +13,7 @@ import {
   updateStudySpecification,
   validateStudyStep,
   type ConstructRole,
+  type HybridStudySetting,
   type ParticipantPlan,
   type ResearchQuestionPlan,
   type StudyDesignDecision,
@@ -23,6 +26,10 @@ import styles from "./ResearchPathWorkspace.module.css";
 
 interface Stage3StudyPlannerProps {
   pathwayDraft: ResearchPathDraft;
+  proposalHandoff: ProposalHandoffPackage | null;
+  proposalHandoffCurrent: boolean;
+  reviewedProposalBaseline: ReviewedProposalBaselinePackage | null;
+  reviewedProposalBaselineCurrent: boolean;
   step: ResearchPathStep;
   studyDesign: StudyDesignDocument;
   updateStudyDesign: (updater: (current: StudyDesignDocument) => StudyDesignDocument) => void;
@@ -41,6 +48,12 @@ const STUDY_SETTINGS: ReadonlyArray<{ value: Exclude<StudySetting, "">; label: s
   { value: "laboratory", label: "Laboratory" },
   { value: "field", label: "Field or real-world setting" },
   { value: "hybrid", label: "Hybrid" },
+];
+
+const HYBRID_SETTINGS: ReadonlyArray<{ value: HybridStudySetting; label: string }> = [
+  { value: "online", label: "Online / participant home" },
+  { value: "laboratory", label: "Research laboratory" },
+  { value: "field", label: "Field / real-world setting" },
 ];
 
 const CONSTRUCT_ROLES: ReadonlyArray<{ value: Exclude<ConstructRole, "">; label: string }> = [
@@ -81,13 +94,16 @@ function ValidationSummary({ issues }: { issues: StudyValidationIssue[] }) {
   );
 }
 
-function InheritedContext({ pathwayDraft }: { pathwayDraft: ResearchPathDraft }) {
-  const questions = collectPathwayResearchQuestions(pathwayDraft).filter(Boolean);
+function InheritedContext({ pathwayDraft, proposalHandoff, proposalHandoffCurrent, reviewedProposalBaseline, reviewedProposalBaselineCurrent, target }: { pathwayDraft: ResearchPathDraft; proposalHandoff: ProposalHandoffPackage | null; proposalHandoffCurrent: boolean; reviewedProposalBaseline: ReviewedProposalBaselinePackage | null; reviewedProposalBaselineCurrent: boolean; target: ProposalHandoffTarget }) {
+  const draftQuestions = collectPathwayResearchQuestions(pathwayDraft).filter(Boolean);
+  const questions = proposalHandoff?.questionHandoffs.map((question) => question.questionText) ?? draftQuestions;
+  const responsibilities = proposalHandoff?.responsibilities.filter((item) => item.disposition === "carry-to-stage3" && item.stage3Target === target) ?? [];
   return (
-    <section className={styles.studyContext}>
+    <section className={`${styles.studyContext} ${proposalHandoffCurrent && reviewedProposalBaselineCurrent ? styles.studyHandoffCurrent : styles.studyHandoffMissing}`}>
       <div>
-        <span>Inherited research context</span>
-        <strong>{questions.length > 0 ? `${questions.length} research question${questions.length === 1 ? "" : "s"}` : "No key questions yet"}</strong>
+        <span>{proposalHandoffCurrent && reviewedProposalBaselineCurrent ? "Current verified Stage 2 handoff · researcher-reviewed baseline" : proposalHandoffCurrent ? "Researcher review required" : proposalHandoff ? "Stale Stage 2 handoff" : "Stage 2 handoff required"}</span>
+        <strong>{reviewedProposalBaseline ? `Proposal r${reviewedProposalBaseline.proposalRevision} · review baseline r${reviewedProposalBaseline.revision}` : proposalHandoff ? `Technical handoff r${proposalHandoff.revision}` : "Draft context only"}</strong>
+        {reviewedProposalBaseline ? <small title={reviewedProposalBaseline.identity.checksum}>{reviewedProposalBaseline.identity.checksum.slice(0, 24)}…{reviewedProposalBaselineCurrent ? "" : " · review reconciliation required"}</small> : proposalHandoff ? <small title={proposalHandoff.identity.checksum}>{proposalHandoff.identity.checksum.slice(0, 24)}… · complete researcher review</small> : <small>Freeze and review the current proposal baseline before completing this step.</small>}
       </div>
       {questions.length > 0 ? (
         <ol>
@@ -101,6 +117,7 @@ function InheritedContext({ pathwayDraft }: { pathwayDraft: ResearchPathDraft })
       ) : (
         <p>Return to Stage 1 → Formulate Research Questions to create the traceable starting point for this study.</p>
       )}
+      {responsibilities.length ? <div className={styles.studyHandoffResponsibilities}><strong>{responsibilities.length} responsibility item{responsibilities.length === 1 ? "" : "s"} assigned here</strong>{responsibilities.map((item) => <p key={item.id}>{item.sourceText}</p>)}</div> : null}
     </section>
   );
 }
@@ -117,6 +134,10 @@ function LegacyNotes({ note }: { note?: string }) {
 
 function StudyDesignCanvas({
   pathwayDraft,
+  proposalHandoff,
+  proposalHandoffCurrent,
+  reviewedProposalBaseline,
+  reviewedProposalBaselineCurrent,
   studyDesign,
   updateStudyDesign,
 }: Omit<Stage3StudyPlannerProps, "step">) {
@@ -136,14 +157,24 @@ function StudyDesignCanvas({
       design: {
         ...spec.design,
         [key]: value,
-        ...(key === "goal" || key === "selectedDesign" || key === "selectionRationale" ? { approved: false } : null),
+        ...(key === "goal" || key === "setting" || key === "hybridSettings" || key === "selectedDesign" || key === "selectionRationale" ? { approved: false } : null),
       },
     })));
   };
 
+  const toggleHybridSetting = (setting: HybridStudySetting) => {
+    const selected = decision.hybridSettings.includes(setting);
+    updateDecision(
+      "hybridSettings",
+      selected
+        ? decision.hybridSettings.filter((item) => item !== setting)
+        : [...decision.hybridSettings, setting],
+    );
+  };
+
   return (
     <div className={styles.studyPlanningCanvas}>
-      <InheritedContext pathwayDraft={pathwayDraft} />
+      <InheritedContext pathwayDraft={pathwayDraft} proposalHandoff={proposalHandoff} proposalHandoffCurrent={proposalHandoffCurrent} reviewedProposalBaseline={reviewedProposalBaseline} reviewedProposalBaselineCurrent={reviewedProposalBaselineCurrent} target="select-design" />
       <div className={styles.studyPlanningBody}>
         <section className={styles.studySection}>
           <div className={styles.studySectionHeading}>
@@ -163,11 +194,31 @@ function StudyDesignCanvas({
             </label>
             <label>
               <span>Study setting</span>
-              <select value={decision.setting} onChange={(event) => updateDecision("setting", event.target.value as StudySetting)}>
+              <select value={decision.setting} onChange={(event) => {
+                const setting = event.target.value as StudySetting;
+                updateDecision("setting", setting);
+                if (setting !== "hybrid") updateDecision("hybridSettings", []);
+              }}>
                 <option value="">Select a setting</option>
                 {STUDY_SETTINGS.map((setting) => <option key={setting.value} value={setting.value}>{setting.label}</option>)}
               </select>
             </label>
+            {decision.setting === "hybrid" ? (
+              <fieldset className={styles.hybridSettingPicker}>
+                <legend>Which settings are part of this hybrid study?</legend>
+                <p>Select at least two. Step 04 will create a shared core and named setting-specific branches.</p>
+                {HYBRID_SETTINGS.map((setting) => (
+                  <label key={setting.value}>
+                    <input
+                      checked={decision.hybridSettings.includes(setting.value)}
+                      onChange={() => toggleHybridSetting(setting.value)}
+                      type="checkbox"
+                    />
+                    <span>{setting.label}</span>
+                  </label>
+                ))}
+              </fieldset>
+            ) : null}
             <label>
               <span>Practical or ethical constraints</span>
               <textarea rows={4} value={decision.constraints} onChange={(event) => updateDecision("constraints", event.target.value)} placeholder="Time, access, recruitment, manipulation, risk, or approval constraints…" />
@@ -238,6 +289,10 @@ function StudyDesignCanvas({
 
 function MeasuresCanvas({
   pathwayDraft,
+  proposalHandoff,
+  proposalHandoffCurrent,
+  reviewedProposalBaseline,
+  reviewedProposalBaselineCurrent,
   studyDesign,
   updateStudyDesign,
 }: Omit<Stage3StudyPlannerProps, "step">) {
@@ -267,6 +322,7 @@ function MeasuresCanvas({
 
   return (
     <div className={styles.studyPlanningCanvas}>
+      <InheritedContext pathwayDraft={pathwayDraft} proposalHandoff={proposalHandoff} proposalHandoffCurrent={proposalHandoffCurrent} reviewedProposalBaseline={reviewedProposalBaseline} reviewedProposalBaselineCurrent={reviewedProposalBaselineCurrent} target="map-measures" />
       <div className={styles.measureQuestionTabs} role="tablist" aria-label="Research question measurement plans">
         {studyDesign.spec.researchQuestions.map((question, index) => (
           <button aria-selected={index === activeQuestion} className={index === activeQuestion ? styles.measureQuestionActive : undefined} key={question.id} onClick={() => setActiveQuestion(index)} role="tab" type="button">
@@ -357,9 +413,14 @@ function MeasuresCanvas({
 }
 
 function ParticipantsCanvas({
+  pathwayDraft,
+  proposalHandoff,
+  proposalHandoffCurrent,
+  reviewedProposalBaseline,
+  reviewedProposalBaselineCurrent,
   studyDesign,
   updateStudyDesign,
-}: Omit<Stage3StudyPlannerProps, "step" | "pathwayDraft">) {
+}: Omit<Stage3StudyPlannerProps, "step">) {
   const participants = studyDesign.spec.participants;
   const issues = validateStudyStep(studyDesign.spec, "stage-03-step-03");
   const estimate = useMemo(
@@ -393,6 +454,7 @@ function ParticipantsCanvas({
 
   return (
     <div className={styles.studyPlanningCanvas}>
+      <InheritedContext pathwayDraft={pathwayDraft} proposalHandoff={proposalHandoff} proposalHandoffCurrent={proposalHandoffCurrent} reviewedProposalBaseline={reviewedProposalBaseline} reviewedProposalBaselineCurrent={reviewedProposalBaselineCurrent} target="plan-participants" />
       <div className={styles.participantSummaryBar}>
         <div><span>Selected design</span><strong>{STUDY_DESIGN_OPTIONS.find((option) => option.id === studyDesign.spec.design.selectedDesign)?.title ?? "Not selected"}</strong></div>
         <div><span>Research questions</span><strong>{studyDesign.spec.researchQuestions.filter((question) => question.question.trim()).length}</strong></div>
@@ -455,13 +517,13 @@ function ParticipantsCanvas({
 
 export default function Stage3StudyPlanner(props: Stage3StudyPlannerProps) {
   if (props.step.canvas === "study-design") {
-    return <StudyDesignCanvas pathwayDraft={props.pathwayDraft} studyDesign={props.studyDesign} updateStudyDesign={props.updateStudyDesign} />;
+    return <StudyDesignCanvas pathwayDraft={props.pathwayDraft} proposalHandoff={props.proposalHandoff} proposalHandoffCurrent={props.proposalHandoffCurrent} reviewedProposalBaseline={props.reviewedProposalBaseline} reviewedProposalBaselineCurrent={props.reviewedProposalBaselineCurrent} studyDesign={props.studyDesign} updateStudyDesign={props.updateStudyDesign} />;
   }
   if (props.step.canvas === "study-measures") {
-    return <MeasuresCanvas pathwayDraft={props.pathwayDraft} studyDesign={props.studyDesign} updateStudyDesign={props.updateStudyDesign} />;
+    return <MeasuresCanvas pathwayDraft={props.pathwayDraft} proposalHandoff={props.proposalHandoff} proposalHandoffCurrent={props.proposalHandoffCurrent} reviewedProposalBaseline={props.reviewedProposalBaseline} reviewedProposalBaselineCurrent={props.reviewedProposalBaselineCurrent} studyDesign={props.studyDesign} updateStudyDesign={props.updateStudyDesign} />;
   }
   if (props.step.canvas === "study-participants") {
-    return <ParticipantsCanvas studyDesign={props.studyDesign} updateStudyDesign={props.updateStudyDesign} />;
+    return <ParticipantsCanvas pathwayDraft={props.pathwayDraft} proposalHandoff={props.proposalHandoff} proposalHandoffCurrent={props.proposalHandoffCurrent} reviewedProposalBaseline={props.reviewedProposalBaseline} reviewedProposalBaselineCurrent={props.reviewedProposalBaselineCurrent} studyDesign={props.studyDesign} updateStudyDesign={props.updateStudyDesign} />;
   }
   return null;
 }

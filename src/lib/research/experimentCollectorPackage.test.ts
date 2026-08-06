@@ -116,13 +116,47 @@ test("the local collector accepts same-origin checkpoints and preserves the newe
     assert.equal((await post(checkpoint(1, "2"))).status, 200);
     assert.equal((await post(checkpoint(3, "7"), "https://example.invalid")).status, 403);
 
-    let exported = await (await fetch(`${admin}/responses.json`)).json() as { sessions: Array<{ status?: string; responses?: Record<string, string> }> };
+    type ExportedSession = {
+      sessionId?: string;
+      status?: string;
+      responses?: Record<string, string>;
+      audioResponses?: Record<string, unknown>;
+      videoResponses?: Record<string, unknown>;
+      timings?: unknown[];
+      events?: unknown[];
+      trials?: unknown[];
+      consentReceipt?: { receiptChecksum?: string };
+    };
+    let exported = await (await fetch(`${admin}/responses.json`)).json() as { sessions: ExportedSession[] };
     assert.equal(exported.sessions[0]?.responses?.["block-rating-1"], "6");
 
     assert.equal((await post(checkpoint(3, "", "withdrawn"))).status, 200);
-    exported = await (await fetch(`${admin}/responses.json`)).json() as { sessions: Array<{ status?: string; responses?: Record<string, string> }> };
+    exported = await (await fetch(`${admin}/responses.json`)).json() as { sessions: ExportedSession[] };
     assert.equal(exported.sessions[0]?.status, "withdrawn");
     assert.deepEqual(exported.sessions[0]?.responses, {});
+
+    const refused = {
+      ...checkpoint(1, "must-not-persist", "refused"),
+      idempotencyKey: "session-refused:1:refused",
+      sessionId: "session-refused",
+      audioResponses: { interview: { uploadId: "private-audio" } },
+      videoResponses: { task: { uploadId: "private-video" } },
+      timings: [{ blockId: "private-timing" }],
+      events: [{ type: "private-event" }],
+      trials: [{ trialId: "private-trial" }],
+      consentReceipt: { receiptChecksum: `sha256:${"a".repeat(64)}` },
+    };
+    assert.equal((await post(refused)).status, 200);
+    exported = await (await fetch(`${admin}/responses.json`)).json() as { sessions: ExportedSession[] };
+    const refusedExport = exported.sessions.find((session) => session.sessionId === "session-refused");
+    assert.equal(refusedExport?.status, "refused");
+    assert.deepEqual(refusedExport?.responses, {});
+    assert.deepEqual(refusedExport?.audioResponses, {});
+    assert.deepEqual(refusedExport?.videoResponses, {});
+    assert.deepEqual(refusedExport?.timings, []);
+    assert.deepEqual(refusedExport?.events, []);
+    assert.deepEqual(refusedExport?.trials, []);
+    assert.equal(refusedExport?.consentReceipt?.receiptChecksum, refused.consentReceipt.receiptChecksum);
   } finally {
     child.kill("SIGTERM");
     await new Promise<void>((resolve) => {

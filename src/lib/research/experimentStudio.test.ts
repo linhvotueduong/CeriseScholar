@@ -16,6 +16,7 @@ import {
   validateExperimentStudio,
   writeExperimentStudioDocument,
   MAX_EXPERIMENT_SPEC_BYTES,
+  EXPERIMENT_STUDIO_SCHEMA_VERSION,
   normalizeExperimentBlockMedia,
 } from "./experimentStudio";
 
@@ -34,7 +35,7 @@ function memoryStorage() {
 test("a new Experimental Studio draft provides a safe five-screen study flow", () => {
   const document = createExperimentStudioDocument("project-1");
 
-  assert.equal(document.schemaVersion, 8);
+  assert.equal(document.schemaVersion, EXPERIMENT_STUDIO_SCHEMA_VERSION);
   assert.deepEqual(document.trialTables, []);
   assert.equal(document.timingDiagnostic, null);
   assert.deepEqual(document.blocks.map((block) => block.type), [
@@ -67,7 +68,7 @@ test("older drafts upgrade to the media-capable schema without losing blocks", (
     }],
   }, "project-1");
 
-  assert.equal(normalized.schemaVersion, 8);
+  assert.equal(normalized.schemaVersion, EXPERIMENT_STUDIO_SCHEMA_VERSION);
   assert.equal(normalized.blocks[0].title, "Legacy rating");
   assert.equal(normalized.blocks[0].displayDurationMs, 0);
   assert.equal(normalized.conditions[0].name, "All participants");

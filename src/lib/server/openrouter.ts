@@ -11,6 +11,7 @@ type OpenRouterChatOptions = {
   timeoutMs?: number;
   temperature?: number;
   maxTokens?: number;
+  signal?: AbortSignal;
 };
 
 type OpenRouterResponse = {
@@ -50,11 +51,19 @@ const APP_TITLE = "Cerise Scholar";
 
 export class OpenRouterError extends Error {
   status: number;
+  code: "cancelled" | "provider-busy" | "provider-timeout" | "temporarily-unavailable" | "unknown";
+  retryable: boolean;
 
-  constructor(message: string, status = 500) {
+  constructor(
+    message: string,
+    status = 500,
+    options: { code?: OpenRouterError["code"]; retryable?: boolean } = {},
+  ) {
     super(message);
     this.name = "OpenRouterError";
     this.status = status;
+    this.code = options.code ?? "unknown";
+    this.retryable = options.retryable === true;
   }
 }
 
@@ -77,6 +86,7 @@ export async function callOpenRouterChat({
   timeoutMs = 55000,
   temperature = 0.3,
   maxTokens = 700,
+  signal,
 }: OpenRouterChatOptions): Promise<OpenRouterChatResult> {
   if (!apiKey) {
     throw new OpenRouterError("AI not configured", 500);
@@ -86,7 +96,14 @@ export async function callOpenRouterChat({
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const abortFromCaller = () => controller.abort();
+  signal?.addEventListener("abort", abortFromCaller, { once: true });
+  if (signal?.aborted) controller.abort();
   const startedAt = Date.now();
 
   try {
@@ -127,18 +144,20 @@ export async function callOpenRouterChat({
         status: res.status,
         contentType,
         durationMs: Date.now() - startedAt,
-        bodyPrefix: text.slice(0, 160),
       });
       // 429 here is the shared FREE pool being saturated upstream — a normal,
       // transient condition, not a fault. Say so instead of echoing raw
       // provider text like "Provider returned error".
       if (res.status === 429) {
-        throw new OpenRouterError("Free AI models are busy right now — please retry in a moment.", 429);
+        throw new OpenRouterError("Free AI models are busy right now — please retry in a moment.", 429, { code: "provider-busy", retryable: true });
       }
-      throw new OpenRouterError(
-        data?.error?.message || "AI service error. Please try again.",
-        res.status >= 500 ? 502 : res.status
-      );
+      if (res.status === 401 || res.status === 403) {
+        throw new OpenRouterError("The AI provider credentials were rejected. Check Settings → AI.", res.status, { code: "unknown", retryable: false });
+      }
+      throw new OpenRouterError("The AI provider could not complete this request.", res.status >= 500 ? 502 : res.status, {
+        code: res.status >= 500 ? "temporarily-unavailable" : "unknown",
+        retryable: res.status >= 500,
+      });
     }
 
     const content = extractOpenRouterContent(data);
@@ -147,9 +166,8 @@ export async function callOpenRouterChat({
         route,
         contentType,
         durationMs: Date.now() - startedAt,
-        bodyPrefix: text.slice(0, 160),
       });
-      throw new OpenRouterError("AI returned an empty response. Please try again.", 502);
+      throw new OpenRouterError("AI returned an empty response. Please try again.", 502, { code: "temporarily-unavailable", retryable: true });
     }
 
     return {
@@ -160,15 +178,19 @@ export async function callOpenRouterChat({
   } catch (err) {
     if (err instanceof OpenRouterError) throw err;
     if (err instanceof Error && err.name === "AbortError") {
-      throw new OpenRouterError("AI took too long. Try a shorter request.", 504);
+      if (signal?.aborted && !timedOut) {
+        throw new OpenRouterError("The AI request was cancelled. No project change was made.", 499, { code: "cancelled", retryable: false });
+      }
+      throw new OpenRouterError("AI took too long. Try a shorter request.", 504, { code: "provider-timeout", retryable: true });
     }
     console.error("OpenRouter request failed", {
       route,
       durationMs: Date.now() - startedAt,
       message: err instanceof Error ? err.message : String(err),
     });
-    throw new OpenRouterError("AI service is temporarily unavailable. Please try again.", 502);
+    throw new OpenRouterError("AI service is temporarily unavailable. Please try again.", 502, { code: "temporarily-unavailable", retryable: true });
   } finally {
     clearTimeout(timeout);
+    signal?.removeEventListener("abort", abortFromCaller);
   }
 }

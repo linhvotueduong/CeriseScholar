@@ -1,6 +1,7 @@
 import { buildExperimentRunnerPackage, experimentRunnerFilename } from "./experimentRunnerPackage";
 import { collectExperimentVariables } from "./experimentStudio";
 import type { ExperimentRelease } from "./experimentRelease";
+import type { ConsentRuntimeArtifact } from "./consentRuntime";
 
 export interface ExperimentCollectorPackage {
   filename: string;
@@ -10,6 +11,7 @@ export interface ExperimentCollectorPackage {
 
 interface ExperimentCollectorPackageOptions {
   executionMode?: "pilot" | "production";
+  consentRuntimeArtifact?: ConsentRuntimeArtifact;
 }
 
 function sourceString(value: string): string {
@@ -31,6 +33,7 @@ export function buildExperimentCollectorPackage(
   const runner = buildExperimentRunnerPackage(release.studio, {
     release,
     executionMode,
+    consentRuntimeArtifact: options.consentRuntimeArtifact,
     collectorCheckpointEndpoint: "/api/checkpoints",
   });
   const variables = collectExperimentVariables(release.studio);
@@ -124,8 +127,8 @@ let paused=false;
 function text(response,status,contentType,body,headers={}){response.writeHead(status,{"Content-Type":contentType,"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","X-Frame-Options":"DENY","Referrer-Policy":"no-referrer","Permissions-Policy":"camera=(), microphone=(), geolocation=()",...headers});response.end(body);}
 function json(response,status,body){text(response,status,"application/json;charset=utf-8",JSON.stringify(body));}
 function readBody(request){return new Promise((resolve,reject)=>{let size=0;const chunks=[];request.on("data",(chunk)=>{size+=chunk.length;if(size>MAX_BODY_BYTES){reject(new Error("too-large"));request.destroy();return;}chunks.push(chunk);});request.on("end",()=>resolve(Buffer.concat(chunks).toString("utf8")));request.on("error",reject);});}
-function validCheckpoint(value){return value&&typeof value==="object"&&typeof value.idempotencyKey==="string"&&value.idempotencyKey.length<=200&&typeof value.sessionId==="string"&&value.sessionId.length<=100&&Number.isInteger(value.checkpointSequence)&&value.checkpointSequence>0&&value.checkpointSequence<=10000000&&value.releaseId===RELEASE.releaseId&&value.releaseChecksum===RELEASE.checksum&&["started","completed","withdrawn"].includes(value.status)&&value.condition&&typeof value.condition.id==="string";}
-function saveCheckpoint(value){const payload=JSON.stringify(value);database.exec("BEGIN IMMEDIATE");try{if(value.status==="withdrawn"){deleteSessionCheckpoints.run(value.sessionId);}const result=insertCheckpoint.run(value.idempotencyKey,value.sessionId,value.releaseId,value.releaseChecksum,value.status,payload,new Date().toISOString());if(Number(result.changes)>0){upsertSession.run(value.sessionId,value.checkpointSequence,value.releaseId,Number(value.releaseNumber)||0,value.releaseChecksum,String(value.executionMode||"pilot"),String(value.condition.id||""),String(value.condition.name||""),value.status,String(value.startedAt||new Date().toISOString()),String(value.updatedAt||new Date().toISOString()),payload);}database.exec("COMMIT");return Number(result.changes)>0;}catch(error){database.exec("ROLLBACK");throw error;}}
+function validCheckpoint(value){return value&&typeof value==="object"&&typeof value.idempotencyKey==="string"&&value.idempotencyKey.length<=200&&typeof value.sessionId==="string"&&value.sessionId.length<=100&&Number.isInteger(value.checkpointSequence)&&value.checkpointSequence>0&&value.checkpointSequence<=10000000&&value.releaseId===RELEASE.releaseId&&value.releaseChecksum===RELEASE.checksum&&["started","completed","refused","withdrawn"].includes(value.status)&&value.condition&&typeof value.condition.id==="string";}
+function saveCheckpoint(value){const scrubbed=value.status==="withdrawn"||value.status==="refused";if(scrubbed){value={...value,responses:{},audioResponses:{},videoResponses:{},timings:[],events:[],history:[],trials:[],trialOrder:[]};}const payload=JSON.stringify(value);database.exec("BEGIN IMMEDIATE");try{if(scrubbed){deleteSessionCheckpoints.run(value.sessionId);}const result=insertCheckpoint.run(value.idempotencyKey,value.sessionId,value.releaseId,value.releaseChecksum,value.status,payload,new Date().toISOString());if(Number(result.changes)>0){upsertSession.run(value.sessionId,value.checkpointSequence,value.releaseId,Number(value.releaseNumber)||0,value.releaseChecksum,String(value.executionMode||"pilot"),String(value.condition.id||""),String(value.condition.name||""),value.status,String(value.startedAt||new Date().toISOString()),String(value.updatedAt||new Date().toISOString()),payload);}database.exec("COMMIT");return Number(result.changes)>0;}catch(error){database.exec("ROLLBACK");throw error;}}
 function csvCell(value){let output=value===null||value===undefined?"":String(value);if(/^[\\t\\r\\n ]*[=+\\-@]/.test(output)){output="'"+output;}return "\\\""+output.replaceAll("\\\"","\\\"\\\"")+"\\\"";}
 function sessions(){return database.prepare("SELECT payload_json FROM sessions ORDER BY started_at ASC").all().flatMap((row)=>{try{return[JSON.parse(String(row.payload_json))];}catch{return[];}});}
 function responseValues(record){const values={};for(const block of RELEASE.studio.blocks){if(block.variableName){values[block.variableName]=record.responses&&record.responses[block.id]!==undefined?record.responses[block.id]:null;}}return values;}

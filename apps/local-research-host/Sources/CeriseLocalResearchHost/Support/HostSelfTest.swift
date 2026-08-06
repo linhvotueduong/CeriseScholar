@@ -477,6 +477,45 @@ enum HostSelfTest {
         else {
             throw Failure(message: "Withdrawn participant payloads were not scrubbed.")
         }
+
+        let refused = checkpoint(
+            idempotencyKey: "refused-1",
+            sequence: 1,
+            status: "refused",
+            releaseId: releaseId,
+            releaseChecksum: releaseChecksum,
+            response: "must also be removed",
+            sessionId: "participant_refused"
+        )
+        _ = try database.saveCheckpoint(
+            refused,
+            releaseId: releaseId,
+            releaseNumber: 1,
+            releaseChecksum: releaseChecksum,
+            expectedExecutionMode: "pilot"
+        )
+        let refusedExport = try JSONSerialization.jsonObject(
+            with: database.responseExportJSON(
+                releaseId: releaseId,
+                releaseChecksum: releaseChecksum
+            )
+        ) as? [String: Any]
+        let refusedSessions = refusedExport?["sessions"] as? [[String: Any]]
+        let refusedSession = refusedSessions?.first {
+            $0["sessionId"] as? String == "participant_refused"
+        }
+        let refusedResponses = refusedSession?["responses"] as? [String: Any]
+        let refusedTimings = refusedSession?["timings"] as? [Any]
+        let refusedEvents = refusedSession?["events"] as? [Any]
+        let refusedTrials = refusedSession?["trials"] as? [Any]
+        guard refusedSession?["status"] as? String == "refused",
+              refusedResponses?.isEmpty == true,
+              refusedTimings?.isEmpty == true,
+              refusedEvents?.isEmpty == true,
+              refusedTrials?.isEmpty == true
+        else {
+            throw Failure(message: "Refused participant payloads were not scrubbed.")
+        }
     }
 
     private static func verifySeparatedResearchPackage(

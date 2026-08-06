@@ -9,46 +9,12 @@ import { BYOK_DECLINED_MESSAGE, isByokDeclinedStatus } from "@/lib/server/aiErro
 import { checkAiGuardrailsBeforeRequest } from "@/lib/server/aiGuardrails";
 import { getMonthlyDefaultLaneUsage, recordAiUsage } from "@/lib/server/aiUsage";
 import { INCLUDED_MONTHLY_ALLOWANCE, allowanceExceeded } from "@/lib/ai/allowance";
+import { legacyResearchJourneyAdapter } from "@/lib/research/researchJourneyMigration";
 
 const OPENALEX_TIMEOUT_MS = 8000;
 const AI_TIMEOUT_MS = 25000;
 
-type AnswerMode = "research_answer" | "research_journey";
-type JourneyIntent = "general_journey" | "find_bridge" | "narrow_question" | "map_evidence";
 type ResearchMessage = { role: "system" | "user" | "assistant"; content: string };
-
-function normalizeAnswerMode(value: unknown): AnswerMode {
-  return value === "research_journey" ? "research_journey" : "research_answer";
-}
-
-function normalizeJourneyIntent(value: unknown): JourneyIntent {
-  if (
-    value === "find_bridge" ||
-    value === "narrow_question" ||
-    value === "map_evidence"
-  ) {
-    return value;
-  }
-  return "general_journey";
-}
-
-function cleanResearchJourneyAnswer(answer: string) {
-  return answer
-    .replace(/\bthe mechanism you describe\b/gi, "the described mechanism")
-    .replace(/\byour ([a-z][a-z -]{1,80}?) intuition\b/gi, "this $1 intuition")
-    .replace(/\byour intuition\b/gi, "this intuition")
-    .replace(/\byour work\b/gi, "this project")
-    .replace(/\byour framework\b/gi, "this framework")
-    .replace(/\byour proposed\b/gi, "the proposed")
-    .replace(/\byour argument\b/gi, "the argument")
-    .replace(/\byour research question\b/gi, "this research question")
-    .replace(/\byour question\b/gi, "this question")
-    .replace(/\byour idea\b/gi, "this idea")
-    .replace(/\byour research time\b/gi, "the research time you want to spend")
-    .replace(/\s*->\s*/g, " to ")
-    .replace(/\s*→\s*/g, " to ")
-    .replace(/—/g, ", ");
-}
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -190,9 +156,26 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { query, followUp, previousAnswer, projectId } = body;
-    const answerMode = normalizeAnswerMode(body.answerMode);
-    const journeyIntent = normalizeJourneyIntent(body.journeyIntent);
-    const isResearchJourney = answerMode === "research_journey";
+    const legacyJourney = legacyResearchJourneyAdapter({
+      answerMode: body.answerMode,
+      journeyIntent: body.journeyIntent,
+      projectId,
+    });
+    if (legacyJourney.legacy) {
+      return NextResponse.json({
+        answer: "Research Journey has moved to the project-aware Research Mentor. This historical request was not treated as evidence and did not change Stage 1 readiness. Open the Mentor to continue with a checksum-bound, review-before-apply suggestion.",
+        references: [],
+        paperCount: 0,
+        totalFound: 0,
+        legacyJourneyAdapter: {
+          status: "moved-to-research-mentor",
+          mentorMode: legacyJourney.mentorMode,
+          destination: legacyJourney.destination,
+          pathwayChanged: false,
+          readinessChanged: false,
+        },
+      });
+    }
 
     // Step 1: Generate 6 search queries
     const searchQueries = generateSearchQueries(query);
@@ -228,7 +211,7 @@ export async function POST(req: NextRequest) {
 
     // Step 4: Full context with proper abstracts
     const papersContext = aiPapers
-      .map((p) => `[${p.num}] ${p.authors.slice(0, 2).join(", ")}${p.authors.length > 2 ? " et al." : ""} (${p.year || "n.d."}). "${p.title}". ${p.journal}.\nFindings: ${p.abstract.slice(0, isResearchJourney ? 180 : 220)}`)
+      .map((p) => `[${p.num}] ${p.authors.slice(0, 2).join(", ")}${p.authors.length > 2 ? " et al." : ""} (${p.year || "n.d."}). "${p.title}". ${p.journal}.\nFindings: ${p.abstract.slice(0, 220)}`)
       .join("\n\n");
 
     // Step 5: Professor-level prompt with detailed, multi-source citations.
@@ -261,62 +244,7 @@ CITATION RULES:
 - Do not invent source numbers that are not listed above.
 - Prefer depth and clarity over a tiny answer, but stay focused enough to finish on a serverless backend.`;
 
-    const journeyIntentInstructions: Record<JourneyIntent, string> = {
-      general_journey:
-        "The student selected Research Journey without a starter button. Treat this as open mentor mode: diagnose what kind of support would help, then choose the best-fit path among bridging, narrowing, mapping evidence, theory, method, or argument support.",
-      find_bridge:
-        "The student chose Find the bridge. Focus on helping them connect a real idea to related concepts, adjacent literatures, useful theories, search terms, and a strategy for source scarcity. This is not only about translating to academic terms; it is about solving the student's struggle when direct literature is limited or named differently.",
-      narrow_question:
-        "The student chose Narrow my question. Treat their prompt as a rough idea, even if it is messy or short. Translate it into researchable pathways with possible variables, scope choices, 2-3 possible research questions, and guidance on which path fits the student's likely goal.",
-      map_evidence:
-        "The student chose Map the evidence. Focus on separating direct evidence, adjacent or indirect evidence, gaps, confidence, and what the student can safely claim from the current literature.",
-    };
-
-    const researchJourneyPrompt = `You are a warm, serious research mentor helping a student move through a real research journey. You have ${aiPapers.length} peer-reviewed sources:
-
-${papersContext}
-
-JOURNEY INTENT:
-${journeyIntentInstructions[journeyIntent]}
-
-MENTORING PRINCIPLES:
-- Diagnose the student's research state before giving strategy, but make the diagnosis feel like guidance, not grading.
-- Match your strategy to the research situation rather than forcing one preferred topic.
-- Preserve the student's agency. Offer paths and tradeoffs; do not decide their thesis for them.
-- Use evidence carefully. If evidence is indirect, correlational, population-limited, or conceptually adjacent, say so clearly.
-- Validate the research idea before suggesting refinements. Use plain, encouraging academic language.
-- Frame gaps as normal research boundaries and strategy choices, never as a personal deficit.
-- Use depersonalized diagnostic language. When evaluating readiness, evidence, fit, limitations, or gaps, say "this question", "this idea", "this project", or "this research path". Avoid possessive wording that makes the evaluation feel personal.
-- Use "you" only for agency, choice, and encouragement, such as "if you want to explore..." or "you could choose...".
-- Outside the Reflective Question section, prefer "this framework", "this research question", "this project", and "the argument" when referring to the work itself.
-- Do not write "your intuition", "your work", "your framework", "your proposed", "your argument", "your research question", "your question", or "your idea". Use "this intuition", "this project", "this framework", "the proposed relationship", "the argument", "this research question", "this question", or "this idea" instead.
-- Prefer "there is room to...", "this could be strengthened by...", and "a helpful next support is..." instead of corrective language like "you need help" or "this idea needs...".
-- Avoid dash-heavy AI-style prose. Do not use em dashes. Prefer periods, commas, colons, or short separate sentences.
-- If direct sources are scarce, use this exact sentence when it fits: "This may be an emerging question, so the strongest strategy is to build a careful bridge from nearby studies."
-- Do not use markdown horizontal rules, divider lines, or standalone "---" separators.
-
-RESEARCH JOURNEY FORMAT:
-Write a serious but gentle mentor-style answer in the exact format below. Target 650-850 words total. Keep every section short and complete.
-
-1. "## Research Readiness": choose exactly one: **Early-stage**, **Developing-stage**, or **Strong-stage**. Explain in 1 soft sentence. Use "This is..." language rather than grading the student. Example tone: "Developing-stage: This is a clear, arguable claim with identifiable constructs, and there is room to improve how the intuitive framework is translated into precise academic language and testable relationships."
-2. "## Literature Fit": choose exactly one: **Direct**, **Adjacent**, or **Emerging**. Explain in 1 sentence using "this question" or "this idea" language.
-3. "## Research State Diagnosis": 2 sentences identifying whether this idea is in exploration, narrowing, academic language-building, evidence-connecting, theory-seeking, method-seeking, or claim-checking.
-4. "## Support Opportunities": name exactly 2 support opportunities using gentle bold labels from this list: Vocabulary support, Scope support, Evidence support, Theory support, Method support, Argument support, Confidence support. Explain each in one sentence without saying "you need" or making the support feel personal.
-5. "## Direct Answer": exactly 3 sentences answering this question with careful citations and no overclaiming.
-6. "## Concept Bridge": include exactly 3 bullets. Format each bullet as: "**Original phrase:** ... **Academic language:** ... **Why it matters:** ..." Do not use arrow notation.
-7. "## Evidence Map": include a markdown table with these columns exactly: | Path | What It Helps Explain | Evidence | Caution |. Use exactly 3 rows.
-8. "## Research Strategy": give exactly 3 bullets using these exact labels: "**Search phrases:**", "**Theory anchors:**", and "**Source strategy and safest claim:**". Do not add a fourth bullet.
-9. "## Possible Research Pathways": use exactly three mini-paragraphs with these exact labels: "**Path 1:**", "**Path 2:**", and "**Path 3:**". Each path must contain one research question and one separate sentence beginning "This path fits if...". Do not use markdown numbered lists.
-10. "## Next Best Step": one short paragraph naming one concrete action that would move this project forward. Use "this framework", "this project", or "this research question" rather than possessive wording for the work itself.
-11. "## Reflective Question": end with exactly one question that helps the student choose their own path. This is the main place where "you" language is welcome. Do not add anything after this question.
-
-CITATION RULES:
-- Support major claims with bracket citations like [1] [3].
-- Use at least ${Math.min(aiPapers.length, 5)} different sources overall.
-- Do not invent source numbers that are not listed above.
-- If the sources are only adjacent to the student's question, say "the best current bridge is..." instead of pretending the literature is direct.`;
-
-    const systemPrompt = answerMode === "research_journey" ? researchJourneyPrompt : researchAnswerPrompt;
+    const systemPrompt = researchAnswerPrompt;
 
     const messages: ResearchMessage[] = [
       { role: "system", content: systemPrompt },
@@ -360,7 +288,7 @@ CITATION RULES:
         models,
         apiKey,
         timeoutMs: AI_TIMEOUT_MS,
-        maxTokens: answerMode === "research_journey" ? 1700 : 2200,
+        maxTokens: 2200,
       });
       void recordAiUsage(supabase, {
         userId: user.id,
@@ -370,10 +298,8 @@ CITATION RULES:
         servedModel,
         usage,
       });
-      const cleanedAnswer = isResearchJourney ? cleanResearchJourneyAnswer(answer) : answer;
-
-      // Fire-and-forget activity trace for the readiness "Theme clarity" check —
-      // ScholarAsk previously left zero DB trace. Never let logging break the answer.
+      // Evidence-search activity remains useful for recency, but never satisfies
+      // Stage 1 pathway readiness. Readiness is derived from canonical artifacts.
       if (projectId) {
         void supabase
           .from("dashboard_activity_events")
@@ -382,7 +308,7 @@ CITATION RULES:
             project_id: projectId,
             event_type: "research_query_submitted",
             section_id: "scholarask",
-            label: isResearchJourney ? `Journey: ${journeyIntent}` : "Research answer",
+            label: "Research answer",
           })
           .then(({ error }) => {
             if (error) {
@@ -392,7 +318,7 @@ CITATION RULES:
       }
 
       return NextResponse.json({
-        answer: cleanedAnswer,
+        answer,
         references: papers,
         paperCount: aiPapers.length,
         totalFound: papers.length,

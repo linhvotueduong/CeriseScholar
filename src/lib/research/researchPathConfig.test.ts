@@ -2,30 +2,62 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { RESEARCH_PATH_STAGES } from "./researchPathConfig";
 
-test("Stage 2 consolidates proposal writing into one Paper Writer step", () => {
+test("Stage 1 uses the five semantic research-framing steps", () => {
+  const stage = RESEARCH_PATH_STAGES.find((item) => item.id === "stage-01");
+  assert.ok(stage);
+  assert.equal(stage.deliverable, "Research Pathway Brief");
+  assert.deepEqual(stage.steps.map((step) => step.id), [
+    "stage-01-capture-concern",
+    "stage-01-shape-problems",
+    "stage-01-explore-baseline",
+    "stage-01-develop-questions",
+    "stage-01-choose-pathway",
+  ]);
+  assert.ok(stage.steps.every((step) => step.canvas === "research-framing"));
+});
+
+test("Stage 2 exposes the seven-step source-traceable proposal workflow without shifting legacy draft ids", () => {
   const stage = RESEARCH_PATH_STAGES.find((item) => item.id === "stage-02");
 
   assert.ok(stage);
-  assert.equal(stage.steps.length, 3);
+  assert.equal(stage.deliverable, "Reviewed Proposal Baseline and Stage 3 Handoff");
+  assert.equal(stage.steps.length, 7);
   assert.deepEqual(
     stage.steps.map((step) => step.shortTitle),
-    ["RQ Roadmaps", "Literature Review", "Write Proposal"],
+    ["Confirm Brief", "Evidence Strategy", "Review Sources", "Synthesize Gap", "Proposed Study", "Compose Proposal", "Verify & Handoff"],
   );
   assert.deepEqual(
     stage.steps.map((step) => step.id),
-    ["stage-02-step-02", "stage-02-step-01", "stage-02-step-03"],
+    [
+      "stage-02-confirm-brief",
+      "stage-02-step-01",
+      "stage-02-review-sources",
+      "stage-02-synthesize-gap",
+      "stage-02-step-02",
+      "stage-02-step-03",
+      "stage-02-verify-handoff",
+    ],
   );
-  assert.equal(stage.steps[0].canvas, "proposal-roadmaps");
-  assert.equal(stage.steps[1].canvas, "proposal-literature");
-  assert.equal(stage.steps[2].canvas, "proposal-paper");
+  assert.deepEqual(
+    stage.steps.map((step) => step.canvas),
+    [
+      "proposal-brief",
+      "proposal-evidence-strategy",
+      "proposal-evidence-review",
+      "proposal-synthesis",
+      "proposal-study-contract",
+      "proposal-compose",
+      "proposal-verify",
+    ],
+  );
 });
 
-test("Stage 3 preserves its six persisted step ids while introducing the study builder", () => {
+test("Stage 3 places consent after study implementation without shifting persisted step ids", () => {
   const stage = RESEARCH_PATH_STAGES.find((item) => item.id === "stage-03");
 
   assert.ok(stage);
   assert.equal(stage.title, "Design and Build the Study");
-  assert.equal(stage.deliverable, "Runnable Study Prototype and Design Specification");
+  assert.equal(stage.deliverable, "Runnable Study Prototype, Consent Protocol, and Design Specification");
   assert.deepEqual(
     stage.steps.map((step) => step.id),
     [
@@ -33,6 +65,7 @@ test("Stage 3 preserves its six persisted step ids while introducing the study b
       "stage-03-step-02",
       "stage-03-step-03",
       "stage-03-step-04",
+      "stage-03-consent",
       "stage-03-step-05",
       "stage-03-step-06",
     ],
@@ -42,6 +75,8 @@ test("Stage 3 preserves its six persisted step ids while introducing the study b
     ["study-design", "study-measures", "study-participants"],
   );
   assert.equal(stage.steps[3].canvas, "experiment-studio-launcher");
+  assert.equal(stage.steps[4].canvas, "consent-workspace");
+  assert.equal(stage.steps[5].canvas, "guided");
 });
 
 test("Stage 6 adds release-bound analysis tools without shifting persisted step ids", () => {

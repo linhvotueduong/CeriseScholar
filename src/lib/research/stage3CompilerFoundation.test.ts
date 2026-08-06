@@ -30,6 +30,7 @@ test("Study Build Profile schema is project-scoped, bounded, and derives readine
     sourceFingerprint: await sourceFingerprint(),
     designKind: "cross-sectional-survey",
     setting: "online",
+    variant: "guided",
     methodLanes: ["quantitative"],
     capabilities: [{ id: "online-survey", status: "supported", rationale: "The current runner supports this slice." }],
     modules: [],

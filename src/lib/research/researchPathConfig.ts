@@ -9,17 +9,23 @@ export type ResearchStageId =
   | "stage-08";
 
 export type ResearchCanvasKind =
+  | "research-framing"
   | "problem"
   | "baseline"
   | "questions"
   | "backcasting"
-  | "proposal-literature"
-  | "proposal-roadmaps"
-  | "proposal-paper"
+  | "proposal-brief"
+  | "proposal-evidence-strategy"
+  | "proposal-evidence-review"
+  | "proposal-synthesis"
+  | "proposal-study-contract"
+  | "proposal-compose"
+  | "proposal-verify"
   | "study-design"
   | "study-measures"
   | "study-participants"
   | "experiment-studio-launcher"
+  | "consent-workspace"
   | "analysis-plan-launcher"
   | "data-intake-audit-launcher"
   | "data-preparation-launcher"
@@ -106,34 +112,47 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
     "Research Pathway Brief",
     [
       {
-        title: "Define the Problem",
-        shortTitle: "Define the Problem",
-        description: "Turn a raw idea into a specific problem by tracing its situation, consequences, and recommended response.",
-        canvas: "problem",
+        id: "stage-01-capture-concern",
+        title: "Capture the Concern",
+        shortTitle: "Capture Concern",
+        description: "Protect the researcher’s original language while collecting observations, experiences, contradictions, and questions worth exploring.",
+        canvas: "research-framing",
         prompts: [],
         checklist: [],
       },
       {
-        title: "Build the Baseline",
-        shortTitle: "Build the Baseline",
-        description: "Find the needs and gaps, then validate the emerging problem through literature and close reading.",
-        canvas: "baseline",
+        id: "stage-01-shape-problems",
+        title: "Shape Candidate Problems",
+        shortTitle: "Shape Problems",
+        description: "Turn the concern into alternative problem frames while separating observations, interpretations, assumptions, and plausible explanations.",
+        canvas: "research-framing",
         prompts: [],
         checklist: [],
       },
       {
-        title: "Formulate Research Questions",
-        shortTitle: "Formulate Research Questions",
-        description: "Brainstorm broadly from the baseline, then refine the strongest ideas into two to four focused research questions.",
-        canvas: "questions",
+        id: "stage-01-explore-baseline",
+        title: "Explore the Baseline and Perspectives",
+        shortTitle: "Explore Baseline",
+        description: "Distinguish what is known, contested, missing, or assumed and connect evidence surfaces to each candidate problem.",
+        canvas: "research-framing",
         prompts: [],
         checklist: [],
       },
       {
-        title: "Backcasting",
-        shortTitle: "Backcasting",
-        description: "Define the vision, compare it with the baseline, generate concepts, and connect the chosen path into a research roadmap.",
-        canvas: "backcasting",
+        id: "stage-01-develop-questions",
+        title: "Develop Candidate Research Questions",
+        shortTitle: "Develop Questions",
+        description: "Compare bounded questions against significance, interest, feasibility, ethics, evidence access, and likely contribution.",
+        canvas: "research-framing",
+        prompts: [],
+        checklist: [],
+      },
+      {
+        id: "stage-01-choose-pathway",
+        title: "Choose a Provisional Pathway",
+        shortTitle: "Choose Pathway",
+        description: "Select a traceable problem and question, record the route and rationale, and compile the exact Stage 2 handoff.",
+        canvas: "research-framing",
         prompts: [],
         checklist: [],
       },
@@ -143,32 +162,69 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
     "stage-02",
     "Research Proposal",
     "Proposal",
-    "Review the evidence, map a pathway for every research question, and compose the proposal that will guide the study.",
-    "Research Proposal",
+    "Turn the Stage 1 pathway into a source-traceable, route-aware, versioned proposal and an explicit Stage 3 handoff.",
+    "Reviewed Proposal Baseline and Stage 3 Handoff",
     [
       {
-        id: "stage-02-step-02",
-        title: "Build a Research Roadmap for Each Research Question",
-        shortTitle: "RQ Roadmaps",
-        description: "Translate every research question into themes, short-, medium-, and long-term tasks, and a clear future vision.",
-        canvas: "proposal-roadmaps",
+        id: "stage-02-confirm-brief",
+        title: "Confirm the Proposal Brief and Requirements",
+        shortTitle: "Confirm Brief",
+        description: "Review the exact Stage 1 handoff, choose the proposal purpose, and compile a versioned requirements profile from current authoritative sources.",
+        canvas: "proposal-brief",
         prompts: [],
         checklist: [],
       },
       {
         id: "stage-02-step-01",
-        title: "Review Key References and Build the Literature Review",
-        shortTitle: "Literature Review",
-        description: "Search, assess, organize, and synthesize the literature that establishes the theoretical background and research gap.",
-        canvas: "proposal-literature",
+        title: "Plan the Evidence Strategy",
+        shortTitle: "Evidence Strategy",
+        description: "Connect every selected question to concepts, source types, eligibility boundaries, search versions, and a defensible stopping rationale.",
+        canvas: "proposal-evidence-strategy",
         prompts: [],
         checklist: [],
       },
       {
+        id: "stage-02-review-sources",
+        title: "Review and Appraise Sources",
+        shortTitle: "Review Sources",
+        description: "Assess candidate evidence in the project context and record inclusion, exclusion, appraisal, caveats, and links to questions.",
+        canvas: "proposal-evidence-review",
+        prompts: [],
+        checklist: [],
+      },
+      {
+        id: "stage-02-synthesize-gap",
+        title: "Synthesize the Evidence and Establish the Gap",
+        shortTitle: "Synthesize Gap",
+        description: "Build a claim–evidence map that separates supported, contested, unsupported, and researcher-reviewed claims.",
+        canvas: "proposal-synthesis",
+        prompts: [],
+        checklist: [],
+      },
+      {
+        id: "stage-02-step-02",
+        title: "Define the Proposed Study",
+        shortTitle: "Proposed Study",
+        description: "Translate each question into a proposed evidence need, source or population, method direction, analysis direction, feasibility, and uncertainty—without implementing the study.",
+        canvas: "proposal-study-contract",
+        prompts: [],
+        checklist: [],
+      },
+      {
+        id: "stage-02-step-03",
         title: "Write the Research Proposal",
-        shortTitle: "Write Proposal",
-        description: "Compose the background, problem statement, literature review, current study, method and materials, and references together in the proposal Paper Writer.",
-        canvas: "proposal-paper",
+        shortTitle: "Compose Proposal",
+        description: "Compose a versioned proposal from reviewed claims, source-linked writing, the proposed study contract, and the selected requirements profile.",
+        canvas: "proposal-compose",
+        prompts: [],
+        checklist: [],
+      },
+      {
+        id: "stage-02-verify-handoff",
+        title: "Verify the Proposal and Create the Stage 3 Handoff",
+        shortTitle: "Verify & Handoff",
+        description: "Resolve stale sources, unsupported claims, requirement gaps, and unresolved decisions before freezing the reviewed proposal baseline for Stage 3.",
+        canvas: "proposal-verify",
         prompts: [],
         checklist: [],
       },
@@ -178,8 +234,8 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
     "stage-03",
     "Design and Build the Study",
     "Build Study",
-    "Turn the approved proposal into a traceable study design, runnable prototype, and analysis-ready specification.",
-    "Runnable Study Prototype and Design Specification",
+    "Turn the approved proposal into a traceable study design, runnable prototype, participant-rights protocol, and analysis-ready specification.",
+    "Runnable Study Prototype, Consent Protocol, and Design Specification",
     [
       {
         title: "Select the Study Design",
@@ -208,13 +264,28 @@ export const RESEARCH_PATH_STAGES: readonly ResearchPathStage[] = [
       {
         title: "Build the Experiment or Survey",
         shortTitle: "Build Study",
-        description: "Create the study flow, participant screens, stimuli, tasks, survey blocks, and branching logic in the full Experimental Studio.",
+        description: "Review a source-linked study scaffold, approve its exact change set, and create one protected Experimental Studio draft.",
         canvas: "experiment-studio-launcher",
         prompts: [],
         checklist: [],
       },
-      guided("Define the Procedure, Data, and Analysis", "Data and Analysis", "Synchronize the procedure, data dictionary, and analysis contract with the study design.", ["What will happen, in what order, and which variables will each event produce?", "How will every research question be answered by the planned data and analysis?"], ["Every collected variable is defined", "Every research question maps to an analysis"]),
-      guided("Test, Freeze, and Export", "Test and Export", "Validate the participant experience and scientific specification, then freeze a reproducible local release.", ["Which scientific, technical, accessibility, and device checks have passed?", "What belongs in the frozen release package and change record?"], ["No critical validation issue remains", "The versioned study package is ready for Stage 4 review"]),
+      {
+        id: "stage-03-consent",
+        title: "Design Consent and Participant Rights",
+        shortTitle: "Consent and Rights",
+        description: "Compile the implemented study into source-linked consent materials, review participant rights, and export a checksum-bound review package.",
+        canvas: "consent-workspace",
+        prompts: [],
+        checklist: [],
+      },
+      {
+        id: "stage-03-step-05",
+        ...guided("Define the Procedure, Data, and Analysis", "Data and Analysis", "Synchronize the procedure, data dictionary, and analysis contract with the study design.", ["What will happen, in what order, and which variables will each event produce?", "How will every research question be answered by the planned data and analysis?"], ["Every collected variable is defined", "Every research question maps to an analysis"]),
+      },
+      {
+        id: "stage-03-step-06",
+        ...guided("Test, Freeze, and Export", "Test and Export", "Validate the participant experience and scientific specification, then freeze a reproducible local release.", ["Which scientific, technical, accessibility, and device checks have passed?", "What belongs in the frozen release package and change record?"], ["No critical validation issue remains", "The versioned study package is ready for Stage 4 review"]),
+      },
     ],
   ),
   makeStage(

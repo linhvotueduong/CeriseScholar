@@ -12,11 +12,9 @@ export type DashboardActivityType =
   | "dashboard_schedule_updated"
   | "research_focus_opened"
   /**
-   * Research Pathway home saved (docs/research-readiness-checklist-model.md §6.3):
-   * fired whenever research_question/approach/hypothesis is written, via any entry
-   * route (typed directly, or "Save as my pathway" from a ScholarAsk Research
-   * Journey answer). Feeds §5.3 status-follows-the-user (see the eventArea map in
-   * src/lib/dashboard/researchReadiness.ts) by pointing status at Theme clarity.
+   * Canonical Research Pathway saved after researcher-authored or explicitly
+   * reviewed Stage 1 work. Historical ScholarAsk Journey activity does not emit
+   * this event and cannot satisfy pathway readiness.
    */
   | "research_pathway_saved"
   /**

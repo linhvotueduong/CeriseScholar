@@ -750,7 +750,7 @@ function ResultsCanvas({
   projectName: string; onBack: () => void;
 }) {
   const addBlock = (type: PlotType) => {
-    setCanvas([...canvas, { id: Math.random().toString(36).slice(2), type, config: {} }]);
+    setCanvas([...canvas, { id: crypto.randomUUID(), type, config: {} }]);
   };
   const removeBlock = (id: string) => setCanvas(canvas.filter(b => b.id !== id));
   const clearAll = () => setCanvas([]);

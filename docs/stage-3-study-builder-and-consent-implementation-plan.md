@@ -1,6 +1,6 @@
 # Stage 3 — Study Builder and Consent Implementation Plan
 
-Status: active; Phases 0–1 implemented, later phases awaiting separate approval
+Status: active; Phases 0–10 implemented, Phase 11 awaiting separate approval
 
 Research review date: July 31, 2026
 
@@ -8,9 +8,11 @@ Scope: implementation sequence for the generative study builder, design and
 setting variants, consent and assent form families, AI assistance, participant
 runtime, contract verification, and pilot-candidate release gates
 
-Product code changed by this plan: Phase 0 authority/safety foundations and
-Phase 1 artifact/compiler foundations are implemented; no Stage 3 UI or runtime
-was added
+Product code changed by this plan: Phases 0–10 are implemented, including the
+authority and compiler foundations, the complete bounded Study Builder,
+three-way reconciliation, the source-linked consent workspace, and the
+review-before-apply AI consent copilot, plus the checksum-bound adult English
+participant consent runtime
 
 Companion architecture:
 
@@ -23,11 +25,20 @@ Visual architecture board:
 
 ## Implementation status
 
-| Phase | Status | Evidence |
-| --- | --- | --- |
-| 0 — Authority registry and safety boundary | Complete | Versioned generic/UCSF metadata manifests, source checksums, clause policies, capability boundaries, normalization, and safety tests |
-| 1 — Shared compiler and artifact foundations | Complete | Strict canonical identity, legacy-compatible SHA-256 API, envelopes/migration, semantic diff/apply preview, dependency invalidation graph, bounded Study Build and Consent schemas |
-| 2–11 | Not started | Require separate phase approval |
+| Phase                                                    | Status      | Evidence                                                                                                                                                                                                                                                |
+| -------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0 — Authority registry and safety boundary               | Complete    | Versioned generic/UCSF metadata manifests, source checksums, clause policies, capability boundaries, normalization, and safety tests                                                                                                                    |
+| 1 — Shared compiler and artifact foundations             | Complete    | Strict canonical identity, legacy-compatible SHA-256 API, envelopes/migration, semantic diff/apply preview, dependency invalidation graph, bounded Study Build and Consent schemas                                                                      |
+| 2 — Study-design capability compiler                     | Complete    | Eight design modules, four setting overlays, context registries, explicit capability boundaries, three profile variants, and a deterministic 32-combination verification report                                                                         |
+| 3 — First two end-to-end Study Builder slices            | Complete    | Online/home survey and randomized laboratory materializers, explicit decision ledger, semantic preview, checksum-bound creation receipt, no-overwrite guard, responsive UI, and happy/refusal verification                                              |
+| 4 — Remaining materializers and reconciliation           | Complete    | Twenty-eight runnable design × setting candidates, four explicit longitudinal boundaries, stable source links, three-way reconciliation, and researcher-owned-content protection                                                                        |
+| 5 — Consent authority, fact compiler, and base workspace | Complete    | Adult standard/survey/interview families, separate audio/video decisions, governance and authority gates, implemented-study facts, participant preview, human review, source reconciliation, local/cloud persistence, and checksum-bound review exports |
+| 6 — Behavioral, remote, and lifecycle consent            | Complete    | Seven governed modules, deterministic artifacts, refusal-safe optional choices, changed-information lifecycle, and fixture inspection                                                                                                                   |
+| 7 — Protected audiences and languages                    | Complete    | Parent/assent, LAR, accessible oral, translation, and short-form packages with source-bound qualified review                                                                                                                                            |
+| 8 — Biomedical and data-use consent                      | Complete    | Eight governed modules, specialized compiler, external addenda, dual review, cross-phase invalidation, and legal-rule fixtures                                                                                                                          |
+| 9 — Review-before-apply AI consent copilot               | Complete    | BYOK-only no-store endpoint, redacted explicit-scope context, bounded parser, protected-clause enforcement, per-suggestion actions, stale-revision checks, and metadata-only local decision ledger                                                     |
+| 10 — Participant consent runtime                         | Complete    | Semantic reviewed-form binding, browser checksum verification, confirmation/correction, separate decisions, refusal/withdrawal scrubbing, metadata-minimal receipts, Local Host support, and 114-test verification                                       |
+| 11                                                       | Not started | Requires separate phase approval                                                                                                                                                                                                                        |
 
 ## Executive recommendation
 
@@ -53,15 +64,15 @@ pipeline:
 
 The recommended visible order remains:
 
-| Step | Name | Responsibility |
-| --- | --- | --- |
-| 01 | Select Design | Choose the methodological design, setting, and rationale |
-| 02 | Map Measures | Define research questions, constructs, evidence, and variables |
-| 03 | Plan Participants | Define population, sampling, assignment, access, and devices |
-| 04 | Build Study | Compile, preview, accept, and edit a design-specific runnable study |
-| 05 | Design Consent and Participant Rights | Compose applicable forms, review them, and bind them to the runtime |
-| 06 | Verify Data and Analysis Contract | Reconcile intent, procedure, consent, variables, and planned analysis |
-| 07 | Create Pilot Candidate | Rehearse, freeze, checksum, version, and export the pilot-ready package |
+| Step | Name                                  | Responsibility                                                          |
+| ---- | ------------------------------------- | ----------------------------------------------------------------------- |
+| 01   | Select Design                         | Choose the methodological design, setting, and rationale                |
+| 02   | Map Measures                          | Define research questions, constructs, evidence, and variables          |
+| 03   | Plan Participants                     | Define population, sampling, assignment, access, and devices            |
+| 04   | Build Study                           | Compile, preview, accept, and edit a design-specific runnable study     |
+| 05   | Design Consent and Participant Rights | Compose applicable forms, review them, and bind them to the runtime     |
+| 06   | Verify Data and Analysis Contract     | Reconcile intent, procedure, consent, variables, and planned analysis   |
+| 07   | Create Pilot Candidate                | Rehearse, freeze, checksum, version, and export the pilot-ready package |
 
 Consent belongs after Build Study because it must describe the procedure that
 participants will actually experience. It belongs before Verify Contract and
@@ -76,12 +87,12 @@ certificate.
 
 The system must distinguish four decisions:
 
-| Decision | Owner | What Cerise may do |
-| --- | --- | --- |
-| Is this human-subjects research and which review path applies? | Researcher and applicable institution/IRB | Ask structured questions, show declared status, and block unresolved required fields |
-| Which approved institutional template and wording apply? | Researcher and applicable institution/IRB | Import/version templates and enforce their editing policies |
-| Does the consent accurately describe the implemented study? | Cerise deterministic verifier plus researcher review | Compare artifacts, report mismatches, and block release |
-| Is the study ethically and operationally approved to pilot or collect? | Stage 4 human governance plus Local Research Host readiness | Bind evidence to immutable checksums; never self-approve |
+| Decision                                                               | Owner                                                       | What Cerise may do                                                                   |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Is this human-subjects research and which review path applies?         | Researcher and applicable institution/IRB                   | Ask structured questions, show declared status, and block unresolved required fields |
+| Which approved institutional template and wording apply?               | Researcher and applicable institution/IRB                   | Import/version templates and enforce their editing policies                          |
+| Does the consent accurately describe the implemented study?            | Cerise deterministic verifier plus researcher review        | Compare artifacts, report mismatches, and block release                              |
+| Is the study ethically and operationally approved to pilot or collect? | Stage 4 human governance plus Local Research Host readiness | Bind evidence to immutable checksums; never self-approve                             |
 
 Cerise must never infer `exempt`, `waiver approved`, `parental permission
 waived`, `surrogate authorized`, `FDA compliant`, or `IRB approved` merely from
@@ -220,18 +231,18 @@ The existing eight design choices are useful methodological labels, but a
 runnable study depends on more than `selectedDesign`. The builder should compile
 an explicit capability profile across these axes:
 
-| Axis | Example values | Why it changes the build |
-| --- | --- | --- |
-| Methodological design | randomized-between, within-subjects, quasi-experimental, survey, longitudinal, observational, qualitative, mixed-methods | Determines evidence structure and methodological validators |
-| Setting | online/home, laboratory, field, hybrid | Determines device, support, privacy, interruption, and rehearsal requirements |
-| Interaction | self-administered, researcher-led, group, observer-entered | Determines navigation, handoff, privacy, and consent process |
-| Assignment | none, random, stratified, counterbalanced, naturally occurring | Determines conditions, allocation, concealment, and balance checks |
-| Time | one session, repeated blocks, multiple waves, event-triggered | Determines checkpointing, identity/recontact, attrition, and reconsent needs |
-| Evidence modality | survey, task performance, interview, focus group, observation, media, sensor, specimen | Determines blocks, variables, storage, consent modules, and runtime capability |
-| Intervention | none, behavioral manipulation, educational intervention, clinical/drug/device | Determines procedural disclosures, risks, alternatives, and governance profile |
-| Disclosure | full, incomplete disclosure proposed, deception approved | Determines consent alteration status and debrief path |
-| Data sensitivity | anonymous, coded, identifiable, PHI, genetic, audio/video | Determines confidentiality, retention, access, and future-use modules |
-| Audience | adult, child, guardian, LAR/surrogate, language/access variant | Determines form family and execution limits |
+| Axis                  | Example values                                                                                                           | Why it changes the build                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Methodological design | randomized-between, within-subjects, quasi-experimental, survey, longitudinal, observational, qualitative, mixed-methods | Determines evidence structure and methodological validators                    |
+| Setting               | online/home, laboratory, field, hybrid                                                                                   | Determines device, support, privacy, interruption, and rehearsal requirements  |
+| Interaction           | self-administered, researcher-led, group, observer-entered                                                               | Determines navigation, handoff, privacy, and consent process                   |
+| Assignment            | none, random, stratified, counterbalanced, naturally occurring                                                           | Determines conditions, allocation, concealment, and balance checks             |
+| Time                  | one session, repeated blocks, multiple waves, event-triggered                                                            | Determines checkpointing, identity/recontact, attrition, and reconsent needs   |
+| Evidence modality     | survey, task performance, interview, focus group, observation, media, sensor, specimen                                   | Determines blocks, variables, storage, consent modules, and runtime capability |
+| Intervention          | none, behavioral manipulation, educational intervention, clinical/drug/device                                            | Determines procedural disclosures, risks, alternatives, and governance profile |
+| Disclosure            | full, incomplete disclosure proposed, deception approved                                                                 | Determines consent alteration status and debrief path                          |
+| Data sensitivity      | anonymous, coded, identifiable, PHI, genetic, audio/video                                                                | Determines confidentiality, retention, access, and future-use modules          |
+| Audience              | adult, child, guardian, LAR/surrogate, language/access variant                                                           | Determines form family and execution limits                                    |
 
 `selectedDesign` supplies the primary methodological module. Other axes add,
 remove, or constrain modules. This avoids a brittle Cartesian product such as
@@ -239,16 +250,16 @@ remove, or constrain modules. This avoids a brittle Cartesian product such as
 
 ### Current design options and target generated behavior
 
-| Selected design | Required scaffold capabilities | Main checks | Example consent facts—not review-path decisions |
-| --- | --- | --- | --- |
-| Randomized between-groups | conditions, allocation, condition-specific procedure, shared outcomes, assignment audit | ratio, balance, contamination, manipulation, comparable measures | assignment by chance, condition differences, placebo/control where applicable |
-| Within-subjects | repeated conditions, order/counterbalance, washout/breaks, repeated outcome identity | order effects, carryover, fatigue, missing condition data | repeated procedures, duration, burden, condition risks |
-| Quasi-experimental | existing groups/intervention exposure, comparison logic, covariates, timing | confounding, baseline comparability, assignment claim prevention | group source, procedures, no false claim of randomization |
-| Cross-sectional survey | sections, validated/self-authored measures, skip logic, optional sensitive items, submission | missingness, response burden, mobile/reflow, anonymous-versus-confidential claims | survey topics, time, discomfort, identifiability, skip/stop rights |
-| Longitudinal | waves, stable measure identity, recontact, reminders, attrition/withdrawal | scheduling, identity linkage, version drift, partial-wave handling | number/timing of contacts, recontact, retention, new-information/reconsent plan |
-| Observational | event/behavior coding, context, timestamps, observer workflow | privacy expectation, third parties, inter-rater reliability, identifiability | observation setting, notice/consent status, recording and privacy limits |
-| Qualitative | interview/focus-group/diary modules, probes, participant-controlled skip/pause, transcript plan | recording choice, group confidentiality limits, quote policy, saturation rationale | topics, recording/use/destruction, quotations, emotional discomfort |
-| Mixed methods | named quantitative and qualitative lanes plus integration metadata | construct identity, sample linkage, sequence, priority, integration completeness | every procedure and modality, linkage, recording, optional sub-study boundaries |
+| Selected design           | Required scaffold capabilities                                                                  | Main checks                                                                        | Example consent facts—not review-path decisions                                 |
+| ------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Randomized between-groups | conditions, allocation, condition-specific procedure, shared outcomes, assignment audit         | ratio, balance, contamination, manipulation, comparable measures                   | assignment by chance, condition differences, placebo/control where applicable   |
+| Within-subjects           | repeated conditions, order/counterbalance, washout/breaks, repeated outcome identity            | order effects, carryover, fatigue, missing condition data                          | repeated procedures, duration, burden, condition risks                          |
+| Quasi-experimental        | existing groups/intervention exposure, comparison logic, covariates, timing                     | confounding, baseline comparability, assignment claim prevention                   | group source, procedures, no false claim of randomization                       |
+| Cross-sectional survey    | sections, validated/self-authored measures, skip logic, optional sensitive items, submission    | missingness, response burden, mobile/reflow, anonymous-versus-confidential claims  | survey topics, time, discomfort, identifiability, skip/stop rights              |
+| Longitudinal              | waves, stable measure identity, recontact, reminders, attrition/withdrawal                      | scheduling, identity linkage, version drift, partial-wave handling                 | number/timing of contacts, recontact, retention, new-information/reconsent plan |
+| Observational             | event/behavior coding, context, timestamps, observer workflow                                   | privacy expectation, third parties, inter-rater reliability, identifiability       | observation setting, notice/consent status, recording and privacy limits        |
+| Qualitative               | interview/focus-group/diary modules, probes, participant-controlled skip/pause, transcript plan | recording choice, group confidentiality limits, quote policy, saturation rationale | topics, recording/use/destruction, quotations, emotional discomfort             |
+| Mixed methods             | named quantitative and qualitative lanes plus integration metadata                              | construct identity, sample linkage, sequence, priority, integration completeness   | every procedure and modality, linkage, recording, optional sub-study boundaries |
 
 These are scientific starting requirements, not complete protocols. The user
 previews guided, minimal-compatible, and blank-with-requirements choices before
@@ -256,12 +267,12 @@ anything is materialized.
 
 ### Setting overlays
 
-| Setting | Builder behavior |
-| --- | --- |
+| Setting     | Builder behavior                                                                                                                                                                       |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Online/home | responsive controls, checkpoint/recovery, realistic browser/device support, privacy-on-shared-device guidance, participant exit/support access, no default fullscreen/focus monitoring |
-| Laboratory | researcher setup/handoff, equipment/calibration, latency checks where justified, session reset, room/device rehearsal, assisted refusal/withdrawal path |
-| Field | offline/interruption limits, environment and bystander privacy, device battery/storage, permission checks, safety and minimal location collection |
-| Hybrid | shared core plus explicit setting branches, comparable measure identity, per-setting consent facts and rehearsals, named deviations rather than generic defaults |
+| Laboratory  | researcher setup/handoff, equipment/calibration, latency checks where justified, session reset, room/device rehearsal, assisted refusal/withdrawal path                                |
+| Field       | offline/interruption limits, environment and bystander privacy, device battery/storage, permission checks, safety and minimal location collection                                      |
+| Hybrid      | shared core plus explicit setting branches, comparable measure identity, per-setting consent facts and rehearsals, named deviations rather than generic defaults                       |
 
 Setting changes the implementation. It does not automatically change the
 methodological design or determine the consent review category.
@@ -321,25 +332,25 @@ derives procedure facts from the accepted Studio document and reports conflicts.
 
 ### Consent families Cerise should support
 
-| Research situation | Base artifact family | Conditional modules or related artifacts | Initial execution posture |
-| --- | --- | --- | --- |
-| Anonymous one-time survey | Exempt information/consent sheet where institutionally applicable | purpose, time, topics, voluntary skip/stop, anonymity limits, contacts; implied decision only when declared approved | MVP runtime |
-| Confidential survey | Exempt or standard form selected by researcher | collected identifiers, access, storage, retention, breach risk, withdrawal boundary | MVP runtime |
-| Interview | Exempt or standard form selected by researcher | sensitive topics, pause/skip, recording, transcription, quotes, retention | MVP runtime |
-| Focus group | Exempt or standard form selected by researcher | recording plus explicit limits on guaranteeing other participants' confidentiality | MVP runtime after group-flow support |
-| Minimal-risk behavioral experiment | Standard or institution-determined exempt form | randomization, task risks, incomplete disclosure status, debrief, performance/event logging | MVP runtime for adult English forms |
-| Deception/incomplete disclosure | IRB-reviewed consent alteration plus debrief artifact | declared approval reference, concealed-fact boundary, debrief timing, post-debrief decision if required | Authoring/export first; runtime only after gate design |
-| Telephone screening | Screening script distinct from main-study consent | eligibility questions, sensitive screening data, retention/deletion, transition to main consent | Later runtime |
-| Telephone main study | Telephone script/process | identity/question opportunity, documentation, copy/information delivery | Later runtime |
-| Longitudinal/recontact | Standard form plus lifecycle policy | waves, reminders, identity linkage, changes/new findings, reconsent triggers | Later runtime |
-| Audio/video research | Separate or clearly separable recording decision | purpose, required/optional status, uses, access, retention/destruction, teaching/public use boundaries | MVP for optional audio/video decisions |
-| Child/adolescent research | Parent/guardian permission plus age/development-appropriate assent | one/two-parent rule declared from institution, dissent handling, reconsent at age of majority where applicable | Authoring/export first |
-| Decisional-capacity concern | Adult/LAR/surrogate forms and capacity plan | assessment, authority basis, participant involvement/assent, reconsent if capacity changes | Authoring/export first |
-| Non-English participant | Fully translated reviewed form or approved short-form process | interpreter, witness, summary, version alignment, copy, reviewer identity | Authoring/export first |
-| Biomedical/clinical investigation | Standard/FDA/institution profile | experimental procedures, risks, alternatives, injury, costs, drugs/devices/placebo, clinical-trial statements | Specialized later phase |
-| Biospecimen/genetic research | Standard form plus data/specimen modules | future use, commercial profit, result return, whole-genome sequencing, sharing, identifiability | Specialized later phase |
-| Broad consent | Dedicated regulatory family when applicable | storage/maintenance, secondary research, identifiable data/specimens, scope and period | Specialized later phase; never a generic checkbox |
-| New information after enrollment | Addendum or revised consent/reconsent | affected participants, change summary, continued participation decision, new checksum | Later lifecycle support |
+| Research situation                 | Base artifact family                                               | Conditional modules or related artifacts                                                                             | Initial execution posture                              |
+| ---------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Anonymous one-time survey          | Exempt information/consent sheet where institutionally applicable  | purpose, time, topics, voluntary skip/stop, anonymity limits, contacts; implied decision only when declared approved | MVP runtime                                            |
+| Confidential survey                | Exempt or standard form selected by researcher                     | collected identifiers, access, storage, retention, breach risk, withdrawal boundary                                  | MVP runtime                                            |
+| Interview                          | Exempt or standard form selected by researcher                     | sensitive topics, pause/skip, recording, transcription, quotes, retention                                            | MVP runtime                                            |
+| Focus group                        | Exempt or standard form selected by researcher                     | recording plus explicit limits on guaranteeing other participants' confidentiality                                   | MVP runtime after group-flow support                   |
+| Minimal-risk behavioral experiment | Standard or institution-determined exempt form                     | randomization, task risks, incomplete disclosure status, debrief, performance/event logging                          | MVP runtime for adult English forms                    |
+| Deception/incomplete disclosure    | IRB-reviewed consent alteration plus debrief artifact              | declared approval reference, concealed-fact boundary, debrief timing, post-debrief decision if required              | Authoring/export first; runtime only after gate design |
+| Telephone screening                | Screening script distinct from main-study consent                  | eligibility questions, sensitive screening data, retention/deletion, transition to main consent                      | Later runtime                                          |
+| Telephone main study               | Telephone script/process                                           | identity/question opportunity, documentation, copy/information delivery                                              | Later runtime                                          |
+| Longitudinal/recontact             | Standard form plus lifecycle policy                                | waves, reminders, identity linkage, changes/new findings, reconsent triggers                                         | Later runtime                                          |
+| Audio/video research               | Separate or clearly separable recording decision                   | purpose, required/optional status, uses, access, retention/destruction, teaching/public use boundaries               | MVP for optional audio/video decisions                 |
+| Child/adolescent research          | Parent/guardian permission plus age/development-appropriate assent | one/two-parent rule declared from institution, dissent handling, reconsent at age of majority where applicable       | Authoring/export first                                 |
+| Decisional-capacity concern        | Adult/LAR/surrogate forms and capacity plan                        | assessment, authority basis, participant involvement/assent, reconsent if capacity changes                           | Authoring/export first                                 |
+| Non-English participant            | Fully translated reviewed form or approved short-form process      | interpreter, witness, summary, version alignment, copy, reviewer identity                                            | Authoring/export first                                 |
+| Biomedical/clinical investigation  | Standard/FDA/institution profile                                   | experimental procedures, risks, alternatives, injury, costs, drugs/devices/placebo, clinical-trial statements        | Specialized later phase                                |
+| Biospecimen/genetic research       | Standard form plus data/specimen modules                           | future use, commercial profit, result return, whole-genome sequencing, sharing, identifiability                      | Specialized later phase                                |
+| Broad consent                      | Dedicated regulatory family when applicable                        | storage/maintenance, secondary research, identifiable data/specimens, scope and period                               | Specialized later phase; never a generic checkbox      |
+| New information after enrollment   | Addendum or revised consent/reconsent                              | affected participants, change summary, continued participation decision, new checksum                                | Later lifecycle support                                |
 
 The table is a capability catalog, not a determination engine. Selecting
 “anonymous survey” may recommend an exempt-template option, but the researcher
@@ -477,7 +488,7 @@ Build:
   handling;
 - capability flags that separate authoring/export from executable consent;
 - UI language for `not yet determined`, `researcher declared`, `institution
-  documented`, and `human review required`;
+documented`, and `human review required`;
 - a licensing/use review gate before redistributing any full institutional
   template text in the application.
 
@@ -539,6 +550,12 @@ Exit gate:
 
 ### Phase 2 — Study-design capability compiler
 
+Implementation status: complete
+
+Verification evidence:
+[Phase 2 capability compiler](./stage-3-phase-2-capability-compiler.md) and
+[32-combination report](./stage-3-phase-2-verification-report.md)
+
 **Goal:** make selected design and setting materially control the proposed
 runnable-study architecture.
 
@@ -571,6 +588,12 @@ Exit gate:
   different before any UI materialization.
 
 ### Phase 3 — First two end-to-end Study Builder slices
+
+Implementation status: complete
+
+Verification evidence:
+[Phase 3 Study Builder implementation](./stage-3-phase-3-study-builder.md) and
+[Phase 3 verification report](./stage-3-phase-3-verification-report.md)
 
 **Goal:** validate the architecture with two deliberately contrasting studies.
 
@@ -613,6 +636,12 @@ Exit gate:
 
 ### Phase 4 — Reconciliation and remaining design/setting modules
 
+Implementation status: complete
+
+Verification evidence:
+[Phase 4 implementation](./stage-3-phase-4-reconciliation-and-materializers.md)
+and [Phase 4 verification report](./stage-3-phase-4-verification-report.md)
+
 **Goal:** cover the full current option set and make upstream changes safe.
 
 Build:
@@ -644,6 +673,12 @@ Exit gate:
   regeneration.
 
 ### Phase 5 — Consent authority, fact compiler, and base workspace
+
+Implementation status: complete
+
+Verification evidence:
+[Phase 5 implementation](./stage-3-phase-5-consent-authority-and-workspace.md)
+and [Phase 5 verification report](./stage-3-phase-5-verification-report.md)
 
 **Goal:** implement consent as structured, versioned artifacts before adding AI
 or participant execution.
@@ -689,6 +724,10 @@ Exit gate:
 
 ### Phase 6 — Behavioral, remote, and lifecycle consent variants
 
+Status: complete on July 31, 2026. See the
+[Phase 6 implementation](./stage-3-phase-6-behavioral-remote-lifecycle-consent.md)
+and [Phase 6 verification report](./stage-3-phase-6-verification-report.md).
+
 **Goal:** cover the common social/behavioral cases that change participant flow.
 
 Build:
@@ -724,6 +763,12 @@ Exit gate:
   prerequisites are approved.
 
 ### Phase 7 — Protected audiences, languages, and specialized governance
+
+**Implementation status (2026-08-01):** built. The schema, deterministic
+compiler, authority metadata, protected-audience workspace, participant preview,
+review/export integration, migrations, and independent fixtures are documented
+in `stage-3-phase-7-protected-audience-language-consent.md` and
+`stage-3-phase-7-verification-report.md`.
 
 **Goal:** add structurally correct multi-form packages without overstating
 execution validity.
@@ -765,6 +810,12 @@ Exit gate:
 
 ### Phase 8 — Biomedical, clinical, specimen, and data-use modules
 
+**Implementation status (2026-08-01):** built. The schema, deterministic
+compiler, specialized workspace, Phase 7 dependency invalidation, persistence
+capacity migration, and independent fixtures are documented in
+`stage-3-phase-8-biomedical-data-use-consent.md` and
+`stage-3-phase-8-verification-report.md`.
+
 **Goal:** add the highest-complexity conditional content after the base engine
 and governance model are proven.
 
@@ -800,6 +851,12 @@ Exit gate:
 
 ### Phase 9 — Review-before-apply AI copilot
 
+**Implementation status (2026-08-01):** built. The bounded context and response
+contracts, BYOK endpoint, researcher workbench, decision ledger, and adversarial
+verification are documented in
+`stage-3-phase-9-ai-consent-copilot.md` and
+`stage-3-phase-9-verification-report.md`.
+
 **Goal:** help users understand and improve forms without making AI part of the
 integrity boundary.
 
@@ -831,6 +888,12 @@ Exit gate:
 - Model output cannot change protected or absent targets.
 
 ### Phase 10 — Participant runtime, refusal, withdrawal, and receipts
+
+**Implementation status (2026-08-01):** built. The bounded runtime envelope,
+semantic Studio binding, participant decision flow, local receipt and state
+machine, collector/native-host scrubbing, and verification are documented in
+`stage-3-phase-10-participant-consent-runtime.md` and
+`stage-3-phase-10-verification-report.md`.
 
 **Goal:** put the exact reviewed consent artifact inside the runnable experiment.
 
@@ -965,18 +1028,18 @@ identity, clinical, and multi-party claims out of the first executable slice.
 
 ## Cross-phase verification matrix
 
-| Layer | Required proof |
-| --- | --- |
-| Domain | Stable IDs, bounded normalization, idempotent compilation, deterministic checksums |
-| Scientific design | Every design/setting has correct modules, evidence mappings, checks, and capability truth |
-| Consent structure | Complete applicable family set, authority trace, clause policy, and source fingerprint |
-| Consistency | Procedure, duration, risks, recording, data, assignment, withdrawal, and debrief match Studio facts |
-| AI | Redacted advisory context, protected targets, review-before-apply, no participant data |
-| Runtime | Applicable form before procedure, separate optional choices, fail-closed tamper/staleness behavior |
-| Participant rights | Refusal, skip, questions, copy, withdrawal, reconsent, accessibility, and language status |
-| Release | Exact source/template/form/Studio/contract/override checksum chain |
-| Governance | Human approval and operational readiness separately bound to the same release |
-| Compatibility | Existing drafts, Studio documents, releases, and Host bundles remain readable |
+| Layer              | Required proof                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| Domain             | Stable IDs, bounded normalization, idempotent compilation, deterministic checksums                  |
+| Scientific design  | Every design/setting has correct modules, evidence mappings, checks, and capability truth           |
+| Consent structure  | Complete applicable family set, authority trace, clause policy, and source fingerprint              |
+| Consistency        | Procedure, duration, risks, recording, data, assignment, withdrawal, and debrief match Studio facts |
+| AI                 | Redacted advisory context, protected targets, review-before-apply, no participant data              |
+| Runtime            | Applicable form before procedure, separate optional choices, fail-closed tamper/staleness behavior  |
+| Participant rights | Refusal, skip, questions, copy, withdrawal, reconsent, accessibility, and language status           |
+| Release            | Exact source/template/form/Studio/contract/override checksum chain                                  |
+| Governance         | Human approval and operational readiness separately bound to the same release                       |
+| Compatibility      | Existing drafts, Studio documents, releases, and Host bundles remain readable                       |
 
 ## Definition of done for the program
 
@@ -1021,6 +1084,6 @@ Approve implementation one phase at a time in this order:
 11. Phase 10 — Participant runtime and receipts.
 12. Phase 11 — Contract, release, Stage 4, and hardening.
 
-Phases 0 and 1 were explicitly approved and implemented. Phases 2–11 remain
-unapproved: each should receive explicit build approval after its predecessor's
+Phases 0–9 were explicitly approved and implemented. Phases 10–11 remain
+unapproved and should receive separate build approval after the Phase 9
 verification evidence is reviewed.

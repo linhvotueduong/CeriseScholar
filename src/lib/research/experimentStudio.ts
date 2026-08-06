@@ -5,7 +5,7 @@ import {
   type ExperimentTimingDiagnosticSummary,
 } from "./experimentTimingDiagnostics";
 
-export const EXPERIMENT_STUDIO_SCHEMA_VERSION = 8 as const;
+export const EXPERIMENT_STUDIO_SCHEMA_VERSION = 9 as const;
 export const EXPERIMENT_STUDIO_STORAGE_VERSION = 1 as const;
 export const MAX_EXPERIMENT_BLOCKS = 100;
 export const MAX_EXPERIMENT_CONDITIONS = 12;
@@ -33,6 +33,7 @@ export const DEFAULT_EXPERIMENT_VIDEO_RESPONSE_BYTES = 25 * 1024 * 1024;
 export type ExperimentBlockType =
   | "welcome"
   | "consent"
+  | "consent-form"
   | "audio-consent"
   | "video-consent"
   | "instructions"
@@ -143,6 +144,18 @@ export interface ExperimentVideoResponseConfig {
   requireCameraCheck: true;
 }
 
+export interface ExperimentConsentFormReference {
+  consentProtocolId: string;
+  consentProtocolChecksum: string;
+  consentArtifactChecksum: string;
+  formId: string;
+  formChecksum: string;
+  language: "en-US";
+  audience: "adult-participant";
+  decisionVariableName: "consent_receipt";
+  decisionIds: string[];
+}
+
 export interface ExperimentBlock {
   id: string;
   type: ExperimentBlockType;
@@ -169,6 +182,7 @@ export interface ExperimentBlock {
   trialLoop?: ExperimentTrialLoopConfig | null;
   audio?: ExperimentAudioResponseConfig | null;
   video?: ExperimentVideoResponseConfig | null;
+  consentForm?: ExperimentConsentFormReference | null;
 }
 
 export interface ExperimentStudioDocument {
@@ -207,6 +221,7 @@ export const EXPERIMENT_BLOCK_OPTIONS: ReadonlyArray<{
 }> = [
   { type: "welcome", label: "Welcome", description: "Introduce the study and set expectations." },
   { type: "consent", label: "Consent", description: "Record an explicit participation decision." },
+  { type: "consent-form", label: "Reviewed consent form", description: "Present an exact checksum-bound consent artifact before any study activity." },
   { type: "audio-consent", label: "Audio recording consent", description: "Collect a separate decision before any voice recording." },
   { type: "video-consent", label: "Video recording consent", description: "Collect a separate decision before any camera recording." },
   { type: "instructions", label: "Instructions", description: "Explain what the participant should do." },
@@ -295,6 +310,26 @@ const BLOCK_DEFAULTS: Record<ExperimentBlockType, Omit<ExperimentBlock, "id">> =
     displayDurationMs: 0,
     responseDeadlineMs: 0,
     media: null,
+  },
+  "consent-form": {
+    type: "consent-form",
+    title: "Reviewed consent form",
+    internalName: "reviewed_consent_form",
+    heading: "Consent to participate",
+    prompt: "Bind the reviewed consent artifact in Stage 03 before participant testing.",
+    responseType: "none",
+    variableName: "",
+    required: false,
+    choices: [],
+    scaleMin: 1,
+    scaleMax: 2,
+    minLabel: "",
+    maxLabel: "",
+    nextBlockId: "",
+    displayDurationMs: 0,
+    responseDeadlineMs: 0,
+    media: null,
+    consentForm: null,
   },
   "audio-consent": {
     type: "audio-consent",
@@ -608,6 +643,9 @@ export function createExperimentBlock(type: ExperimentBlockType, id: string): Ex
     trialLoop: BLOCK_DEFAULTS[type].trialLoop ? { ...BLOCK_DEFAULTS[type].trialLoop } : null,
     audio: BLOCK_DEFAULTS[type].audio ? { ...BLOCK_DEFAULTS[type].audio } : null,
     video: BLOCK_DEFAULTS[type].video ? { ...BLOCK_DEFAULTS[type].video } : null,
+    consentForm: BLOCK_DEFAULTS[type].consentForm
+      ? { ...BLOCK_DEFAULTS[type].consentForm, decisionIds: [...BLOCK_DEFAULTS[type].consentForm.decisionIds] }
+      : null,
   };
 }
 
@@ -773,6 +811,39 @@ function normalizeExperimentVideoResponse(
   };
 }
 
+function normalizeExperimentConsentFormReference(
+  value: unknown,
+): ExperimentConsentFormReference | null {
+  if (!isRecord(value)) return null;
+  const checksum = (candidate: unknown) => (
+    typeof candidate === "string" && /^sha256:[a-f0-9]{64}$/.test(candidate)
+      ? candidate
+      : ""
+  );
+  const decisionIds = Array.isArray(value.decisionIds)
+    ? value.decisionIds.slice(0, 24).map((id) => safeId(id, "")).filter(Boolean)
+    : [];
+  const reference: ExperimentConsentFormReference = {
+    consentProtocolId: safeId(value.consentProtocolId, ""),
+    consentProtocolChecksum: checksum(value.consentProtocolChecksum),
+    consentArtifactChecksum: checksum(value.consentArtifactChecksum),
+    formId: safeId(value.formId, ""),
+    formChecksum: checksum(value.formChecksum),
+    language: value.language === "en-US" ? "en-US" : "en-US",
+    audience: value.audience === "adult-participant" ? "adult-participant" : "adult-participant",
+    decisionVariableName: "consent_receipt",
+    decisionIds: [...new Set(decisionIds)],
+  };
+  return reference.consentProtocolId
+    && reference.consentProtocolChecksum
+    && reference.consentArtifactChecksum
+    && reference.formId
+    && reference.formChecksum
+    && reference.decisionIds.includes("main-participation")
+    ? reference
+    : null;
+}
+
 function normalizeExperimentTrialTable(value: unknown, index: number): ExperimentTrialTable | null {
   if (!isRecord(value)) return null;
   const rawColumns = Array.isArray(value.columns)
@@ -853,6 +924,9 @@ export function normalizeExperimentStudioDocument(
         : null,
       video: type === "video-response" && defaults.video
         ? normalizeExperimentVideoResponse(candidate.video, defaults.video)
+        : null,
+      consentForm: type === "consent-form"
+        ? normalizeExperimentConsentFormReference(candidate.consentForm)
         : null,
     } satisfies ExperimentBlock];
   });
@@ -1111,7 +1185,7 @@ export function validateExperimentStudio(document: ExperimentStudioDocument): Ex
     }
   }
 
-  if (!document.blocks.some((block) => block.type === "consent")) {
+  if (!document.blocks.some((block) => block.type === "consent" || block.type === "consent-form")) {
     issues.push({ id: "missing-consent", severity: "warning", message: "Add a consent block or document why consent is not required." });
   }
   if (!document.blocks.some((block) => block.type === "debrief")) {
@@ -1119,6 +1193,27 @@ export function validateExperimentStudio(document: ExperimentStudioDocument): Ex
   }
 
   for (const block of document.blocks) {
+    if (block.type === "consent-form") {
+      const semanticConsentCount = document.blocks.filter((candidate) => candidate.type === "consent-form").length;
+      if (semanticConsentCount !== 1) {
+        issues.push({ id: `${block.id}-unique-consent-form`, blockId: block.id, severity: "error", message: "Use exactly one checksum-bound reviewed consent form in a supported participant flow." });
+      }
+      if (document.blocks[0]?.id !== block.id) {
+        issues.push({ id: `${block.id}-consent-form-first`, blockId: block.id, severity: "error", message: "The reviewed consent form must be the first runnable screen so no study response, timing, event, or assignment is collected beforehand." });
+      }
+      if (!block.consentForm) {
+        issues.push({ id: `${block.id}-consent-form-reference`, blockId: block.id, severity: "error", message: "Bind an exact reviewed consent artifact before participant testing." });
+      }
+      if (
+        block.responseType !== "none"
+        || block.variableName
+        || block.displayDurationMs !== 0
+        || block.responseDeadlineMs !== 0
+        || block.media
+      ) {
+        issues.push({ id: `${block.id}-consent-form-semantics`, blockId: block.id, severity: "error", message: "The reviewed consent block stores its decision in a metadata-minimal receipt, not as a study response, timed task, or media prompt." });
+      }
+    }
     if (block.type === "trial-loop") {
       const loop = block.trialLoop;
       const table = document.trialTables.find((candidate) => candidate.id === loop?.tableId);
@@ -1189,12 +1284,12 @@ export function validateExperimentStudio(document: ExperimentStudioDocument): Ex
         });
       } else {
         const consent = document.blocks.find((candidate) => candidate.id === block.audio?.consentBlockId);
-        if (!consent || consent.type !== "audio-consent") {
+        if (!consent || (consent.type !== "audio-consent" && consent.type !== "consent-form")) {
           issues.push({
             id: `${block.id}-audio-consent`,
             blockId: block.id,
             severity: "error",
-            message: `${block.title} needs a linked audio recording consent block.`,
+          message: `${block.title} needs a linked audio recording decision in the reviewed consent runtime or a legacy audio-consent block.`,
           });
         } else if ((blockIndexes.get(consent.id) ?? Number.POSITIVE_INFINITY) >= (blockIndexes.get(block.id) ?? -1)) {
           issues.push({
@@ -1263,12 +1358,12 @@ export function validateExperimentStudio(document: ExperimentStudioDocument): Ex
         });
       } else {
         const consent = document.blocks.find((candidate) => candidate.id === block.video?.consentBlockId);
-        if (!consent || consent.type !== "video-consent") {
+        if (!consent || (consent.type !== "video-consent" && consent.type !== "consent-form")) {
           issues.push({
             id: `${block.id}-video-consent`,
             blockId: block.id,
             severity: "error",
-            message: `${block.title} needs a linked video recording consent block.`,
+            message: `${block.title} needs a linked video recording decision in the reviewed consent runtime or a legacy video-consent block.`,
           });
         } else if ((blockIndexes.get(consent.id) ?? Number.POSITIVE_INFINITY) >= (blockIndexes.get(block.id) ?? -1)) {
           issues.push({
@@ -1282,7 +1377,7 @@ export function validateExperimentStudio(document: ExperimentStudioDocument): Ex
           const audioConsent = document.blocks.find(
             (candidate) => candidate.id === block.video?.audioConsentBlockId,
           );
-          if (!audioConsent || audioConsent.type !== "audio-consent") {
+          if (!audioConsent || (audioConsent.type !== "audio-consent" && audioConsent.type !== "consent-form")) {
             issues.push({
               id: `${block.id}-video-audio-consent`,
               blockId: block.id,

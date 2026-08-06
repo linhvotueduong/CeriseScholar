@@ -80,6 +80,7 @@ test("study completion gates require researcher decisions instead of checkbox-on
 
   document.spec.design.goal = "test-causal-effect";
   document.spec.design.selectedDesign = "within-subjects";
+  document.spec.design.setting = "online";
   document.spec.design.selectionRationale = "The same participants can complete both sleep conditions.";
   document.spec.design.approved = true;
 

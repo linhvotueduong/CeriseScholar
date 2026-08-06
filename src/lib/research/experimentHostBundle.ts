@@ -10,6 +10,7 @@ import {
   experimentRunnerFilename,
 } from "./experimentRunnerPackage";
 import { collectExperimentVariables } from "./experimentStudio";
+import type { ConsentRuntimeArtifact } from "./consentRuntime";
 
 export const EXPERIMENT_HOST_BUNDLE_FORMAT = "cerise-local-research-host" as const;
 export const EXPERIMENT_HOST_BUNDLE_VERSION = 5 as const;
@@ -166,7 +167,11 @@ function hostCodebook(release: ExperimentRelease): ExperimentHostCodebook {
 
 export async function buildExperimentHostBundle(
   release: ExperimentRelease,
-  options: { executionMode?: ExperimentHostExecutionMode; createdAt?: string } = {},
+  options: {
+    executionMode?: ExperimentHostExecutionMode;
+    createdAt?: string;
+    consentRuntimeArtifact?: ConsentRuntimeArtifact;
+  } = {},
 ): Promise<BuiltExperimentHostBundle> {
   if (!await verifyExperimentRelease(release)) {
     throw new Error("The selected release failed its integrity check.");
@@ -177,6 +182,7 @@ export async function buildExperimentHostBundle(
   const runner = buildExperimentRunnerPackage(release.studio, {
     release,
     executionMode,
+    consentRuntimeArtifact: options.consentRuntimeArtifact,
     collectorCheckpointEndpoint: "/api/checkpoints",
     ...(containsAudio ? { collectorAudioEndpoint: "/api/audio" } : {}),
     ...(containsVideo ? { collectorVideoEndpoint: "/api/video" } : {}),

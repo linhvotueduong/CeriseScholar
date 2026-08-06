@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AppIcon } from "@/components/app-shell/AppIcons";
+import { createClient } from "@/lib/supabase/client";
 import { buildExperimentCollectorPackage } from "@/lib/research/experimentCollectorPackage";
 import { buildExperimentHostBundle } from "@/lib/research/experimentHostBundle";
 import {
@@ -27,6 +28,18 @@ import {
 } from "@/lib/research/experimentRunnerPackage";
 import type { ExperimentStudioDocument } from "@/lib/research/experimentStudio";
 import type { StudyDesignDocument } from "@/lib/research/studyDesign";
+import {
+  buildConsentRuntimeArtifact,
+  consentRuntimeArtifactMatchesReference,
+  verifyConsentRuntimeArtifact,
+  type ConsentRuntimeArtifact,
+} from "@/lib/research/consentRuntime";
+import {
+  compileConsentPhase5Source,
+  readConsentPhase5Document,
+  type ConsentPhase5Document,
+} from "@/lib/research/consentPhase5";
+import { fetchConsentPhase5Document } from "@/lib/research/consentPhase5Persistence";
 import styles from "./ExperimentalStudio.module.css";
 
 interface ExperimentPackagePanelProps {
@@ -65,6 +78,8 @@ export default function ExperimentPackagePanel({
   const [hostBundleBusy, setHostBundleBusy] = useState(false);
   const [releaseLocation, setReleaseLocation] = useState<"cloud" | "device" | "">("");
   const [executionMode, setExecutionMode] = useState<"pilot" | "production">("pilot");
+  const [consentRuntimeArtifact, setConsentRuntimeArtifact] = useState<ConsentRuntimeArtifact | null>(null);
+  const [consentRuntimeStatus, setConsentRuntimeStatus] = useState("No structured runtime consent is bound to this release.");
   const [releaseReview, setReleaseReview] = useState<ExperimentReleaseReviewAttestations>({
     draftRehearsed: false,
     consentWithdrawalTested: false,
@@ -78,7 +93,9 @@ export default function ExperimentPackagePanel({
     [releases, selectedReleaseId],
   );
   const runnableStudio = selectedRelease?.studio ?? studio;
-  const canPackage = Boolean(selectedRelease) && canBuildExperimentRunnerPackage(runnableStudio);
+  const hasStructuredConsent = runnableStudio.blocks.some((block) => block.type === "consent-form");
+  const canPackage = Boolean(selectedRelease)
+    && canBuildExperimentRunnerPackage(runnableStudio, consentRuntimeArtifact ?? undefined);
   const firstBlock = runnableStudio.blocks[0];
   const filename = customFilename ?? suggestedFilename;
 
@@ -105,6 +122,62 @@ export default function ExperimentPackagePanel({
     })();
     return () => { cancelled = true; };
   }, [studio.projectId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setConsentRuntimeArtifact(null);
+    const semanticBlock = selectedRelease?.studio.blocks.find((block) => block.type === "consent-form");
+    if (!selectedRelease || !semanticBlock) {
+      setConsentRuntimeStatus("This release uses the legacy unstructured consent path.");
+      return () => { cancelled = true; };
+    }
+    if (!studyDesign) {
+      setConsentRuntimeStatus("The study design is unavailable, so the bound consent source cannot be re-verified.");
+      return () => { cancelled = true; };
+    }
+    void (async () => {
+      const candidates: ConsentPhase5Document[] = [];
+      try {
+        const local = readConsentPhase5Document(window.localStorage, selectedRelease.projectId);
+        if (local) candidates.push(local);
+      } catch {
+        // Cloud retrieval remains available.
+      }
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const cloud = await fetchConsentPhase5Document(supabase, user.id, selectedRelease.projectId);
+          if (cloud) candidates.push(cloud);
+        }
+      } catch {
+        // The exact locally reviewed artifact can still be used offline.
+      }
+      candidates.sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
+      const source = await compileConsentPhase5Source(studyDesign, selectedRelease.studio);
+      for (const protocol of candidates) {
+        try {
+          const artifact = await buildConsentRuntimeArtifact(protocol, source.sourceFingerprint);
+          if (
+            await verifyConsentRuntimeArtifact(artifact)
+            && consentRuntimeArtifactMatchesReference(artifact, semanticBlock.consentForm)
+          ) {
+            if (!cancelled) {
+              setConsentRuntimeArtifact(artifact);
+              setConsentRuntimeStatus("Exact reviewed consent artifact verified for this release.");
+            }
+            return;
+          }
+        } catch {
+          // Try the next owner-scoped copy.
+        }
+      }
+      if (!cancelled) {
+        setConsentRuntimeStatus("The exact bound consent artifact is unavailable or stale. Packaging is locked.");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedRelease, studyDesign]);
 
   async function freezeRelease() {
     if (!canFreeze || releaseBusy) return;
@@ -167,6 +240,7 @@ export default function ExperimentPackagePanel({
         filename,
         release: selectedRelease,
         executionMode,
+        consentRuntimeArtifact: consentRuntimeArtifact ?? undefined,
       });
       setCustomFilename(runner.filename);
       setMessage("");
@@ -217,7 +291,10 @@ export default function ExperimentPackagePanel({
       setMessage("Freeze or select a release before creating a collector.");
       return;
     }
-    const collector = buildExperimentCollectorPackage(selectedRelease, { executionMode });
+    const collector = buildExperimentCollectorPackage(selectedRelease, {
+      executionMode,
+      consentRuntimeArtifact: consentRuntimeArtifact ?? undefined,
+    });
     downloadText(collector.filename, collector.source, collector.mimeType);
     setMessage("Local Collector downloaded. Run it with Node.js 22.5 or newer; participant data will stay in local SQLite.");
   }
@@ -230,7 +307,10 @@ export default function ExperimentPackagePanel({
     setHostBundleBusy(true);
     setMessage("");
     try {
-      const built = await buildExperimentHostBundle(selectedRelease, { executionMode });
+      const built = await buildExperimentHostBundle(selectedRelease, {
+        executionMode,
+        consentRuntimeArtifact: consentRuntimeArtifact ?? undefined,
+      });
       downloadText(built.filename, built.content, built.mimeType);
       setMessage(
         "Verified Local Host bundle downloaded. Import it into Cerise Local Research Host, then start collection.",
@@ -360,6 +440,12 @@ export default function ExperimentPackagePanel({
             <button type="button">Next</button>
           </div>
         </div>
+
+        {hasStructuredConsent ? (
+          <p className={styles.packageResponseNote} role="status">
+            <strong>Consent runtime:</strong> {consentRuntimeStatus}
+          </p>
+        ) : null}
 
         <div className={styles.packageActions}>
           <button

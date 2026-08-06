@@ -271,7 +271,7 @@ export default function MethodologyGuide({
               </div>
               <div>
                 <label className="text-sm font-medium text-[#5a4a3a] block mb-1">
-                  Dependent Variable (DV) — what you're measuring
+                  Dependent Variable (DV) — what you&apos;re measuring
                 </label>
                 <input value={dvName} onChange={e => setDvName(e.target.value)}
                   placeholder="e.g., Psychological stress level"

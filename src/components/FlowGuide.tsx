@@ -28,11 +28,16 @@ export default function FlowGuide() {
     const step = localStorage.getItem("cerise-flow-step");
     if (stored) {
       const parsed = JSON.parse(stored) as FlowStep[];
-      setFlow(parsed);
-      setCurrentStep(step ? parseInt(step, 10) : 0);
+      const initializationTimer = window.setTimeout(() => {
+        setFlow(parsed);
+        setCurrentStep(step ? parseInt(step, 10) : 0);
+      }, 0);
       // Show popup after a short delay
       const timer = setTimeout(() => setShow(true), 800);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(initializationTimer);
+        clearTimeout(timer);
+      };
     }
   }, []);
 

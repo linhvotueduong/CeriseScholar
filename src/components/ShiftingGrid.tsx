@@ -43,15 +43,9 @@ const HOLD_MS = 2000;
 
 export default function ShiftingGrid({ pillars }: ShiftingGridProps) {
   const [index, setIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        setIsPaused(true);
-      }
-    }
-  }, []);
+  const [isPaused, setIsPaused] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 
   useEffect(() => {
     if (isPaused) return;

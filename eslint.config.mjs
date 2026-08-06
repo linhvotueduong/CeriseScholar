@@ -9,11 +9,15 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".next*/**",
     ".next.backup-*/**",
     ".claude/**",
+    // Locally preserved build-cache snapshots can be mounted under a repo-relative Users tree.
+    "Users/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "public/pdf.worker.min.mjs",
   ]),
 ]);
 

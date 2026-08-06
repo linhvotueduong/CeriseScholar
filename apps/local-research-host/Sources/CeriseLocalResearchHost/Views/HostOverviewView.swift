@@ -182,6 +182,7 @@ struct HostOverviewView: View {
         HStack(spacing: 12) {
             MetricCard(title: "In progress", value: store.counts.started, systemImage: "clock")
             MetricCard(title: "Completed", value: store.counts.completed, systemImage: "checkmark.circle")
+            MetricCard(title: "Refused", value: store.counts.refused, systemImage: "hand.raised")
             MetricCard(title: "Withdrawn", value: store.counts.withdrawn, systemImage: "xmark.circle")
             MetricCard(
                 title: "Local storage",
