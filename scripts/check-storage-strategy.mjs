@@ -2,25 +2,20 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const root = process.cwd();
-const sourceRoot = path.join(root, "src");
+const scanRoots = ["src", "scripts", "package.json", "AGENTS.md"];
 
-const allowedTransitionalCloudStorageFiles = new Set([
-  "src/app/api/ocr/route.ts",
-  "src/app/dashboard/page.tsx",
-  "src/app/dashboard/project/[projectId]/page.tsx",
-  "src/app/dashboard/project/[projectId]/viewer/[id]/page.tsx",
-  "src/app/dashboard/upload/page.tsx",
-  "src/app/dashboard/viewer/[id]/page.tsx",
-  "src/components/pdf/DocumentPanel.tsx",
-]);
-
-const storageNeedles = [
-  "supabase.storage",
-  ".storage.from(",
-  ".createSignedUrl(",
-  ".createSignedUrls(",
-  ".download(",
-  ".upload(",
+const retiredNeedles = [
+  ["LOCAL", "AGENT_"].join("_"),
+  ["NEXT_PUBLIC_LOCAL", "AGENT"].join("_"),
+  ["OLL", "AMA_"].join(""),
+  ["local", "agent"].join("-"),
+  ["Local", "Agent"].join(" "),
+  ["Oll", "ama"].join(""),
+  ["local", "vault"].join(" "),
+  ["Local", "vault"].join(" "),
+  ["local", "first", "agent", "migration"].join("-"),
+  ["local", "agent", "installer", "plan"].join("-"),
+  ["local", "file", "storage", "strategy"].join("-"),
 ];
 
 const ignoredDirectories = new Set(["node_modules", ".next", ".git"]);
@@ -38,6 +33,13 @@ const ignoredExtensions = new Set([
 ]);
 
 async function collectFiles(target, files = []) {
+  const stats = await fs.stat(target).catch(() => null);
+  if (!stats) return files;
+  if (stats.isFile()) {
+    if (!ignoredExtensions.has(path.extname(target).toLowerCase())) files.push(target);
+    return files;
+  }
+
   const entries = await fs.readdir(target, { withFileTypes: true });
 
   for (const entry of entries) {
@@ -54,7 +56,10 @@ async function collectFiles(target, files = []) {
   return files;
 }
 
-const files = await collectFiles(sourceRoot);
+const files = [];
+for (const scanRoot of scanRoots) {
+  await collectFiles(path.join(root, scanRoot), files);
+}
 const hits = [];
 
 for (const file of files) {
@@ -62,23 +67,18 @@ for (const file of files) {
   const text = await fs.readFile(file, "utf8").catch(() => "");
   if (!text) continue;
 
-  const matchedNeedles = storageNeedles.filter((needle) => text.includes(needle));
-  if (matchedNeedles.length && !allowedTransitionalCloudStorageFiles.has(relativeFile)) {
-    hits.push(`${relativeFile} contains ${matchedNeedles.join(", ")}`);
-  }
+  const matchedNeedles = retiredNeedles.filter((needle) => text.includes(needle));
+  if (matchedNeedles.length) hits.push(`${relativeFile} contains ${matchedNeedles.join(", ")}`);
 }
 
 if (hits.length) {
-  console.error("New cloud source-file storage references found outside the approved transitional allowlist:");
+  console.error("Retired desktop-helper/storage references found in active code or contributor guidance:");
   for (const hit of hits) console.error(`- ${hit}`);
   console.error("");
-  console.error("Step 5 policy: new source-file workflows must use the Cerise Scholar Local Agent/vault path.");
-  console.error("If this is an intentional transitional exception, update docs/local-file-storage-strategy.md first.");
+  console.error("Phase 4 policy: source-file workflows are cloud-only through the hosted app and Supabase-backed storage.");
+  console.error("Move historical notes to docs/archive/ and keep active code free of retired desktop AI paths.");
   process.exit(1);
 }
 
-console.log("No unapproved cloud source-file storage references found.");
-console.log("Approved transitional cloud storage files:");
-for (const file of [...allowedTransitionalCloudStorageFiles].sort()) {
-  console.log(`- ${file}`);
-}
+console.log("Cloud-only storage strategy check passed.");
+console.log("No active retired desktop-helper, desktop-model, or desktop-vault references found.");

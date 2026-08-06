@@ -78,7 +78,10 @@ export function useCodes(projectId?: string) {
   useEffect(() => {
     if (initStartedRef.current) return;
     initStartedRef.current = true;
-    fetchCodes().then(() => initializeDefaults());
+    const timer = window.setTimeout(() => {
+      void fetchCodes().then(() => initializeDefaults());
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [fetchCodes, initializeDefaults]);
 
   const createCode = useCallback(
@@ -105,7 +108,7 @@ export function useCodes(projectId?: string) {
       setCodes((prev) => [...prev, data as Code]);
       return data as Code;
     },
-    [codes.length]
+    [codes.length, projectId]
   );
 
   const updateCode = useCallback(

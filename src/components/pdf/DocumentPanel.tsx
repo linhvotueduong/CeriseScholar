@@ -4,16 +4,19 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { logDashboardActivity } from "@/lib/dashboard/activity";
+import { toggleSourceFinished } from "@/lib/dashboard/finishSource";
 import { useUser } from "@/hooks/useUser";
 import { runOcr } from "@/lib/ocr/runOcr";
+import { extractPdfMetadata } from "@/lib/pdf/extractMetadata";
 import type { Pdf } from "@/types/pdf";
 
 interface DocumentPanelProps {
   currentPdfId: string;
   projectId?: string;
+  onSelectPdf?: (pdf: Pdf | null) => void | Promise<void>;
 }
 
-export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanelProps) {
+export default function DocumentPanel({ currentPdfId, projectId, onSelectPdf }: DocumentPanelProps) {
   const [pdfs, setPdfs] = useState<Pdf[]>([]);
   const [uploading, setUploading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -27,7 +30,7 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
       const supabase = createClient();
       let query = supabase
         .from("pdfs")
-        .select("id, display_name, filename, file_size, created_at, ocr_status, storage_path");
+        .select("id, display_name, filename, file_size, created_at, ocr_status, storage_path, finished_at");
       if (projectId) query = query.eq("project_id", projectId);
       const { data } = await query.order("created_at", { ascending: false }).limit(100);
       if (data) setPdfs(data as Pdf[]);
@@ -55,6 +58,17 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
 
     if (uploadError) { setUploading(false); return; }
 
+    // Extract PDF metadata (title, author, page count) — mirrors
+    // src/app/dashboard/upload/page.tsx so highlights on PDFs uploaded from
+    // the Workspace drag-drop path also get real APA-stub metadata instead
+    // of empty pdf_author/pdf_title columns. Failure-tolerant, same as upload page.
+    let pdfMeta = { title: "", author: "", subject: "", pageCount: 0 };
+    try {
+      pdfMeta = await extractPdfMetadata(file);
+    } catch {
+      // Metadata extraction failed — not critical, continue
+    }
+
     const { data: newPdf } = await supabase
       .from("pdfs")
       .insert({
@@ -62,9 +76,13 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
         user_id: user.id,
         project_id: projectId || null,
         filename: file.name,
-        display_name: file.name.replace(/\.pdf$/i, ""),
+        display_name: pdfMeta.title || file.name.replace(/\.pdf$/i, ""),
         storage_path: storagePath,
         file_size: file.size,
+        page_count: pdfMeta.pageCount || null,
+        pdf_author: pdfMeta.author,
+        pdf_title: pdfMeta.title,
+        pdf_subject: pdfMeta.subject,
         ocr_status: "pending",
       })
       .select()
@@ -79,6 +97,7 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
         label: "Uploaded source content",
       });
       void runOcr(fileId);
+      if (onSelectPdf) void onSelectPdf(newPdf as Pdf);
     }
     setUploading(false);
   }
@@ -103,11 +122,37 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
         await supabase.storage.from("pdfs").remove([pdf.storage_path]);
       }
 
-      setPdfs((prev) => prev.filter((p) => p.id !== pdfId));
+      const remainingPdfs = pdfs.filter((p) => p.id !== pdfId);
+      setPdfs(remainingPdfs);
 
-      if (pdfId === currentPdfId) router.push("/dashboard");
+      if (pdfId === currentPdfId) {
+        if (onSelectPdf) {
+          void onSelectPdf(remainingPdfs[0] ?? null);
+        } else {
+          router.push("/projects");
+        }
+      }
     },
-    [pdfs, currentPdfId, router]
+    [pdfs, currentPdfId, onSelectPdf, router]
+  );
+
+  const handleToggleFinish = useCallback(
+    async (e: React.MouseEvent, pdf: Pdf) => {
+      e.stopPropagation();
+      const supabase = createClient();
+      const { ok, finishedAt } = await toggleSourceFinished({
+        supabase,
+        pdfId: pdf.id,
+        projectId,
+        displayName: pdf.display_name,
+        currentlyFinished: !!pdf.finished_at,
+        navigate: (href) => router.push(href),
+      });
+      if (ok) {
+        setPdfs((prev) => prev.map((p) => (p.id === pdf.id ? { ...p, finished_at: finishedAt } : p)));
+      }
+    },
+    [projectId, router]
   );
 
   async function handleRetryOcr(e: React.MouseEvent, pdfId: string) {
@@ -181,13 +226,22 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
               className={`group relative ${isDragging ? "opacity-40" : ""} ${isDragOver ? "border-t-2 border-t-[#1a1208]" : ""}`}
             >
               <button
-                onClick={() => router.push(projectId ? `/dashboard/project/${projectId}/viewer/${pdf.id}` : `/dashboard/viewer/${pdf.id}`)}
+                onClick={() => {
+                  if (onSelectPdf) {
+                    void onSelectPdf(pdf);
+                    return;
+                  }
+                  router.push(projectId ? `/dashboard/project/${projectId}/viewer/${pdf.id}` : `/dashboard/viewer/${pdf.id}`);
+                }}
                 className={`w-full text-left px-3 py-2 border-b border-gray-50 transition-colors ${
                   isActive ? "bg-pink-50 border-l-2 border-l-[#1a1208]" : "hover:bg-[#fdfcfa] border-l-2 border-l-transparent"
                 }`}
               >
                 <p className={`text-xs truncate pr-4 ${isActive ? "font-medium text-[#1a1208]" : "text-[#5a4a3a]"}`}>
                   {pdf.display_name}
+                  {pdf.finished_at && (
+                    <span className="ml-1.5 text-[9px] font-semibold text-[#2f8f5b]" title="Marked finished">✓ finished</span>
+                  )}
                 </p>
                 <p className="text-[9px] text-[#9a8a7a] mt-0.5 flex items-center gap-1">
                   {pdf.file_size ? `${(pdf.file_size / 1024 / 1024).toFixed(1)} MB` : ""} · {new Date(pdf.created_at).toLocaleDateString()}
@@ -200,24 +254,41 @@ export default function DocumentPanel({ currentPdfId, projectId }: DocumentPanel
                 </p>
               </button>
 
-              {pdf.ocr_status === "failed" && (
+              {/* Trailing row actions — a single flex row (not stacked absolutes) so
+                  Finish/Unfinish, the OCR retry link, and Delete never overlap. */}
+              <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 group-hover:opacity-100">
                 <button
-                  className="absolute right-5 top-1/2 -translate-y-1/2 rounded border border-[#e0cdb8] bg-white px-1.5 py-0.5 text-[9px] font-semibold text-[#8f6132] hover:bg-[#f6efe4]"
-                  onClick={(e) => handleRetryOcr(e, pdf.id)}
-                  title="Retry text extraction"
+                  className={`rounded border px-1.5 py-0.5 text-[9px] font-semibold whitespace-nowrap ${
+                    pdf.finished_at
+                      ? "border-[#d7eadf] bg-[#edf8f0] text-[#2f8f5b]"
+                      : "border-[#e0cdb8] bg-white text-[#8f6132] hover:bg-[#f6efe4]"
+                  }`}
+                  onClick={(e) => handleToggleFinish(e, pdf)}
+                  title={pdf.finished_at ? "Mark this source unfinished" : "Mark source finished"}
                   type="button"
                 >
-                  retry
+                  {pdf.finished_at ? "Unfinish" : "Finish"}
                 </button>
-              )}
 
-              <button
-                onClick={(e) => handleDelete(e, pdf.id)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 text-[#d4cdc5] hover:text-red-500 opacity-0 group-hover:opacity-100 text-xs"
-                title="Delete"
-              >
-                &times;
-              </button>
+                {pdf.ocr_status === "failed" && (
+                  <button
+                    className="rounded border border-[#e0cdb8] bg-white px-1.5 py-0.5 text-[9px] font-semibold text-[#8f6132] hover:bg-[#f6efe4]"
+                    onClick={(e) => handleRetryOcr(e, pdf.id)}
+                    title="Retry text extraction"
+                    type="button"
+                  >
+                    retry
+                  </button>
+                )}
+
+                <button
+                  onClick={(e) => handleDelete(e, pdf.id)}
+                  className="text-[#d4cdc5] hover:text-red-500 text-xs px-0.5"
+                  title="Delete"
+                >
+                  &times;
+                </button>
+              </div>
             </div>
           );
         })}

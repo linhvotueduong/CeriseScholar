@@ -10,7 +10,19 @@ export type DashboardActivityType =
   | "paper_draft_saved"
   | "dashboard_task_completed"
   | "dashboard_schedule_updated"
-  | "research_focus_opened";
+  | "research_focus_opened"
+  /**
+   * Canonical Research Pathway saved after researcher-authored or explicitly
+   * reviewed Stage 1 work. Historical ScholarAsk Journey activity does not emit
+   * this event and cannot satisfy pathway readiness.
+   */
+  | "research_pathway_saved"
+  /**
+   * Per-source Finish button (docs/research-readiness-checklist-model.md §7.1):
+   * fired when a source is marked finished (pdfs.finished_at set). No schema
+   * change — reuses this same activity events table (§7.4.5).
+   */
+  | "source_review_finished";
 
 type LogDashboardActivityParams = {
   projectId?: string | null;

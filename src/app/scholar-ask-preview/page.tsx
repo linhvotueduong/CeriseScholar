@@ -96,7 +96,7 @@ export default function ScholarAskPreview() {
 
       {/* ═══ Sub-nav ═══ */}
       <div style={{ height: "40px", flexShrink: 0, display: "flex", alignItems: "center", padding: "0 32px", gap: "28px", borderBottom: `1px solid ${palette.rule}`, marginTop: "max(8px, 1vw)", fontFamily: "var(--font-noto)", fontSize: "12px" }}>
-        <Link href="/projects-preview" style={{ color: palette.inkMuted, textDecoration: "none", fontSize: "11px" }}>← Projects&nbsp;&nbsp;&nbsp;Geopolitical</Link>
+        <Link href="/projects" style={{ color: palette.inkMuted, textDecoration: "none", fontSize: "11px" }}>← Projects&nbsp;&nbsp;&nbsp;Geopolitical</Link>
         <div style={{ flex: 1 }} />
         {[{n:"ScholarAsk",h:"/scholar-ask-preview"},{n:"Workspace",h:"/workspace-preview"},{n:"Meta Analysis",h:"/meta-analysis-preview"},{n:"Lit Review",h:"/lit-review-preview"},{n:"Paper Writer",h:"/paper-writer-preview"}].map((tab) => (
           <Link key={tab.n} href={tab.h} style={{ color: tab.n === "ScholarAsk" ? palette.cerise : palette.inkMuted, fontWeight: tab.n === "ScholarAsk" ? 700 : 400, borderBottom: tab.n === "ScholarAsk" ? `2px solid ${palette.cerise}` : "2px solid transparent", paddingBottom: "8px", marginBottom: "-1px", fontSize: "11px", textDecoration: "none" }}>{tab.n}</Link>

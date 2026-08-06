@@ -20,7 +20,7 @@ const productLinks = [
 const companyLinks = [
   { href: "/about", label: "About" },
   { href: "/research-guidance", label: "Research Guide" },
-  { href: "/projects-preview", label: "Projects" },
+  { href: "/projects", label: "Projects" },
   { href: "/help", label: "Help" },
 ];
 

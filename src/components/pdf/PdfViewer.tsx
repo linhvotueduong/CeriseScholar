@@ -1,29 +1,25 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { usePdf } from "@/hooks/usePdf";
 import { useHighlights } from "@/hooks/useHighlights";
 import { useAnnotations } from "@/hooks/useAnnotations";
 import { useCodes } from "@/hooks/useCodes";
 import { useTts } from "@/hooks/useTts";
 import { extractPageText } from "@/lib/pdf/extractText";
-import { useLocalAgentStatus } from "@/hooks/useLocalAgentStatus";
-import {
-  callLocalAgentChat,
-  LOCAL_AGENT_REQUIRED_MESSAGE,
-  LOCAL_AI_UNAVAILABLE_MESSAGE,
-  type LocalAgentChatMessage,
-} from "@/lib/local-agent/client";
+import { createClient } from "@/lib/supabase/client";
+import { toggleSourceFinished } from "@/lib/dashboard/finishSource";
 import PdfPage from "./PdfPage";
 import PdfToolbar from "./PdfToolbar";
 import TtsWidget from "@/components/tts/TtsWidget";
 import Markdown from "react-markdown";
 import AnnotationSidebar from "@/components/annotations/AnnotationSidebar";
 import CodeSystemPanel from "@/components/codes/CodeSystemPanel";
-import LaptopRequiredMobileSheet from "@/components/mobile/LaptopRequiredMobileSheet";
 import DocumentPanel from "@/components/pdf/DocumentPanel";
 import NoteModal from "@/components/annotations/NoteModal";
 import Spinner from "@/components/ui/Spinner";
+import type { Pdf } from "@/types/pdf";
 
 interface PdfViewerProps {
   url: string;
@@ -32,6 +28,7 @@ interface PdfViewerProps {
   pdfAuthor?: string;
   pdfTitle?: string;
   projectId?: string;
+  onSelectPdf?: (pdf: Pdf | null) => void | Promise<void>;
 }
 
 type SpeechRecognitionEventLike = {
@@ -71,6 +68,7 @@ function LeftPanels({
   onCreateCode,
   onUpdateCode,
   onDeleteCode,
+  onSelectPdf,
 }: {
   pdfId: string;
   projectId?: string;
@@ -79,6 +77,7 @@ function LeftPanels({
   onCreateCode: (name: string, color: string) => void;
   onUpdateCode: (id: string, fields: Partial<Pick<import("@/types/code").Code, "name" | "color">>) => void;
   onDeleteCode: (id: string) => void;
+  onSelectPdf?: (pdf: Pdf | null) => void | Promise<void>;
 }) {
   const [docsOpen, setDocsOpen] = useState(true);
   const [codesOpen, setCodesOpen] = useState(true);
@@ -121,7 +120,7 @@ function LeftPanels({
             <span className="text-[10px] text-[#9a8a7a]">{totalPages}p</span>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <DocumentPanel currentPdfId={pdfId} projectId={projectId} />
+            <DocumentPanel currentPdfId={pdfId} onSelectPdf={onSelectPdf} projectId={projectId} />
           </div>
         </div>
       ) : (
@@ -223,7 +222,7 @@ interface PendingHighlight {
   rects: { x: number; y: number; width: number; height: number }[];
 }
 
-export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTitle, projectId }: PdfViewerProps) {
+export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTitle, projectId, onSelectPdf }: PdfViewerProps) {
   const {
     document,
     currentPage,
@@ -243,7 +242,36 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   const { annotations, createAnnotation, updateAnnotation } = useAnnotations(pdfId);
   const { codes, createCode, updateCode, deleteCode } = useCodes(projectId);
   const tts = useTts();
-  const localAgent = useLocalAgentStatus();
+  const router = useRouter();
+
+  // Per-source Finish button (docs/research-readiness-checklist-model.md §7.1):
+  // this header mirrors the same finished_at column the document panel toggles.
+  const [finishedAt, setFinishedAt] = useState<string | null>(null);
+  useEffect(() => {
+    if (!pdfId) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("pdfs").select("finished_at").eq("id", pdfId).single();
+      if (!cancelled) setFinishedAt((data?.finished_at as string | null) ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pdfId]);
+
+  const handleToggleFinished = useCallback(async () => {
+    const supabase = createClient();
+    const { ok, finishedAt: nextFinishedAt } = await toggleSourceFinished({
+      supabase,
+      pdfId,
+      projectId,
+      displayName: pdfDisplayName || "This source",
+      currentlyFinished: !!finishedAt,
+      navigate: (href) => router.push(href),
+    });
+    if (ok) setFinishedAt(nextFinishedAt);
+  }, [pdfId, projectId, pdfDisplayName, finishedAt, router]);
 
   const [highlightMode, setHighlightMode] = useState(false);
   const [reHighlightId, setReHighlightId] = useState<string | null>(null);
@@ -265,7 +293,6 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
   const [chatLoading, setChatLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [chatSize, setChatSize] = useState({ w: 380, h: 480 });
-  const [laptopRequiredOpen, setLaptopRequiredOpen] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -450,62 +477,28 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
     const text = overrideText || chatInput.trim();
     if (!text || chatLoading || !document) return;
 
-    if (!localAgent.canUseLocalAi && localAgent.mobile) {
-      setLaptopRequiredOpen(true);
-      return;
-    }
-
     setChatInput("");
     setChatMessages((prev) => [...prev, { role: "user", content: text }]);
     setChatLoading(true);
 
     try {
-      if (!localAgent.canUseLocalAi) {
-        throw new Error(
-          localAgent.mobile
-            ? LOCAL_AGENT_REQUIRED_MESSAGE
-            : localAgent.ui.status === "needs-ollama"
-              ? LOCAL_AI_UNAVAILABLE_MESSAGE
-              : localAgent.ui.detail || LOCAL_AGENT_REQUIRED_MESSAGE
-        );
-      }
+      const excerpt = await getDocumentContext();
 
-      const docContext = await getDocumentContext();
-      const context = docContext ? `\n\nDocument content:\n${docContext}` : "";
-
-      let reply = "";
-      const messages: LocalAgentChatMessage[] = [
-        {
-          role: "system",
-          content:
-            "You are Cerise Scholar's PDF research assistant. Answer using the provided document context when available. Be concise, specific, and honest when the document does not contain enough evidence.",
-        },
-        ...chatMessages.slice(-6),
-        { role: "user", content: text + context },
-      ];
-
-      if (localAgent.hostedAiBypass) {
-        const response = await fetch("/api/ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            task: "pdf_chat",
-            messages,
-          }),
-        });
-        const data = (await response.json().catch(() => ({}))) as {
-          content?: string;
-          error?: string;
-        };
-        if (!response.ok) throw new Error(data.error || "Cerise could not answer this PDF question yet.");
-        reply = data.content || "";
-      } else {
-        reply = await callLocalAgentChat({
-          messages,
-          query: text,
-          timeoutMs: 45000,
-        });
-      }
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: "pdf_chat",
+          question: text,
+          excerpt,
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        result?: string;
+        error?: string;
+      };
+      if (!response.ok) throw new Error(data.error || "Cerise could not answer this PDF question yet.");
+      const reply = data.result || "";
       setChatMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (err) {
       setChatMessages((prev) => [
@@ -517,7 +510,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
       ]);
     }
     setChatLoading(false);
-  }, [chatInput, chatLoading, document, chatMessages, getDocumentContext, localAgent.canUseLocalAi, localAgent.hostedAiBypass, localAgent.mobile, localAgent.ui.detail, localAgent.ui.status]);
+  }, [chatInput, chatLoading, document, getDocumentContext]);
 
   // Voice input — speech-to-text using browser API
   const toggleVoiceInput = useCallback(() => {
@@ -603,6 +596,7 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
         onCreateCode={createCode}
         onUpdateCode={updateCode}
         onDeleteCode={deleteCode}
+        onSelectPdf={onSelectPdf}
       />
 
       {/* CENTER: PDF Viewer */}
@@ -627,6 +621,8 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
           onReadSelection={handleReadSelection}
           onToggleChat={() => setChatOpen((o) => !o)}
           chatOpen={chatOpen}
+          finished={!!finishedAt}
+          onToggleFinished={pdfId ? handleToggleFinished : undefined}
         />
 
         {reHighlightId && (
@@ -905,13 +901,6 @@ export default function PdfViewer({ url, pdfId, pdfDisplayName, pdfAuthor, pdfTi
           highlightText={existingNoteModal.highlightText}
         />
       )}
-      <LaptopRequiredMobileSheet
-        open={laptopRequiredOpen}
-        onClose={() => setLaptopRequiredOpen(false)}
-        title="Use your laptop for PDF AI"
-        body="You can keep reading and highlighting on mobile. Asking AI about the document uses local file text, so for this beta it runs from the Cerise Scholar Local Agent on your trusted laptop."
-        primaryLabel="I’ll use my laptop"
-      />
     </div>
   );
 }

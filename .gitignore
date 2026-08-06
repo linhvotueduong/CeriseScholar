@@ -46,9 +46,19 @@ next-env.d.ts
 
 # build/backup snapshots (auto-generated, not source)
 /.next.backup-*/
+/.next-*/
+/Users/
+/output/
+
+# local browser verification artifacts
+/.playwright-cli/
 
 # claude code worktrees
 /.claude/worktrees/
 
 # supabase local cli temp
 /supabase/.temp/
+
+# SwiftPM Local Research Host build products
+/apps/local-research-host/.build/
+/apps/local-research-host/dist/

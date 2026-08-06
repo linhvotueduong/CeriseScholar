@@ -81,7 +81,11 @@ async function getSupabase() {
 
 type SupabaseServer = Awaited<ReturnType<typeof getSupabase>>;
 
-async function processPdf(supabase: SupabaseServer, storagePath: string, pdfId: string) {
+async function processPdf(
+  supabase: SupabaseServer,
+  storagePath: string,
+  pdfId: string
+) {
   await supabase.from("pdfs").update({ ocr_status: "processing" }).eq("id", pdfId);
 
   const { data: fileData, error: downloadError } = await supabase.storage

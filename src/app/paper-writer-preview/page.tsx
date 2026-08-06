@@ -129,7 +129,7 @@ export default function PaperWriterPreview() {
           fontFamily: "var(--font-noto)", fontSize: "12px",
         }}
       >
-        <Link href="/projects-preview" style={{ color: palette.inkMuted, textDecoration: "none", fontSize: "11px" }}>
+        <Link href="/projects" style={{ color: palette.inkMuted, textDecoration: "none", fontSize: "11px" }}>
           ← Projects&nbsp;&nbsp;&nbsp;Geopolitical
         </Link>
         <div style={{ flex: 1 }} />

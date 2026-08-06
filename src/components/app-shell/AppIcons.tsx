@@ -14,6 +14,7 @@ export type AppIconName =
   | "check-square"
   | "clock"
   | "dashboard"
+  | "download"
   | "edit"
   | "external-link"
   | "file"
@@ -107,6 +108,12 @@ const iconPaths: Record<AppIconName, ReactNode> = {
       <rect height="6" rx="1.5" width="6" x="14" y="4" />
       <rect height="6" rx="1.5" width="6" x="4" y="14" />
       <rect height="6" rx="1.5" width="6" x="14" y="14" />
+    </>
+  ),
+  download: (
+    <>
+      <path d="M12 3v12M7 10l5 5 5-5" />
+      <path d="M5 20h14" />
     </>
   ),
   edit: (

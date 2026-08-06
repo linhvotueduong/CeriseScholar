@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * Kept as `middleware` (not `proxy`) because Next 16.2.1's dev runtime
  * still emits a middleware-manifest and 500s without it.
  * - Refreshes the user's auth session (so they stay logged in)
- * - Redirects non-logged-in users away from /dashboard pages
+ * - Redirects non-logged-in users away from protected app pages
  * - Redirects logged-in users away from /login and /signup pages
  */
 export async function middleware(request: NextRequest) {
@@ -53,8 +53,9 @@ export async function middleware(request: NextRequest) {
 
   const isProtectedAppPath =
     path.startsWith("/dashboard") ||
-    path === "/research-desk" ||
-    path.startsWith("/research-desk/") ||
+    path.startsWith("/experimental-studio") ||
+    path === "/projects" ||
+    path === "/evidence-library" ||
     path === "/settings" ||
     path.startsWith("/settings/") ||
     path === "/auth/complete-profile";
@@ -66,7 +67,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // /admin/* is for the site admin only. Redirect everyone else to /dashboard.
+  // /admin/* is for the site admin only. Redirect everyone else to /projects.
   // Logged-out users get sent to /login first so they can sign in.
   if (path.startsWith("/admin")) {
     if (!user) {
@@ -76,15 +77,15 @@ export async function middleware(request: NextRequest) {
     }
     if (user.email?.toLowerCase() !== "cerisescholar@gmail.com") {
       const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
+      url.pathname = "/projects";
       return NextResponse.redirect(url);
     }
   }
 
-  // If user IS logged in and trying to access /login or /signup, redirect to /dashboard
+  // If user IS logged in and trying to access /login or /signup, redirect to /projects
   if (user && (path === "/login" || path === "/signup")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/projects";
     return NextResponse.redirect(url);
   }
 
@@ -95,8 +96,9 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/research-desk",
-    "/research-desk/:path*",
+    "/experimental-studio/:path*",
+    "/projects",
+    "/evidence-library",
     "/settings",
     "/settings/:path*",
     "/auth/complete-profile",

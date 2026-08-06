@@ -1,106 +1,184 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import SettingsPanel from "@/components/app-ui/SettingsPanel";
-import { SettingsRow, ToggleSwitch } from "@/components/app-ui/SettingsControls";
 import { AppIcon } from "@/components/app-shell/AppIcons";
+import { useUser } from "@/hooks/useUser";
+import { createClient } from "@/lib/supabase/client";
+import { fetchUserPreferences, upsertUserPreferences } from "@/lib/profile/profile";
+
+type SaveState = "idle" | "loading" | "saved" | "error";
+
+const languages = [
+  { value: "en", label: "English" },
+  { value: "vi", label: "Vietnamese" },
+];
+
+const timezones = [
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Europe/London",
+  "Europe/Paris",
+  "Asia/Ho_Chi_Minh",
+  "Asia/Kuala_Lumpur",
+  "Asia/Tokyo",
+];
+const timezoneOptions = timezones.map((value) => ({
+  value,
+  label: value.replaceAll("_", " "),
+}));
 
 export default function PreferencesSettingsPage() {
+  const { user, loading } = useUser();
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
+  const [language, setLanguage] = useState("en");
+  const [timezone, setTimezone] = useState("UTC");
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [message, setMessage] = useState("");
+  const savedPreferencesRef = useRef<string | null>(null);
+  const saveRequestRef = useRef(0);
+
+  useEffect(() => {
+    if (loading || !user || loadedUserId === user.id) return;
+    let mounted = true;
+    void fetchUserPreferences(createClient(), user.id).then((preferences) => {
+      if (!mounted) return;
+      const nextLanguage = preferences?.preferred_language ?? "en";
+      const nextTimezone = preferences?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
+      savedPreferencesRef.current = JSON.stringify({ language: nextLanguage, timezone: nextTimezone });
+      setLanguage(nextLanguage);
+      setTimezone(nextTimezone);
+      setLoadedUserId(user.id);
+    });
+    return () => { mounted = false; };
+  }, [loadedUserId, loading, user]);
+
+  useEffect(() => {
+    if (!user || loadedUserId !== user.id) return;
+    const snapshot = JSON.stringify({ language, timezone });
+    if (snapshot === savedPreferencesRef.current) return;
+    const requestId = ++saveRequestRef.current;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setSaveState("loading");
+      setMessage("Saving preferences…");
+      void upsertUserPreferences(createClient(), user.id, {
+        preferred_language: language,
+        timezone,
+      }).then(({ error }) => {
+        if (cancelled || requestId !== saveRequestRef.current) return;
+        if (error) {
+          setSaveState("error");
+          setMessage("We couldn't save your preferences. Change a setting to try again.");
+          return;
+        }
+        savedPreferencesRef.current = snapshot;
+        setSaveState("saved");
+        setMessage("Preferences saved automatically.");
+      });
+    }, 400);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [language, loadedUserId, timezone, user]);
+
+  function markChanged() {
+    setSaveState("idle");
+    setMessage("");
+  }
+
   return (
-    <SettingsPanel
-      className="h-[800px] min-h-[800px] max-h-[800px] pb-10"
-      title="Preferences"
-      description="Customize your workspace, research defaults, and reading experience."
-    >
-      <div className="flex h-[674px] flex-col">
-        <section className="grid gap-3 md:grid-cols-4">
-          <SummaryCard icon="folder" label="Start page" value="Research Desk" />
-          <SummaryCard icon="book-open" label="Citation style" value="APA 7" />
-          <SummaryCard icon="settings" label="Theme" value="Light" />
-          <SummaryCard icon="list" label="Density" value="Comfortable" />
+    <div>
+      <SettingsPanel
+        title="Preferences"
+        description="Customize how Cerise Scholar displays information for you."
+      >
+        <section className="grid gap-3 rounded-[12px] border border-[#e5e1dc] bg-white p-4 lg:grid-cols-[190px_minmax(0,1fr)]">
+          <div className="border-[#eeeae5] lg:border-r lg:pr-4">
+            <h3 className="text-[12px] font-bold text-[#17120d]">Language & region</h3>
+            <p className="mt-1 text-[10px] leading-4 text-[#6f6760]">
+              Set the language and timezone used for your account.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <SelectField
+              icon="globe"
+              label="Preferred language"
+              onChange={(value) => {
+                setLanguage(value);
+                markChanged();
+              }}
+              options={languages}
+              value={language}
+            />
+            <SelectField
+              icon="clock"
+              label="Timezone"
+              onChange={(value) => {
+                setTimezone(value);
+                markChanged();
+              }}
+              options={timezoneOptions}
+              value={timezone}
+            />
+          </div>
         </section>
 
-        <section className="mt-4 grid flex-1 gap-3 lg:grid-cols-2">
-          <MiniPanel title="A. Workspace Preferences">
-            <PrefRow label="Default start page" action={<Select value="Research Desk" />} />
-            <PrefRow label="Open last project on launch" action={<ToggleSwitch defaultOn />} />
-            <PrefRow label="Default section when returning to a project" action={<Select value="Last opened section" />} />
-            <PrefRow label="Workspace density" action={<Select value="Comfortable" />} />
-            <PrefRow label="Autosave notes and drafts" action={<ToggleSwitch defaultOn />} />
-          </MiniPanel>
-          <MiniPanel title="B. Research Defaults">
-            <PrefRow label="Citation style" body="Default citation format for research outputs." action={<Select value="APA 7" />} />
-            <PrefRow label="Literature review table sort" action={<Select value="Recently updated" />} />
-            <PrefRow label="Reference export format" action={<Select value="RIS" />} />
-            <PrefRow label="Show evidence counts on project cards" action={<ToggleSwitch defaultOn />} />
-          </MiniPanel>
-          <MiniPanel title="C. Course Library Preferences">
-            <PrefRow label="Resume latest lesson automatically" action={<ToggleSwitch defaultOn />} />
-            <PrefRow label="Show recommended courses" action={<ToggleSwitch defaultOn />} />
-            <PrefRow label="Display course progress on dashboard" action={<ToggleSwitch defaultOn />} />
-            <PrefRow label="Preferred lesson layout" action={<Select value="Split view" />} />
-          </MiniPanel>
-          <MiniPanel title="D. Appearance & Reading">
-            <PrefRow label="Theme" action={<Select value="Light" />} />
-            <PrefRow label="Reading text size" action={<Segmented options={["Small", "Medium", "Large"]} active="Medium" />} />
-            <PrefRow label="Reduce motion" action={<ToggleSwitch />} />
-            <PrefRow label="Compact sidebar labels" action={<ToggleSwitch />} />
-          </MiniPanel>
+        <section className="mt-3 rounded-[12px] border border-[#e5e1dc] bg-[#faf9f7] p-4">
+          <div className="flex items-start gap-3">
+            <AppIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#6f6760]" name="settings" />
+            <div>
+              <h3 className="text-[11px] font-bold text-[#17120d]">Saved to your account</h3>
+              <p className="mt-1 text-[10px] leading-4 text-[#6f6760]">
+                These preferences follow you when you sign in on another device. Changing your preferred language does not translate research papers or source text.
+              </p>
+            </div>
+          </div>
         </section>
 
-        <footer className="mt-4 flex items-center justify-between border-t border-[#eeeae5] pt-4">
-          <button className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-[#d8d3ce] px-5 text-[12px] font-bold text-[#17120d]" type="button">
-            <AppIcon className="h-[18px] w-[18px]" name="refresh" />
-            Reset to defaults
-          </button>
-          <button className="inline-flex h-10 items-center gap-2 rounded-[8px] bg-[#111111] px-6 text-[12px] font-bold text-white shadow-[0_8px_18px_rgba(17,17,17,0.12)]" type="button">
-            Save Settings
-          </button>
-        </footer>
-      </div>
-    </SettingsPanel>
-  );
-}
-
-function PrefRow({ action, body, label }: { action?: React.ReactNode; body?: string; label: string }) {
-  return <SettingsRow action={action} body={body} className="min-h-[44px] py-2.5" label={label} />;
-}
-
-function SummaryCard({ icon, label, value }: { icon: "folder" | "book-open" | "settings" | "list"; label: string; value: string }) {
-  return (
-    <article className="flex min-h-[70px] items-center gap-4 rounded-[10px] border border-[#e5e1dc] bg-white px-5 py-3">
-      <AppIcon className="h-7 w-7 text-[#17120d]" name={icon} />
-      <div>
-        <p className="text-[11px] font-semibold text-[#6f6760]">{label}</p>
-        <p className="mt-0.5 text-[15px] font-bold leading-none text-[#17120d]">{value}</p>
-      </div>
-    </article>
-  );
-}
-
-function MiniPanel({ children, title }: { children: React.ReactNode; title: string }) {
-  return (
-    <article className="flex min-h-[236px] flex-col rounded-[12px] border border-[#e5e1dc] p-4">
-      <h3 className="text-[13px] font-bold text-[#111111]">{title}</h3>
-      <div className="mt-3 flex-1">{children}</div>
-    </article>
-  );
-}
-
-function Select({ value }: { value: string }) {
-  return (
-    <button className="inline-flex h-9 min-w-[146px] items-center justify-between rounded-[8px] border border-[#d8d3ce] px-3 text-left text-[11px] font-bold text-[#17120d]" type="button">
-      {value}
-      <AppIcon className="h-3.5 w-3.5 text-[#7b7168]" name="chevron-down" />
-    </button>
-  );
-}
-
-function Segmented({ options, active }: { options: string[]; active: string }) {
-  return (
-    <div className="grid h-9 grid-cols-3 rounded-[8px] border border-[#e5e1dc] bg-white p-0.5 text-[11px] font-bold text-[#6f6760]">
-      {options.map((option) => (
-        <span className={option === active ? "rounded-[6px] bg-[#111111] px-3 py-2 text-white" : "px-3 py-2"} key={option}>
-          {option}
-        </span>
-      ))}
+        <p
+          aria-live="polite"
+          className={`mt-3 min-h-5 text-right text-[11px] font-semibold ${saveState === "error" ? "text-[#c0392b]" : saveState === "saved" ? "text-[#237a3b]" : "text-[#6f6760]"}`}
+        >
+          {loading ? "Loading preferences…" : message}
+        </p>
+      </SettingsPanel>
     </div>
+  );
+}
+
+function SelectField({
+  icon,
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  icon: "clock" | "globe";
+  label: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  value: string;
+}) {
+  return (
+    <label className="text-[10px] font-bold text-[#4f4842]">
+      <span className="flex items-center gap-2">
+        <AppIcon className="h-4 w-4" name={icon} />
+        {label}
+      </span>
+      <select
+        className="mt-2 h-10 w-full rounded-[8px] border border-[#d8d3ce] bg-white px-3 text-[11px] font-semibold text-[#17120d] outline-none focus:border-[#17120d]"
+        onChange={(event) => onChange(event.target.value)}
+        value={value}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    </label>
   );
 }

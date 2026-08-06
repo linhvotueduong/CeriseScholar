@@ -74,7 +74,7 @@ const steps = [
     ],
     ceriseTool: "ScholarAsk → Workspace (PDF viewer with highlighting, notes, and Code System)",
     links: [
-      { label: "Open Workspace", href: "/dashboard" },
+      { label: "Open Projects", href: "/projects" },
       { label: "What is ScholarAsk?", href: "/about" },
     ],
   },
@@ -99,7 +99,7 @@ const steps = [
     ],
     ceriseTool: "Meta-Analysis (Methodology Guide → Data Upload → Analyze Data → Effect Sizes → Forest Plot)",
     links: [
-      { label: "Open Workspace", href: "/dashboard" },
+      { label: "Open Projects", href: "/projects" },
       { label: "ICPSR Data", href: "https://www.icpsr.umich.edu/" },
     ],
   },
@@ -123,7 +123,7 @@ const steps = [
       "Your synthesis paragraphs become the first draft of your literature review",
     ],
     ceriseTool: "Literature Review Table (filter by section → write synthesis paragraphs → export CSV)",
-    links: [{ label: "Open Workspace", href: "/dashboard" }],
+    links: [{ label: "Open Projects", href: "/projects" }],
   },
   {
     number: 5,
@@ -145,7 +145,7 @@ const steps = [
       "Always cite your sources — use the APA references from your Lit Review Table",
     ],
     ceriseTool: "All tools combined: Workspace highlights → Lit Review synthesis → Meta-Analysis results → Final paper",
-    links: [{ label: "Open Workspace", href: "/dashboard" }],
+    links: [{ label: "Open Projects", href: "/projects" }],
   },
 ];
 
@@ -191,7 +191,7 @@ export default function ResearchGuidancePage() {
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "28px", alignItems: "center" }}>
             <Link
-              href="/projects-preview"
+              href="/projects"
               className="transition-colors hover:bg-[#1a1208] hover:text-white"
               style={{
                 padding: "14px 36px", borderRadius: "50px",

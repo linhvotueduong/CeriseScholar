@@ -5,15 +5,26 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import LaptopRequiredMobileSheet from "@/components/mobile/LaptopRequiredMobileSheet";
-import { readApiResponse } from "@/lib/utils/readApiResponse";
-import { useLocalAgentStatus } from "@/hooks/useLocalAgentStatus";
 import {
-  callLocalAgentChat,
-  LOCAL_AGENT_REQUIRED_MESSAGE,
-  LOCAL_AI_UNAVAILABLE_MESSAGE,
-  type LocalAgentChatMessage,
-} from "@/lib/local-agent/client";
+  evidenceDedupeKey,
+  fetchScholarAskDedupeKeys,
+  saveScholarAskEvidence,
+} from "@/lib/research/evidenceLibrary";
+import { readApiResponse } from "@/lib/utils/readApiResponse";
+import { INCLUDED_MONTHLY_ALLOWANCE, allowanceExceeded } from "@/lib/ai/allowance";
+import { createClient } from "@/lib/supabase/client";
+import { showToast } from "@/components/app-ui/Toast";
+import { useUser } from "@/hooks/useUser";
+import {
+  exportResearchJourneyArchive,
+  legacyJourneyMentorHref,
+  mentorModeForLegacyJourneyIntent,
+  migrateLegacyResearchJourneyConversations,
+  readResearchJourneyArchive,
+  writeResearchJourneyArchive,
+  type ResearchJourneyArchive,
+} from "@/lib/research/researchJourneyMigration";
+import type { ResearchMentorMode } from "@/lib/research/researchMentor";
 
 // ============================================================
 // Error Boundary
@@ -62,80 +73,14 @@ interface Message {
   totalFound?: number;
   loading?: boolean;
   error?: boolean;
+  /** Historical only. New ScholarAsk messages are always evidence-search answers. */
+  mode?: "research_answer" | "research_journey";
 }
 
 interface Conversation {
   id: string;
   title: string;
   messages: Message[];
-}
-
-type ResearchLocalAgentPayload = {
-  localAgent?: {
-    route: "research";
-    messages: LocalAgentChatMessage[];
-    query: string;
-    answerMode: AnswerMode;
-    journeyIntent: JourneyIntent;
-  };
-  references?: PaperRef[];
-  paperCount?: number;
-  totalFound?: number;
-  error?: string;
-};
-
-type AnswerMode = "research_answer" | "research_journey";
-type JourneyIntent = "general_journey" | "find_bridge" | "narrow_question" | "map_evidence";
-
-const answerModeOptions: { value: AnswerMode; label: string }[] = [
-  { value: "research_answer", label: "Research Answer" },
-  { value: "research_journey", label: "Research Journey" },
-];
-
-const starterPrompts = [
-  {
-    label: "Find the bridge",
-    intent: "find_bridge" as const,
-    prompt: "Help me find the bridge for this idea: ",
-  },
-  {
-    label: "Narrow my question",
-    intent: "narrow_question" as const,
-    prompt: "Here is my rough idea in under 150 words. Help me narrow it: ",
-  },
-  {
-    label: "Map the evidence",
-    intent: "map_evidence" as const,
-    prompt: "Help me map the evidence for this topic: ",
-  },
-];
-
-function AnswerModeControl({
-  answerMode,
-  onChange,
-}: {
-  answerMode: AnswerMode;
-  onChange: (mode: AnswerMode) => void;
-}) {
-  return (
-    <div className="flex items-center gap-1 rounded-full border border-[#e0d8d0] bg-[#faf7f0] p-0.5" aria-label="ScholarAsk answer style">
-      {answerModeOptions.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          aria-pressed={answerMode === option.value}
-          className={`rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
-            answerMode === option.value
-              ? "bg-[#1a1208] text-white shadow-sm"
-              : "text-[#7a6a5a] hover:text-[#1a1208]"
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 // ============================================================
@@ -254,44 +199,147 @@ const ResponseContent = React.memo(function ResponseContent({
 // ============================================================
 // Main Page
 // ============================================================
-export default function ScholarAskPage() {
+function ScholarAskWorkspace({
+  embedded = false,
+  projectId: providedProjectId,
+}: {
+  embedded?: boolean;
+  projectId?: string;
+}) {
   const params = useParams();
-  const projectId = params.projectId as string;
-  const localAgent = useLocalAgentStatus();
+  const projectId = providedProjectId ?? (params.projectId as string);
+  const { user } = useUser();
 
   const storageKey = `cerise_ask_${projectId}`;
   const legacyStorageKey = `${["scholar", "ask"].join("")}_${projectId}`;
   const [query, setQuery] = useState("");
-  const [answerMode, setAnswerMode] = useState<AnswerMode>("research_answer");
-  const [journeyIntent, setJourneyIntent] = useState<JourneyIntent>("general_journey");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [journeyArchive, setJourneyArchive] = useState<ResearchJourneyArchive | null>(null);
+  const [showJourneyArchive, setShowJourneyArchive] = useState(false);
+  const [legacyMentorMode, setLegacyMentorMode] = useState<ResearchMentorMode | null>(null);
   const [showRefs, setShowRefs] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hydrated, setHydrated] = useState(false);
-  const [laptopRequiredOpen, setLaptopRequiredOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Right panel — completely separate state
   const [selectedPaper, setSelectedPaper] = useState<PaperRef | null>(null);
   const [paperAnalysis, setPaperAnalysis] = useState<Record<number, string>>({});
+  const [paperAnalysisError, setPaperAnalysisError] = useState<Record<number, string>>({});
   const [analyzingPaper, setAnalyzingPaper] = useState<number | null>(null);
+  const [savedEvidenceIds, setSavedEvidenceIds] = useState<Set<string>>(new Set());
 
-  // Load from localStorage AFTER hydration (avoids mismatch)
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey);
-      if (saved) {
-        const data = JSON.parse(saved);
-        if (data.conversations?.length) setConversations(data.conversations);
-        if (data.activeConvId) setActiveConvId(data.activeConvId);
-        if (!localStorage.getItem(storageKey)) localStorage.setItem(storageKey, saved);
-        localStorage.removeItem(legacyStorageKey);
+    if (!embedded) return;
+    const narrowViewport = window.matchMedia("(max-width: 639px)");
+    const closeSidebarOnNarrowViewport = () => {
+      if (narrowViewport.matches) setSidebarOpen(false);
+    };
+    closeSidebarOnNarrowViewport();
+    narrowViewport.addEventListener("change", closeSidebarOnNarrowViewport);
+    return () => narrowViewport.removeEventListener("change", closeSidebarOnNarrowViewport);
+  }, [embedded]);
+
+  // AI-ready badge — reflects the real usage/lane state from /api/ai/usage
+  // instead of a hardcoded "AI ready". Never shows green until we've confirmed it.
+  type AiStatusState =
+    | { kind: "loading" }
+    | { kind: "unknown" }
+    | { kind: "byok" }
+    | { kind: "included"; used: number; allowance: number }
+    | { kind: "exhausted" };
+  const [aiStatus, setAiStatus] = useState<AiStatusState>({ kind: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/ai/usage");
+        const data = await readApiResponse<{
+          lane?: string;
+          used?: number;
+          allowance?: number | null;
+          error?: string;
+        }>(res);
+        if (cancelled) return;
+        if (!res.ok || data.error || !data.lane) {
+          setAiStatus({ kind: "unknown" });
+          return;
+        }
+        if (data.lane === "byok") {
+          setAiStatus({ kind: "byok" });
+          return;
+        }
+        const used = data.used ?? 0;
+        const allowance = data.allowance ?? INCLUDED_MONTHLY_ALLOWANCE;
+        setAiStatus(
+          allowanceExceeded(used, allowance) ? { kind: "exhausted" } : { kind: "included", used, allowance }
+        );
+      } catch {
+        if (!cancelled) setAiStatus({ kind: "unknown" });
       }
-    } catch { /* ignore */ }
-    setHydrated(true);
-  }, [legacyStorageKey, storageKey]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Load evidence conversations and move historical Journey sessions into a
+  // checksum-verified, read-only archive. The archive does not count as a
+  // pathway artifact and cannot satisfy Stage 1 readiness.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const saved = localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey);
+        const data = saved ? JSON.parse(saved) as { conversations?: unknown[]; activeConvId?: unknown } : {};
+        const existingArchive = await readResearchJourneyArchive(localStorage, projectId);
+        const migrated = await migrateLegacyResearchJourneyConversations({
+          projectId,
+          conversations: Array.isArray(data.conversations) ? data.conversations : [],
+          existingArchive,
+        });
+        if (cancelled) return;
+        setConversations(migrated.activeConversations as Conversation[]);
+        if (migrated.archive) {
+          writeResearchJourneyArchive(localStorage, migrated.archive);
+          setJourneyArchive(migrated.archive);
+        }
+        const requestedActiveId = typeof data.activeConvId === "string" ? data.activeConvId : null;
+        setActiveConvId(migrated.activeConversations.some((conversation) => conversation.id === requestedActiveId) ? requestedActiveId : null);
+        if (saved && !localStorage.getItem(storageKey)) localStorage.setItem(storageKey, saved);
+        localStorage.removeItem(legacyStorageKey);
+      } catch { /* malformed device history stays inert */ }
+      if (!cancelled) setHydrated(true);
+    })();
+    return () => { cancelled = true; };
+  }, [legacyStorageKey, projectId, storageKey]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const legacyMode = params.get("answerMode") === "research_journey" || params.get("mode") === "research_journey";
+    const legacyIntent = params.get("journeyIntent") ?? params.get("intent");
+    if (legacyMode || legacyIntent) setLegacyMentorMode(mentorModeForLegacyJourneyIntent(legacyIntent));
+  }, []);
+
+  // Which papers are already in the Evidence Library (Evidence Library v2,
+  // supabase/migrations/027_evidence_library.sql) — drives the Save/Saved
+  // button state. Keyed by URL (or title) rather than a local id since these
+  // rows now live in Supabase, not localStorage.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const keys = await fetchScholarAskDedupeKeys(supabase, user.id);
+      if (!cancelled) setSavedEvidenceIds(keys);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   // Save to localStorage whenever conversations change (only after hydration)
   useEffect(() => {
@@ -324,63 +372,42 @@ export default function ScholarAskPage() {
     setSelectedPaper(paper);
 
     if (!paperAnalysisRef.current[paper.num] && lastAssistantMsgRef.current) {
-      if (!localAgent.canUseLocalAi) {
-        if (localAgent.mobile) {
-          setLaptopRequiredOpen(true);
-        }
-        setPaperAnalysis((prev) => ({
-          ...prev,
-          [paper.num]: localAgent.ui.detail || LOCAL_AGENT_REQUIRED_MESSAGE,
-        }));
-        return;
-      }
-
       setAnalyzingPaper(paper.num);
+      setPaperAnalysisError((prev) => {
+        if (!prev[paper.num]) return prev;
+        const next = { ...prev };
+        delete next[paper.num];
+        return next;
+      });
       try {
-        let analysis = "";
-        if (localAgent.hostedAiBypass) {
-          const response = await fetch("/api/ai", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              task: "paper_analysis",
-              paper,
-              mainAnswer: lastAssistantMsgRef.current.content,
-            }),
-          });
-          const data = await readApiResponse<{ content?: string; error?: string }>(response);
-          if (!response.ok) throw new Error(data.error || "Could not generate analysis.");
-          analysis = data.content || "";
-        } else {
-          analysis = await callLocalAgentChat({
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are an academic research assistant. Explain in one paragraph how the selected paper connects to the research answer. Be specific, cautious, and do not overclaim support.",
-              },
-              {
-                role: "user",
-                content: `Main research answer excerpt:\n${lastAssistantMsgRef.current.content.slice(0, 600)}\n\nPaper to analyze:\nTitle: ${paper.title}\nAuthors: ${paper.authors?.join(", ")}\nYear: ${paper.year}\nJournal: ${paper.journal}\nAbstract: ${paper.abstract}\n\nExplain how this paper connects to the points in the answer above.`,
-              },
-            ],
-            query: paper.title,
-            timeoutMs: 25000,
-          });
-        }
+        const response = await fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task: "paper_analysis",
+            paper,
+            mainAnswer: lastAssistantMsgRef.current.content,
+          }),
+        });
+        const data = await readApiResponse<{ content?: string; error?: string }>(response);
+        if (!response.ok) throw new Error(data.error || "Could not generate analysis.");
+        const analysis = data.content || "";
         if (analysis) {
           setPaperAnalysis((prev) => ({ ...prev, [paper.num]: analysis }));
         }
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return;
-        setPaperAnalysis((prev) => ({
+        // Errors go in a SEPARATE map, never the analysis cache — a transient
+        // failure (busy free pool) must not block retries: reopening the
+        // citation runs the analysis again because the cache stays empty.
+        setPaperAnalysisError((prev) => ({
           ...prev,
           [paper.num]: err instanceof Error ? err.message : "Could not generate analysis.",
         }));
       }
       setAnalyzingPaper(null);
     }
-  }, [localAgent.canUseLocalAi, localAgent.hostedAiBypass, localAgent.mobile, localAgent.ui.detail]);
+  }, []);
 
   // Stable callback for citation clicks
   const handleCiteClick = useCallback((num: number) => {
@@ -393,8 +420,7 @@ export default function ScholarAskPage() {
   function newConversation() {
     setActiveConvId(null);
     setQuery("");
-    setAnswerMode("research_answer");
-    setJourneyIntent("general_journey");
+    setShowJourneyArchive(false);
     setShowRefs(false);
     setSelectedPaper(null);
   }
@@ -406,17 +432,6 @@ export default function ScholarAskPage() {
   async function handleSubmit(text?: string) {
     const q = (text || query).trim();
     if (!q || isLoading) return;
-
-    if (!localAgent.canUseLocalAi && localAgent.mobile) {
-      setLaptopRequiredOpen(true);
-      return;
-    }
-
-    const unavailableMessage = localAgent.mobile
-      ? LOCAL_AGENT_REQUIRED_MESSAGE
-      : localAgent.ui.status === "needs-ollama"
-        ? LOCAL_AI_UNAVAILABLE_MESSAGE
-        : localAgent.ui.detail || LOCAL_AGENT_REQUIRED_MESSAGE;
 
     const isFollowUp = !!activeConvId && messages.length > 0;
     let convId = activeConvId;
@@ -432,29 +447,18 @@ export default function ScholarAskPage() {
 
     updateConv(convId!, (c) => ({
       ...c,
-      messages: [...c.messages, { role: "user", content: q }, { role: "assistant", content: "", loading: true }],
+      messages: [...c.messages, { role: "user", content: q }, { role: "assistant", content: "", loading: true, mode: "research_answer" }],
     }));
     setQuery("");
     setShowRefs(false);
     setSelectedPaper(null);
 
-    if (!localAgent.canUseLocalAi) {
-      updateConv(convId!, (c) => ({
-        ...c,
-        messages: c.messages.map((m) =>
-          m.loading ? { role: "assistant", content: unavailableMessage, error: true } : m
-        ),
-      }));
-      return;
-    }
-
     try {
-      const body: Record<string, unknown> = { query: q, answerMode, journeyIntent };
+      const body: Record<string, unknown> = { query: q, projectId };
       if (isFollowUp && lastAssistantMsg) {
         body.followUp = q;
         body.previousAnswer = lastAssistantMsg.content;
       }
-      body.localAgent = !localAgent.hostedAiBypass;
 
       const res = await fetch("/api/research", {
         method: "POST",
@@ -467,44 +471,25 @@ export default function ScholarAskPage() {
         paperCount?: number;
         totalFound?: number;
         error?: string;
-      } & ResearchLocalAgentPayload>(res);
+      }>(res);
       if (!res.ok) throw new Error(data.error || "Research failed");
-      if (localAgent.hostedAiBypass) {
-        if (!data.answer) {
-          throw new Error("Cerise Scholar could not generate a hosted AI answer. Try again.");
-        }
-
-        updateConv(convId!, (c) => ({
-          ...c,
-          messages: c.messages.map((m) =>
-            m.loading
-              ? {
-                  role: "assistant",
-                  content: data.answer!,
-                  references: data.references,
-                  paperCount: data.paperCount,
-                  totalFound: data.totalFound,
-                }
-              : m
-          ),
-        }));
-        return;
+      if (!data.answer) {
+        throw new Error("Cerise Scholar could not generate an answer. Try again.");
       }
-
-      if (!data.localAgent?.messages?.length) {
-        throw new Error("Cerise Scholar could not prepare the local AI request. Try again.");
-      }
-
-      const answer = await callLocalAgentChat({
-        messages: data.localAgent.messages,
-        query: data.localAgent.query || q,
-        timeoutMs: answerMode === "research_journey" ? 45000 : 60000,
-      });
 
       updateConv(convId!, (c) => ({
         ...c,
         messages: c.messages.map((m) =>
-          m.loading ? { role: "assistant", content: answer, references: data.references, paperCount: data.paperCount, totalFound: data.totalFound } : m
+          m.loading
+            ? {
+                role: "assistant",
+                content: data.answer!,
+                references: data.references,
+                paperCount: data.paperCount,
+                totalFound: data.totalFound,
+                mode: m.mode,
+              }
+            : m
         ),
       }));
     } catch (err) {
@@ -535,16 +520,39 @@ export default function ScholarAskPage() {
     e.target.style.height = Math.min(e.target.scrollHeight, 150) + "px";
   }
 
-  function handleAnswerModeChange(mode: AnswerMode) {
-    setAnswerMode(mode);
-    if (mode === "research_answer") setJourneyIntent("general_journey");
+  async function handleSaveSelectedPaper() {
+    if (!selectedPaper || !user) return;
+    const paper = selectedPaper;
+    const key = evidenceDedupeKey({ title: paper.title, url: paper.url });
+    if (savedEvidenceIds.has(key)) return;
+
+    const supabase = createClient();
+    const saved = await saveScholarAskEvidence(supabase, {
+      userId: user.id,
+      projectId: projectId || null,
+      title: paper.title,
+      docType: paper.journal ? "Journal Article" : "Other",
+      url: paper.url || null,
+    });
+
+    if (!saved) {
+      showToast({ message: "Couldn't save this source — try again." });
+      return;
+    }
+
+    setSavedEvidenceIds((current) => new Set([...current, key]));
+    showToast({ message: "Saved to your Evidence Library" });
   }
 
-  function handleStarterPrompt(starter: (typeof starterPrompts)[number]) {
-    setQuery(starter.prompt);
-    setAnswerMode("research_journey");
-    setJourneyIntent(starter.intent);
-    requestAnimationFrame(() => inputRef.current?.focus());
+  function handleExportJourneyArchive() {
+    if (!journeyArchive) return;
+    const blob = new Blob([exportResearchJourneyArchive(journeyArchive)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `cerise-research-journey-archive-${projectId}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   // Pre-compute refNums so it's stable for React.memo
@@ -555,10 +563,10 @@ export default function ScholarAskPage() {
 
   return (
     <ErrorBoundary>
-      <div className="-mx-8 -my-8 flex flex-col h-[calc(100vh-57px)]">
+      <div className={embedded ? "flex h-full min-h-[620px] flex-col" : "-mx-8 -my-8 flex h-[calc(100vh-57px)] flex-col"}>
         {/* Sub-nav tabs */}
-        <div style={{ height: "40px", flexShrink: 0, display: "flex", alignItems: "center", padding: "0 24px", gap: "24px", borderBottom: "1px solid #e0d8d0", background: "#fff", fontFamily: "var(--font-noto), 'Noto Sans', sans-serif", fontSize: "11px" }}>
-          <Link href="/dashboard" style={{ color: "#7a6a5a", textDecoration: "none", fontSize: "11px" }}>← Projects</Link>
+        {!embedded ? <div style={{ height: "40px", flexShrink: 0, display: "flex", alignItems: "center", padding: "0 24px", gap: "24px", borderBottom: "1px solid #e0d8d0", background: "#fff", fontFamily: "var(--font-noto), 'Noto Sans', sans-serif", fontSize: "11px" }}>
+          <Link href="/projects" style={{ color: "#7a6a5a", textDecoration: "none", fontSize: "11px" }}>← Projects</Link>
           <div style={{ flex: 1 }} />
           {[
             { n: "Workspace", h: `/dashboard/project/${projectId}` },
@@ -569,19 +577,39 @@ export default function ScholarAskPage() {
           ].map((tab) => (
             <Link key={tab.n} href={tab.h} style={{ color: tab.active ? "#c0392b" : "#7a6a5a", fontWeight: tab.active ? 700 : 400, borderBottom: tab.active ? "2px solid #c0392b" : "2px solid transparent", paddingBottom: "8px", marginBottom: "-1px", fontSize: "11px", textDecoration: "none" }}>{tab.n}</Link>
           ))}
-        </div>
+        </div> : null}
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
         {sidebarOpen && (
-          <div className="w-52 bg-[#fdfcfa] border-r border-[#e0d8d0] flex flex-col shrink-0">
-            <div className="p-3 border-b border-[#e0d8d0]">
+          <div className={`w-52 bg-[#fdfcfa] border-r border-[#e0d8d0] flex flex-col shrink-0 ${embedded ? "max-sm:absolute max-sm:inset-y-0 max-sm:left-0 max-sm:z-20 max-sm:shadow-xl" : ""}`}>
+            <div className="flex items-center gap-2 p-3 border-b border-[#e0d8d0]">
               <button onClick={newConversation} className="w-full flex items-center gap-2 px-3 py-2 text-xs bg-white border border-[#e0d8d0] rounded-lg hover:bg-[#fdfcfa] text-[#5a4a3a] font-medium">+ New research</button>
+              {embedded ? (
+                <button
+                  aria-label="Close conversations"
+                  className="hidden shrink-0 rounded-lg border border-[#e0d8d0] bg-white px-2 py-2 text-[10px] font-semibold text-[#5a4a3a] max-sm:inline-flex"
+                  onClick={() => setSidebarOpen(false)}
+                  type="button"
+                >
+                  Close
+                </button>
+              ) : null}
             </div>
+            {journeyArchive?.conversations.length ? (
+              <button
+                className={`mx-3 mt-3 rounded-lg border px-3 py-2 text-left text-[11px] font-semibold ${showJourneyArchive ? "border-[#9a6546] bg-[#f8efe8] text-[#6d442d]" : "border-[#e0d8d0] bg-white text-[#7a6a5a] hover:bg-[#faf7f0]"}`}
+                onClick={() => { setShowJourneyArchive(true); setSelectedPaper(null); }}
+                type="button"
+              >
+                Journey archive · {journeyArchive.conversations.length}
+                <span className="mt-0.5 block text-[9px] font-normal">Read-only historical mentoring</span>
+              </button>
+            ) : null}
             <div className="flex-1 overflow-y-auto py-1">
               {conversations.map((conv) => (
                 <div key={conv.id} className={`flex items-center group ${activeConvId === conv.id ? "bg-white border-r-2 border-[#1a1208]" : "hover:bg-white"}`}>
-                  <button onClick={() => { setActiveConvId(conv.id); setShowRefs(false); setSelectedPaper(null); }}
+                  <button onClick={() => { setActiveConvId(conv.id); setShowJourneyArchive(false); setShowRefs(false); setSelectedPaper(null); }}
                     className={`flex-1 text-left px-3 py-2.5 text-xs transition-colors truncate ${activeConvId === conv.id ? "text-[#1a1208] font-medium" : "text-[#7a6a5a]"}`}
                   >{conv.title}</button>
                   <button
@@ -611,21 +639,76 @@ export default function ScholarAskPage() {
             </button>
             {activeConv && <span className="text-sm text-[#5a4a3a] font-medium truncate">{activeConv.title}</span>}
             <div className="ml-auto" />
-            <span
-              className={`hidden sm:inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
-                localAgent.canUseLocalAi
-                  ? "border-green-200 bg-green-50 text-green-700"
-                  : "border-amber-200 bg-amber-50 text-amber-700"
-              }`}
-              title={localAgent.ui.detail}
+            {!embedded ? <Link
+              aria-label="Open Evidence Library"
+              className="inline-flex shrink-0 items-center rounded-lg bg-[#1a1208] px-3 py-1.5 text-[10px] font-semibold text-white shadow-sm transition-colors hover:bg-black"
+              href="/evidence-library"
             >
-              {localAgent.hostedAiBypass ? "Hosted AI ready" : localAgent.canUseLocalAi ? "Laptop AI ready" : "Laptop AI required"}
-            </span>
+              Evidence Library <span aria-hidden="true">→</span>
+            </Link> : null}
+            {aiStatus.kind === "included" && (
+              <span className="hidden sm:inline-flex rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-[10px] font-semibold text-green-700">
+                AI ready — included ({aiStatus.used} of {aiStatus.allowance} used)
+              </span>
+            )}
+            {aiStatus.kind === "exhausted" && (
+              <Link
+                href="/settings/ai"
+                className="hidden sm:inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700 hover:bg-amber-100"
+              >
+                Allowance used — connect a key in Settings
+              </Link>
+            )}
+            {(aiStatus.kind === "loading" || aiStatus.kind === "unknown") && (
+              <span className="hidden sm:inline-flex rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-semibold text-gray-500">
+                {aiStatus.kind === "loading" ? "Checking AI status…" : "AI status unknown"}
+              </span>
+            )}
           </div>
+
+          {legacyMentorMode ? (
+            <div className="flex flex-wrap items-center gap-3 border-b border-[#dfc7b7] bg-[#fff8f2] px-4 py-3 text-xs text-[#6d442d]" role="status">
+              <strong>Research Journey moved to the Research Mentor.</strong>
+              <span>This saved link still works; historical content remains in the read-only archive and does not mark Stage 1 complete.</span>
+              <Link className="ml-auto rounded-full bg-[#6d442d] px-3 py-1.5 font-semibold text-white" href={legacyJourneyMentorHref(projectId, legacyMentorMode)}>Open Mentor</Link>
+            </div>
+          ) : null}
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto">
-            {messages.length === 0 ? (
+            {showJourneyArchive && journeyArchive ? (
+              <div className="mx-auto max-w-4xl space-y-5 px-6 py-8">
+                <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[#e0d8d0] pb-5">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9a6546]">Historical · read only</p>
+                    <h1 className="mt-1 text-2xl font-bold text-[#1a1208]">Research Journey archive</h1>
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#7a6a5a]">These conversations are preserved exactly for reference. They are not current pathway artifacts, Mentor context, evidence, or Stage 1 readiness.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="rounded-lg border border-[#d4cdc5] bg-white px-3 py-2 text-xs font-semibold text-[#5a4a3a]" onClick={handleExportJourneyArchive} type="button">Export JSON</button>
+                    <button className="rounded-lg bg-[#1a1208] px-3 py-2 text-xs font-semibold text-white" onClick={() => setShowJourneyArchive(false)} type="button">Back to evidence search</button>
+                  </div>
+                </header>
+                {journeyArchive.conversations.map((conversation) => (
+                  <details className="rounded-xl border border-[#e0d8d0] bg-white p-4 shadow-sm" key={conversation.id}>
+                    <summary className="cursor-pointer list-none">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div><strong className="text-sm text-[#1a1208]">{conversation.title}</strong><small className="mt-1 block text-[10px] text-[#9a8a7a]">{conversation.messages.length} messages · migrated {new Date(conversation.migratedAt).toLocaleDateString()}</small></div>
+                        <Link className="rounded-full border border-[#dfc7b7] bg-[#fff8f2] px-3 py-1.5 text-[10px] font-semibold text-[#6d442d]" href={legacyJourneyMentorHref(projectId, conversation.suggestedMentorMode)}>Continue with Mentor</Link>
+                      </div>
+                    </summary>
+                    <div className="mt-4 space-y-3 border-t border-[#eee7df] pt-4">
+                      {conversation.messages.map((message, index) => (
+                        <article className={message.role === "user" ? "ml-auto max-w-[82%] rounded-xl bg-[#faf7f0] p-3" : "max-w-[92%] rounded-xl border border-[#eee7df] bg-white p-3"} key={`${conversation.id}-${index}`}>
+                          <span className="mb-2 block text-[9px] font-bold uppercase tracking-[0.12em] text-[#9a8a7a]">{message.role === "user" ? "Researcher" : "Historical Journey response"}</span>
+                          <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-[#5a4a3a]">{message.content}</pre>
+                        </article>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            ) : messages.length === 0 ? (
               <div className="relative flex h-full flex-col overflow-hidden bg-white">
                 <img
                   src="/assets/characters/lightbulb2_nobg.png"
@@ -634,25 +717,19 @@ export default function ScholarAskPage() {
                   className="pointer-events-none absolute bottom-[max(4.5rem,11vh)] left-1/2 h-auto w-[min(20rem,36vw)] -translate-x-1/2 opacity-90 2xl:bottom-[max(2rem,4vh)] 2xl:w-[min(24rem,24vw)]"
                 />
                 <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-[max(14.5rem,30vh)] 2xl:pb-[max(12rem,24vh)]">
-                <h1 className="mb-2 text-4xl font-bold text-[#1a1208] 2xl:text-5xl">Discover <em>your</em> question</h1>
-                <p className="mb-10 text-[#7a6a5a] 2xl:text-lg">Bridge your idea to sources, concepts, and a researchable path.</p>
+                <h1 className="mb-2 text-4xl font-bold text-[#1a1208] 2xl:text-5xl">Search the <em>evidence</em></h1>
+                <p className="mb-10 text-[#7a6a5a] 2xl:text-lg">Find, interrogate, and synthesize academic sources for the question you bring.</p>
                 <div className="w-full max-w-2xl 2xl:max-w-3xl">
                   <div className="bg-white border border-[#d4cdc5] rounded-2xl p-4 shadow-sm transition-shadow focus-within:border-[#b9afa4] focus-within:shadow-[0_4px_18px_rgba(26,18,8,0.08)] 2xl:p-5">
                     <textarea ref={inputRef} value={query} onChange={handleTextareaChange} onKeyDown={handleKeyDown} placeholder="What would you like to learn more about?" rows={2} className="w-full resize-none text-sm text-[#1a1208] placeholder-[#9a8a7a] focus:outline-none focus-visible:!outline-none focus-visible:!ring-0 2xl:text-base" />
                     <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <AnswerModeControl answerMode={answerMode} onChange={handleAnswerModeChange} />
-                      </div>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9a8a7a]">Evidence search</span>
                       <button onClick={() => handleSubmit()} disabled={!query.trim()} className="w-8 h-8 bg-[#1a1208] text-white rounded-lg flex items-center justify-center hover:bg-[#000000] disabled:opacity-30 transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                       </button>
                     </div>
                   </div>
-                  <div className="flex items-center justify-center gap-6 mt-6">
-                    {starterPrompts.map((starter) => (
-                      <button key={starter.label} onClick={() => handleStarterPrompt(starter)} className="text-xs text-[#7a6a5a] hover:text-[#1a1208] transition-colors">{starter.label}</button>
-                    ))}
-                  </div>
+                  <p className="mt-6 text-center text-xs text-[#7a6a5a]">Need to shape, narrow, bridge, or compare a research path? Open the project’s Research Mentor.</p>
                 </div>
                 </div>
               </div>
@@ -670,7 +747,7 @@ export default function ScholarAskPage() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-[#1a1208] rounded-full animate-pulse" />
-                          <span className="text-sm text-[#5a4a3a] font-medium">Searching papers and asking your laptop AI...</span>
+                          <span className="text-sm text-[#5a4a3a] font-medium">Searching papers and thinking...</span>
                         </div>
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#d4cdc5] border-t-[#1a1208]" />
@@ -733,7 +810,9 @@ export default function ScholarAskPage() {
                           </div>
                         )}
 
-                        <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[10px] text-[#9a8a7a] hover:text-[#7a6a5a]">Copy response</button>
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[10px] text-[#9a8a7a] hover:text-[#7a6a5a]">Copy response</button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -744,7 +823,7 @@ export default function ScholarAskPage() {
           </div>
 
           {/* Bottom input */}
-          {messages.length > 0 && (
+          {messages.length > 0 && !showJourneyArchive && (
             <div className="border-t border-[#e0d8d0] bg-white px-6 py-3 shrink-0">
               <div className="max-w-3xl mx-auto">
                 <div className="bg-white border border-[#d4cdc5] rounded-2xl px-4 py-3">
@@ -754,11 +833,8 @@ export default function ScholarAskPage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                     </button>
                   </div>
-                  <div className="mt-3 flex justify-start">
-                    <AnswerModeControl answerMode={answerMode} onChange={handleAnswerModeChange} />
-                  </div>
                 </div>
-                <p className="text-[10px] text-[#9a8a7a] text-center mt-1.5">ScholarAsk uses OpenAlex for sources and your laptop Local Agent for AI synthesis.</p>
+                <p className="text-[10px] text-[#9a8a7a] text-center mt-1.5">ScholarAsk searches real papers via OpenAlex and answers with AI.</p>
               </div>
             </div>
           )}
@@ -773,7 +849,21 @@ export default function ScholarAskPage() {
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
-                <h4 className="text-sm font-semibold text-[#1a1208] leading-snug">{selectedPaper.title}</h4>
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="text-sm font-semibold text-[#1a1208] leading-snug">{selectedPaper.title}</h4>
+                  <button
+                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                      savedEvidenceIds.has(evidenceDedupeKey({ title: selectedPaper.title, url: selectedPaper.url }))
+                        ? "border-[#d7eadf] bg-[#edf8f0] text-green-700"
+                        : "border-[#e0d8d0] bg-[#faf7f0] text-[#5a4a3a] hover:bg-[#f4ede4]"
+                    }`}
+                    onClick={handleSaveSelectedPaper}
+                    type="button"
+                    disabled={!user}
+                  >
+                    {savedEvidenceIds.has(evidenceDedupeKey({ title: selectedPaper.title, url: selectedPaper.url })) ? "Saved" : "Save"}
+                  </button>
+                </div>
                 <p className="text-xs text-[#7a6a5a] mt-1">{selectedPaper.authors.join(", ")} ({selectedPaper.year || "n.d."})</p>
                 {selectedPaper.journal && <p className="text-xs text-[#9a8a7a] mt-0.5">{selectedPaper.journal}</p>}
                 <div className="flex items-center gap-2 mt-2">
@@ -799,6 +889,17 @@ export default function ScholarAskPage() {
                   </div>
                 ) : paperAnalysis[selectedPaper.num] ? (
                   <p className="text-xs text-[#7a6a5a] leading-relaxed bg-[#faf7f0] border border-[#e0d8d0] rounded-lg p-3">{paperAnalysis[selectedPaper.num]}</p>
+                ) : paperAnalysisError[selectedPaper.num] ? (
+                  <div className="text-xs leading-relaxed bg-[#fdf3f2] border border-[#eed5d2] rounded-lg p-3">
+                    <p className="text-[#9a3f3a]">{paperAnalysisError[selectedPaper.num]}</p>
+                    <button
+                      className="mt-2 rounded border border-[#e0cdb8] bg-white px-2 py-1 text-[11px] font-semibold text-[#8f6132] hover:bg-[#f6efe4]"
+                      onClick={() => openPaperPanel(selectedPaper)}
+                      type="button"
+                    >
+                      Retry analysis
+                    </button>
+                  </div>
                 ) : (
                   <p className="text-xs text-[#9a8a7a] italic">Analysis will generate automatically...</p>
                 )}
@@ -808,13 +909,21 @@ export default function ScholarAskPage() {
         )}
         </div>
       </div>
-      <LaptopRequiredMobileSheet
-        open={laptopRequiredOpen}
-        onClose={() => setLaptopRequiredOpen(false)}
-        title="Use your laptop for ScholarAsk"
-        body="You can keep reviewing your workspace on mobile. ScholarAsk’s AI-heavy synthesis uses your local research context, so during this beta it runs from the Local Agent on your trusted laptop."
-        primaryLabel="I’ll use my laptop"
-      />
     </ErrorBoundary>
   );
+}
+
+export default function ScholarAskPage(props: unknown) {
+  const embedded = Boolean(
+    props && typeof props === "object" && "embedded" in props && props.embedded,
+  );
+  const projectId =
+    props &&
+    typeof props === "object" &&
+    "projectId" in props &&
+    typeof props.projectId === "string"
+      ? props.projectId
+      : undefined;
+
+  return <ScholarAskWorkspace embedded={embedded} projectId={projectId} />;
 }

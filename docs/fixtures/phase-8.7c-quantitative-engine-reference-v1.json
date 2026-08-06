@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "fixturePurpose": "Independent golden results for the first Phase 8.7C quantitative-engine expansion batch.",
+  "generatedAt": "2026-07-29T00:00:00.000Z",
+  "references": [
+    {
+      "id": "spearman-statpsych-ci-spear",
+      "methodId": "spearman-rank-correlation",
+      "referenceImplementation": "R statpsych 1.6.0 ci.spear",
+      "referenceUrl": "https://search.r-project.org/CRAN/refmans/statpsych/html/ci.spear.html",
+      "referenceCommand": "ci.spear(.05, y, x)",
+      "confidenceLevel": 0.95,
+      "predictor": [67, 28, 30, 28, 52, 40, 25, 37, 44, 10, 14, 20, 28, 40, 51],
+      "outcome": [21, 4, 9, 12, 35, 18, 10, 22, 24, 1, 6, 8, 13, 16, 19],
+      "expected": {
+        "completeSampleSize": 15,
+        "estimate": 0.8699639,
+        "standardError": 0.08241326,
+        "lower": 0.5840951,
+        "upper": 0.9638297
+      }
+    },
+    {
+      "id": "paired-r-stats-sleep",
+      "methodId": "paired-samples-mean-difference",
+      "referenceImplementation": "R stats 4.6.0 t.test with paired = TRUE",
+      "referenceUrl": "https://stat.ethz.ch/R-manual/R-devel/library/stats/html/t.test.html",
+      "datasetUrl": "https://stat.ethz.ch/R-manual/R-devel/library/datasets/help/sleep.html",
+      "referenceCommand": "t.test(sleep2$extra.1, sleep2$extra.2, paired = TRUE)",
+      "confidenceLevel": 0.95,
+      "outcome": [0.7, -1.6, -0.2, -1.2, -0.1, 3.4, 3.7, 0.8, 0, 2],
+      "pairedVariable": [1.9, 0.8, 1.1, 0.1, -0.1, 4.4, 5.5, 1.6, 4.6, 3.4],
+      "expected": {
+        "completeSampleSize": 10,
+        "meanDifference": -1.58,
+        "tStatistic": -4.062127683382037,
+        "degreesOfFreedom": 9,
+        "lower": -2.4598858,
+        "upper": -0.7001142
+      },
+      "effectSizeCheck": {
+        "definition": "Cohen's dz = paired mean difference / sample standard deviation of paired differences.",
+        "differenceStandardDeviation": 1.2299954832798732,
+        "cohensDz": -1.2845575625910546
+      }
+    }
+  ]
+}

@@ -33,7 +33,7 @@ function ArticlePreview({ article, slug }: { article: (typeof helpArticles)[Help
   const iconName =
     slug === "getting-started"
       ? "play"
-      : slug === "local-agent-setup"
+      : slug === "ai-setup"
         ? "dashboard"
         : slug === "privacy-protection"
           ? "shield"

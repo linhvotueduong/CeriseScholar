@@ -18,7 +18,18 @@ export const PAPER_SECTIONS = [
   "references",
 ] as const;
 
-export type PaperSectionKey = (typeof PAPER_SECTIONS)[number];
+export const PROPOSAL_SECTIONS = [
+  "proposal_background",
+  "proposal_problem_statement",
+  "proposal_literature_review",
+  "proposal_current_study",
+  "proposal_method_materials",
+  "proposal_references",
+] as const;
+
+export type PaperSectionKey =
+  | (typeof PAPER_SECTIONS)[number]
+  | (typeof PROPOSAL_SECTIONS)[number];
 
 export const SECTION_LABELS: Record<PaperSectionKey, string> = {
   abstract: "Abstract",
@@ -29,6 +40,12 @@ export const SECTION_LABELS: Record<PaperSectionKey, string> = {
   discussion: "Discussion",
   conclusion: "Conclusion",
   references: "References",
+  proposal_background: "Background",
+  proposal_problem_statement: "Statement of the Problem",
+  proposal_literature_review: "Literature Review",
+  proposal_current_study: "Current Study",
+  proposal_method_materials: "Method and Materials",
+  proposal_references: "References",
 };
 
 export const SECTION_GUIDANCE: Record<PaperSectionKey, { description: string; tips: string[] }> = {
@@ -121,6 +138,66 @@ export const SECTION_GUIDANCE: Record<PaperSectionKey, { description: string; ti
       "APA format: Author, A. A. (Year). Title of article. Journal Name, Volume(Issue), pages. DOI",
       "List references in alphabetical order by first author's last name",
       "Use hanging indent format (first line flush left, subsequent lines indented)",
+    ],
+  },
+  proposal_background: {
+    description:
+      "Establish the theoretical or conceptual background readers need before encountering the research problem.",
+    tips: [
+      "Introduce the field and the context that frames the proposed study",
+      "Define the key concepts, terms, and boundaries used throughout the proposal",
+      "Use key references to support the background rather than relying on general claims",
+      "Move from broad context toward the specific problem the study addresses",
+    ],
+  },
+  proposal_problem_statement: {
+    description:
+      "State the unresolved problem, show the evidence for the gap, and explain why addressing it matters.",
+    tips: [
+      "Name the specific unresolved problem in clear, researchable language",
+      "Support the need and significance with evidence from the literature review",
+      "Describe the consequences of leaving the gap unresolved",
+      "Avoid proposing the solution before the problem and gap are firmly established",
+    ],
+  },
+  proposal_literature_review: {
+    description:
+      "Synthesize the key literature into an evidence-backed argument that establishes what is known and what remains missing.",
+    tips: [
+      "Organize the review by themes and debates rather than one source at a time",
+      "Compare agreements, disagreements, methods, and limitations across studies",
+      "Use Sync Materials to bring in synthesis paragraphs from the Lit Review tool",
+      "End with the research gap that leads directly to the proposed current study",
+    ],
+  },
+  proposal_current_study: {
+    description:
+      "Present the purpose, research questions, proposed contribution, and alignment of the current study.",
+    tips: [
+      "State exactly what the current study will investigate and contribute",
+      "List each research question consistently with the Stage 2 RQ Roadmaps",
+      "Connect every question to the problem and the gap established in the literature",
+      "Keep proposed claims appropriately limited before data collection begins",
+    ],
+  },
+  proposal_method_materials: {
+    description:
+      "Describe the proposed research design, materials or data sources, participants, procedure, and analysis direction.",
+    tips: [
+      "Name the research design and explain why it can answer the research questions",
+      "Describe participants, materials, datasets, instruments, or other evidence sources",
+      "Outline the procedure and the analysis planned for each research question",
+      "Identify access, feasibility, ethical, consent, privacy, and material constraints",
+    ],
+  },
+  proposal_references: {
+    description:
+      "List every source cited in the research proposal using a consistent reference style.",
+    tips: [
+      "Use Sync Materials to import APA references from the Lit Review tool",
+      "Ensure every in-text citation has a matching reference entry",
+      "Remove duplicate references and order the list alphabetically",
+      "Check DOI links, author names, publication years, and titles before submission",
     ],
   },
 };

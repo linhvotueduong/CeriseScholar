@@ -22,13 +22,13 @@ export default function HelpCategoryCard({
   }[tone];
   const iconMap: Record<string, AppIconName> = {
     "Getting Started": "book-open",
-    "Local Agent & Setup": "dashboard",
+    "AI Setup": "dashboard",
     "Privacy & Protection": "shield",
     "Account & Access": "user",
     "Research Workflow": "folder",
     "Report an issue": "bug",
     "Request a feature": "lightbulb",
-    "Ask Cerise Space": "users",
+    "Ask the Cerise Community": "users",
   };
   const icon = iconMap[label] || "help";
 

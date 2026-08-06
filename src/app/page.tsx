@@ -86,11 +86,11 @@ const faqs = [
   },
   {
     q: "Where do my private files and chats stay?",
-    a: "You stay in control. With the Local Agent workflow, private PDFs, notes, chats, and research materials can stay close on your trusted laptop.",
+    a: "You stay in control. Cerise Scholar handles project materials through its hosted workspace, and you decide what to upload or include in AI prompts.",
   },
   {
     q: "Do I need to install anything?",
-    a: "Not to explore the web app. The Local Agent and Ollama are only for deeper laptop-based workflows that need local files or local AI support.",
+    a: "No desktop helper is required. AI is included by default, and you can connect your own OpenRouter key in Settings > AI.",
   },
   {
     q: "Can I use it on mobile?",

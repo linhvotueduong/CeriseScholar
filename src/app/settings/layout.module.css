@@ -1,5 +1,6 @@
 .settingsMain {
   overflow-x: hidden;
+  padding-top: 12px !important;
 }
 
 .settingsFrame {
@@ -66,52 +67,37 @@
     margin-top: 10px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"]),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"]),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"]) {
+  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"]) {
     padding-bottom: 16px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody) {
+  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody) {
     margin-top: 10px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody .mt-4),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .mt-4),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody .mt-4) {
+  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .mt-4) {
     margin-top: 8px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody .mt-3),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .mt-3),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody .mt-3) {
+  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .mt-3) {
     margin-top: 7px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody section),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody article),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody article) {
+  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody article) {
     padding-top: 10px !important;
     padding-bottom: 10px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody [class*="py-2.5"]),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody [class*="py-2.5"]),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody [class*="py-2.5"]) {
+  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody [class*="py-2.5"]) {
     padding-top: 7px !important;
     padding-bottom: 7px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .gap-4),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody .gap-4) {
+  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .gap-4) {
     gap: 10px !important;
   }
 
-  .settingsContent :global(.settingsPanel[data-settings-panel="Local Setup"] .settingsPanelBody .gap-3),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .gap-3),
-  .settingsContent :global(.settingsPanel[data-settings-panel="Danger Zone"] .settingsPanelBody .gap-3) {
+  .settingsContent :global(.settingsPanel[data-settings-panel="Preferences"] .settingsPanelBody .gap-3) {
     gap: 7px !important;
   }
 
@@ -128,7 +114,7 @@
 @media (max-width: 1420px) {
   .settingsMain {
     padding-inline: 16px !important;
-    padding-block: 14px 20px !important;
+    padding-block: 10px 20px !important;
   }
 
   .settingsFrame {
@@ -161,27 +147,6 @@
     max-width: 620px !important;
     font-size: 12px !important;
     line-height: 1.45 !important;
-  }
-
-  .settingsFrame :global(.settingsHeader > div:last-child) {
-    gap: 8px !important;
-  }
-
-  .settingsFrame :global(.settingsHeader label) {
-    height: 36px !important;
-    width: 230px !important;
-    padding-inline: 12px !important;
-    font-size: 12px !important;
-  }
-
-  .settingsFrame :global(.settingsHeader input) {
-    font-size: 12px !important;
-  }
-
-  .settingsFrame :global(.settingsHeader button) {
-    height: 36px !important;
-    padding-inline: 18px !important;
-    font-size: 12px !important;
   }
 
   .settingsGrid :global(.settingsSubnav) {
@@ -241,16 +206,4 @@
     padding-inline: 12px !important;
   }
 
-  .settingsFrame :global(.settingsHeader > div:last-child) {
-    width: 100%;
-  }
-
-  .settingsFrame :global(.settingsHeader label) {
-    width: 100% !important;
-  }
-
-  .settingsFrame :global(.settingsHeader button) {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
 }

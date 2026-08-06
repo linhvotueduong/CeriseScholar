@@ -1,0 +1,655 @@
+.panel {
+  --assistant-ink: #171512;
+  --assistant-muted: #68625d;
+  --assistant-line: #ddd6cf;
+  --assistant-paper: #fffefa;
+  --assistant-panel: #f8f4ef;
+  --assistant-cerise: #a6164c;
+  --assistant-cerise-dark: #751033;
+  background: var(--assistant-paper);
+  border: 1px solid var(--assistant-line);
+  color: var(--assistant-ink);
+}
+
+.panel button,
+.panel textarea,
+.panel input {
+  font: inherit;
+}
+
+.panel button {
+  cursor: pointer;
+}
+
+.panelHeader {
+  align-items: center;
+  background: linear-gradient(100deg, #2b2024 0%, #421f2d 100%);
+  color: white;
+  display: flex;
+  gap: 28px;
+  justify-content: space-between;
+  padding: 20px 22px;
+}
+
+.titleBlock {
+  display: grid;
+  gap: 5px;
+}
+
+.eyebrow,
+.scopeHeader span,
+.promptField > span,
+.responseSummary > span,
+.suggestionHeading > span,
+.wordingCompare span,
+.manualEdit > span,
+.ledgerSummary > span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: #f1afc5;
+}
+
+.titleBlock h2 {
+  font-size: 21px;
+  margin: 0;
+}
+
+.titleBlock p {
+  color: #ded3d7;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 760px;
+}
+
+.openButton {
+  align-items: center;
+  background: white;
+  border: 0;
+  border-radius: 999px;
+  color: #2b2024;
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 800;
+  gap: 7px;
+  padding: 10px 14px;
+}
+
+.openButton svg {
+  height: 15px;
+  width: 15px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(210px, .6fr) minmax(330px, .95fr) minmax(390px, 1.25fr);
+  min-height: 560px;
+}
+
+.modeRail,
+.requestColumn,
+.resultsColumn {
+  min-width: 0;
+  padding: 20px;
+}
+
+.modeRail {
+  background: var(--assistant-panel);
+  border-right: 1px solid var(--assistant-line);
+}
+
+.modeRail h3 {
+  font-size: 12px;
+  letter-spacing: .04em;
+  margin: 0 0 13px;
+  text-transform: uppercase;
+}
+
+.modeList {
+  display: grid;
+  gap: 6px;
+}
+
+.modeList button {
+  align-items: start;
+  background: white;
+  border: 1px solid var(--assistant-line);
+  display: grid;
+  gap: 9px;
+  grid-template-columns: 22px 1fr;
+  padding: 11px;
+  text-align: left;
+}
+
+.modeList button > svg {
+  height: 17px;
+  margin-top: 1px;
+  width: 17px;
+}
+
+.modeList button span {
+  display: grid;
+  gap: 3px;
+}
+
+.modeList button strong {
+  font-size: 11px;
+}
+
+.modeList button small {
+  color: var(--assistant-muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.modeList .modeActive {
+  background: #fff0f4;
+  border-color: var(--assistant-cerise);
+  box-shadow: inset 3px 0 var(--assistant-cerise);
+  color: var(--assistant-cerise-dark);
+}
+
+.ledgerSummary {
+  border-top: 1px solid var(--assistant-line);
+  display: grid;
+  gap: 5px;
+  margin-top: 20px;
+  padding-top: 17px;
+}
+
+.ledgerSummary > span {
+  color: var(--assistant-muted);
+}
+
+.ledgerSummary strong {
+  font-size: 11px;
+}
+
+.ledgerSummary small {
+  color: var(--assistant-muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.requestColumn {
+  border-right: 1px solid var(--assistant-line);
+  display: grid;
+  align-content: start;
+  gap: 15px;
+}
+
+.scopeHeader {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.scopeHeader > div {
+  display: grid;
+  gap: 3px;
+}
+
+.scopeHeader > div > span,
+.promptField > span {
+  color: var(--assistant-cerise-dark);
+}
+
+.scopeHeader strong {
+  font-size: 13px;
+}
+
+.scopeHeader small {
+  color: var(--assistant-muted);
+  font-size: 10px;
+}
+
+.scopeToggle {
+  align-items: start;
+  display: flex;
+  font-size: 10px;
+  font-weight: 700;
+  gap: 7px;
+  line-height: 1.4;
+  max-width: 150px;
+}
+
+.scopeToggle input {
+  accent-color: var(--assistant-cerise);
+  margin: 1px 0 0;
+}
+
+.promptField {
+  display: grid;
+  gap: 7px;
+}
+
+.promptField textarea,
+.manualEdit textarea {
+  border: 1px solid #c8c0b9;
+  line-height: 1.5;
+  padding: 11px;
+  resize: vertical;
+  width: 100%;
+}
+
+.promptField small {
+  color: var(--assistant-muted);
+  font-size: 9px;
+}
+
+.disclosure {
+  align-items: start;
+  background: #eaf3f5;
+  border: 1px solid #c5d9df;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 20px 1fr;
+  padding: 13px;
+}
+
+.disclosure > svg {
+  height: 18px;
+  width: 18px;
+}
+
+.disclosure > div {
+  display: grid;
+  gap: 5px;
+}
+
+.disclosure strong {
+  font-size: 11px;
+}
+
+.disclosure p,
+.disclosure span,
+.disclosure small {
+  color: #4d5a5e;
+  font-size: 9px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.disclosure span {
+  color: #1e4e59;
+  font-weight: 750;
+}
+
+.requestActions {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr auto;
+}
+
+.requestActions > button,
+.suggestionActions button {
+  align-items: center;
+  background: var(--assistant-cerise-dark);
+  border: 0;
+  border-radius: 999px;
+  color: white;
+  display: flex;
+  font-size: 10px;
+  font-weight: 800;
+  gap: 6px;
+  justify-content: center;
+  padding: 10px 13px;
+}
+
+.requestActions > button:disabled,
+.suggestionActions button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.requestActions svg,
+.suggestionActions svg,
+.suggestionHeading svg,
+.error svg,
+.noSuggestions svg {
+  height: 14px;
+  width: 14px;
+}
+
+.keyStatus {
+  align-items: center;
+  display: grid;
+  gap: 7px;
+  grid-template-columns: 8px 1fr;
+}
+
+.keyStatus > span {
+  background: #b6801f;
+  border-radius: 999px;
+  height: 8px;
+  width: 8px;
+}
+
+.keyStatus[data-status="connected"] > span {
+  background: #267a42;
+}
+
+.keyStatus[data-status="missing"] > span,
+.keyStatus[data-status="unavailable"] > span {
+  background: #a42135;
+}
+
+.keyStatus p {
+  color: var(--assistant-muted);
+  font-size: 9px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.settingsLink {
+  color: var(--assistant-cerise-dark);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.error {
+  align-items: start;
+  background: #fff0f1;
+  color: #921b2d;
+  display: grid;
+  font-size: 10px;
+  gap: 8px;
+  grid-template-columns: 16px 1fr;
+  line-height: 1.5;
+  padding: 11px;
+}
+
+.resultsColumn {
+  background: #fcfaf7;
+  max-height: 900px;
+  overflow: auto;
+}
+
+.emptyResults,
+.loadingResults {
+  align-items: center;
+  color: var(--assistant-muted);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 360px;
+  text-align: center;
+}
+
+.emptyResults > svg {
+  height: 34px;
+  width: 34px;
+}
+
+.emptyResults h3 {
+  color: var(--assistant-ink);
+  font-size: 15px;
+  margin: 13px 0 5px;
+}
+
+.emptyResults p {
+  font-size: 10px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 280px;
+}
+
+.loadingResults {
+  font-size: 11px;
+  gap: 12px;
+}
+
+.loadingResults span {
+  animation: consent-assistant-spin .8s linear infinite;
+  border: 2px solid #d4cbd0;
+  border-radius: 999px;
+  border-top-color: var(--assistant-cerise);
+  height: 24px;
+  width: 24px;
+}
+
+.responseSummary {
+  background: #2b2024;
+  color: white;
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 15px;
+}
+
+.responseSummary > span {
+  color: #f1afc5;
+}
+
+.responseSummary p {
+  font-size: 11px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.responseSummary small {
+  color: #d8ced2;
+  font-size: 9px;
+}
+
+.suggestionList {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.suggestionCard {
+  background: white;
+  border: 1px solid var(--assistant-line);
+  padding: 14px;
+}
+
+.suggestionHeading {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 11px;
+}
+
+.suggestionHeading > span {
+  color: var(--assistant-cerise-dark);
+}
+
+.suggestionHeading > strong {
+  font-size: 13px;
+}
+
+.suggestionHeading > small {
+  align-items: center;
+  color: #28603a;
+  display: flex;
+  font-size: 9px;
+  font-weight: 750;
+  gap: 5px;
+}
+
+.wordingCompare {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.wordingCompare > div {
+  background: #f6f3ef;
+  border-left: 3px solid #afa69e;
+  padding: 10px;
+}
+
+.wordingCompare > div:last-child {
+  background: #fff1f5;
+  border-left-color: var(--assistant-cerise);
+}
+
+.wordingCompare span {
+  color: var(--assistant-muted);
+}
+
+.wordingCompare p,
+.findingBody p {
+  font-size: 10px;
+  line-height: 1.55;
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+
+.findingBody {
+  background: #f6f3ef;
+  padding: 10px;
+}
+
+.findingBody p:first-child {
+  margin-top: 0;
+}
+
+.suggestionMeta {
+  display: grid;
+  margin: 10px 0;
+}
+
+.suggestionMeta div {
+  border-top: 1px solid #ece7e2;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 100px 1fr;
+  padding: 7px 0;
+}
+
+.suggestionMeta dt,
+.suggestionMeta dd {
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.suggestionMeta dt {
+  color: var(--assistant-muted);
+}
+
+.suggestionMeta dd {
+  margin: 0;
+}
+
+.manualEdit {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.manualEdit > span {
+  color: var(--assistant-cerise-dark);
+}
+
+.suggestionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.suggestionActions button {
+  padding: 8px 11px;
+}
+
+.suggestionActions button:nth-child(2),
+.suggestionActions .keepButton {
+  background: white;
+  border: 1px solid #bfb6ae;
+  color: var(--assistant-ink);
+}
+
+.noSuggestions {
+  align-items: start;
+  background: #edf7ef;
+  color: #24552f;
+  display: grid;
+  font-size: 10px;
+  gap: 8px;
+  grid-template-columns: 16px 1fr;
+  line-height: 1.5;
+  padding: 12px;
+}
+
+.noSuggestions p,
+.decisionNote {
+  margin: 0;
+}
+
+.decisionNote {
+  color: var(--assistant-muted);
+  font-size: 9px;
+  line-height: 1.5;
+  padding: 12px 2px 0;
+}
+
+@keyframes consent-assistant-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1160px) {
+  .workspace {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .resultsColumn {
+    border-top: 1px solid var(--assistant-line);
+    grid-column: 1 / -1;
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .panelHeader,
+  .scopeHeader,
+  .requestActions {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .openButton {
+    justify-self: start;
+  }
+
+  .workspace {
+    display: block;
+  }
+
+  .modeRail,
+  .requestColumn {
+    border-bottom: 1px solid var(--assistant-line);
+    border-right: 0;
+  }
+
+  .modeList {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .scopeToggle {
+    max-width: none;
+  }
+
+  .wordingCompare {
+    grid-template-columns: 1fr;
+  }
+
+  .suggestionMeta div {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingResults span {
+    animation: none;
+  }
+}

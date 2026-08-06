@@ -12,42 +12,25 @@ export default function HelpSupportSettingsPage() {
       <section className="flex h-[674px] flex-col gap-4">
         <SupportBlock
           action={<LinkButton href="/help">Visit Help Center</LinkButton>}
+          columns={3}
           title="Help Center"
           subtitle="Find guides, tutorials, and answers to common questions."
         >
           <Feature icon="book-open" title="Guides & Tutorials" body="Step-by-step guides to help you get started." />
           <Feature icon="help" title="FAQs" body="Find answers to frequently asked questions." />
           <Feature icon="play" title="Video Tutorials" body="Watch short videos to learn key features." />
-          <Feature icon="file" title="Release Notes" body="Stay up to date with the latest updates." />
         </SupportBlock>
 
         <SupportBlock
           action={<LinkButton href="/help/contact">New Support Ticket</LinkButton>}
+          columns={2}
           framed
           title="Contact Support"
           subtitle="Need additional help? Our support team is here for you."
         >
-          <Feature icon="mail" title="Email Support" body="support@cerisescholar.app. We typically reply within 24 hours." />
-          <Feature icon="users" title="Live Chat" body="Available Monday - Friday, 9:00 AM - 6:00 PM." />
+          <Feature icon="mail" title="Email Support" body="cerisescholar@gmail.com. We typically reply within 24 hours." />
           <Feature icon="trophy" title="Priority Support" body="Faster response times for future paid plans." />
         </SupportBlock>
-
-        <article className="flex min-h-[124px] items-center rounded-[12px] border border-[#e5e1dc] bg-white p-5">
-          <div className="grid w-full gap-3 md:grid-cols-[180px_1fr_auto] md:items-center">
-            <div>
-              <h3 className="text-[13px] font-bold text-[#17120d]">System Status</h3>
-              <p className="mt-1 text-[10px] leading-3.5 text-[#6f6760]">Check the current status of Cerise Scholar services.</p>
-            </div>
-            <div className="flex min-h-[50px] items-center gap-2.5 rounded-[10px] border border-[#e5e1dc] px-4 py-2">
-              <AppIcon className="h-5 w-5 text-[#1f8a3b]" name="check-square" />
-              <div>
-                <p className="text-[12px] font-bold text-[#17120d]">All systems operational</p>
-                <p className="text-[10px] text-[#6f6760]">All services are running normally.</p>
-              </div>
-            </div>
-            <button className="h-9 rounded-[8px] border border-[#d8d3ce] px-4 text-[11px] font-bold" type="button">View Status Page</button>
-          </div>
-        </article>
 
         <article className="flex min-h-[108px] items-center rounded-[12px] border border-[#e5e1dc] bg-white p-5">
           <div className="flex w-full flex-wrap items-center justify-between gap-3">
@@ -63,15 +46,23 @@ export default function HelpSupportSettingsPage() {
   );
 }
 
+const gridColsClass: Record<2 | 3 | 4, string> = {
+  2: "grid gap-3 md:grid-cols-2",
+  3: "grid gap-3 md:grid-cols-3",
+  4: "grid gap-3 md:grid-cols-4",
+};
+
 function SupportBlock({
   action,
   children,
+  columns = 4,
   framed = false,
   subtitle,
   title,
 }: {
   action: React.ReactNode;
   children: React.ReactNode;
+  columns?: 2 | 3 | 4;
   framed?: boolean;
   subtitle: string;
   title: string;
@@ -86,7 +77,7 @@ function SupportBlock({
         {action}
       </div>
       <div className={framed ? "mt-5 rounded-[10px] border border-[#e5e1dc] p-4" : "mt-7"}>
-        <div className={framed ? "grid gap-3 md:grid-cols-3" : "grid gap-3 md:grid-cols-4"}>{children}</div>
+        <div className={gridColsClass[columns]}>{children}</div>
       </div>
     </article>
   );

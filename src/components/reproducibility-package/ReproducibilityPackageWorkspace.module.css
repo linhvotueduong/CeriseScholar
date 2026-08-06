@@ -1,0 +1,1027 @@
+.workspace {
+  min-height: 100vh;
+  background: #f7f2eb;
+  color: #2a2021;
+}
+
+.workspace * {
+  box-sizing: border-box;
+}
+
+.workspace button,
+.workspace input,
+.workspace select,
+.workspace textarea {
+  font: inherit;
+}
+
+.topbar {
+  min-height: 72px;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  color: #fff;
+  background: #2c0812;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+}
+
+.brandRow,
+.topActions,
+.contextBar > div,
+.importCard,
+.panelHeader,
+.materialHeading,
+.verificationSummary,
+.privacyCard,
+.warningCard,
+.errorNotice,
+.successNotice,
+.emptyVerification {
+  display: flex;
+  align-items: center;
+}
+
+.brandRow {
+  min-width: 0;
+  gap: 20px;
+}
+
+.brand {
+  color: #fff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.returnLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #eed8de;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.returnLink:hover {
+  color: #fff;
+}
+
+.projectName {
+  min-width: 0;
+  max-width: 320px;
+  padding-left: 20px;
+  overflow: hidden;
+  color: #caaeb6;
+  border-left: 1px solid rgb(255 255 255 / 18%);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topActions {
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.localBadge,
+.contextBadge,
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.localBadge {
+  padding: 8px 11px;
+  color: #f0cbd5;
+  background: rgb(255 255 255 / 8%);
+  border: 1px solid rgb(255 255 255 / 12%);
+}
+
+.secondaryButton,
+.inlineButton {
+  border: 1px solid #d5c6bd;
+  color: #522231;
+  background: #fff;
+  font-weight: 750;
+}
+
+.secondaryButton {
+  min-height: 38px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-color: rgb(255 255 255 / 18%);
+  border-radius: 8px;
+  color: #fff;
+  background: rgb(255 255 255 / 9%);
+}
+
+.contextBar {
+  min-height: 64px;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: #fff;
+  border-bottom: 1px solid #e3d9d1;
+}
+
+.contextBar > div {
+  min-width: 0;
+  gap: 10px;
+}
+
+.contextBar strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+}
+
+.contextBar span:not(.contextIcon) {
+  color: #847578;
+  font-size: 12px;
+}
+
+.contextIcon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 9px;
+  color: #8a1839;
+  background: #f8e8ec;
+}
+
+.contextBar label {
+  color: #77696c;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.contextBar select {
+  min-width: 135px;
+  min-height: 36px;
+  padding: 0 30px 0 10px;
+  border: 1px solid #d9cec7;
+  border-radius: 7px;
+  color: #3a272b;
+  background: #fff;
+}
+
+.contextBar code {
+  max-width: 190px;
+  overflow: hidden;
+  color: #7f6f73;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layout {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 218px minmax(0, 1fr) 286px;
+  align-items: start;
+}
+
+.workflowRail,
+.gateRail {
+  position: sticky;
+  top: 0;
+  min-width: 0;
+  height: calc(100vh - 136px);
+  overflow: auto;
+}
+
+.workflowRail {
+  padding: 25px 18px;
+  color: #f3e7e9;
+  background: #3a0c18;
+}
+
+.railLabel {
+  display: block;
+  margin-bottom: 17px;
+  color: #ac8b93;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.workflowRail ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflowRail ol > li {
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: 26px 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: #bda5ab;
+  border-bottom: 1px solid rgb(255 255 255 / 7%);
+  font-size: 12px;
+}
+
+.workflowRail ol > li > span {
+  color: #7e5c65;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.workflowRail ol > li svg {
+  width: 15px;
+}
+
+.workflowRail ol > li strong {
+  line-height: 1.35;
+}
+
+.workflowRail ol > .completeStep {
+  color: #fff;
+}
+
+.workflowRail ol > .completeStep > span,
+.workflowRail ol > .completeStep svg {
+  color: #eca5b7;
+}
+
+.boundaryCard {
+  margin-top: 26px;
+  padding: 15px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 10px;
+  color: #dbc6cb;
+  background: rgb(255 255 255 / 5%);
+}
+
+.boundaryCard > svg {
+  width: 17px;
+  margin-bottom: 8px;
+  color: #ef9db1;
+}
+
+.boundaryCard strong {
+  display: block;
+  font-size: 12px;
+}
+
+.boundaryCard ul {
+  margin: 10px 0 0;
+  padding-left: 16px;
+  color: #bda8ad;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.content {
+  min-width: 0;
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 42px clamp(22px, 4vw, 58px) 72px;
+}
+
+.hero {
+  max-width: 790px;
+  margin-bottom: 27px;
+}
+
+.hero > p,
+.panelHeader > div > span {
+  margin: 0 0 8px;
+  color: #a12246;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0 0 13px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(31px, 3.1vw, 48px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.hero > span {
+  display: block;
+  color: #75666a;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.importCard,
+.panel,
+.emptyState {
+  margin-bottom: 18px;
+  border: 1px solid #dfd3cb;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgb(50 18 25 / 4%);
+}
+
+.importCard {
+  padding: 18px;
+  gap: 14px;
+}
+
+.importCard > div:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+
+.importCard strong {
+  font-size: 14px;
+}
+
+.importCard p,
+.panelIntro,
+.materialHeading p,
+.privacyCard p,
+.warningCard p,
+.emptyVerification p {
+  margin: 5px 0 0;
+  color: #7b6c70;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.importIcon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 11px;
+  color: #8a1839;
+  background: #f8e7ec;
+}
+
+.importCard button,
+.reviewButton,
+.buildButton,
+.exportButton {
+  min-height: 40px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: #861b3c;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.workspace button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.errorNotice,
+.successNotice {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  gap: 10px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.errorNotice {
+  color: #7b2030;
+  background: #fce8ea;
+  border: 1px solid #efc9cf;
+}
+
+.successNotice {
+  color: #155e48;
+  background: #e9f6f0;
+  border: 1px solid #bfe5d6;
+}
+
+.errorNotice p {
+  margin: 3px 0 0;
+}
+
+.panel {
+  padding: clamp(20px, 3vw, 30px);
+}
+
+.panelHeader {
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.panelHeader h2,
+.gateRail h2,
+.emptyState h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.panelHeader h2 {
+  font-size: 23px;
+}
+
+.countBadge,
+.contextBadge {
+  padding: 6px 9px;
+  color: #7c2841;
+  background: #f9e9ee;
+  border: 1px solid #edd3db;
+}
+
+.panelIntro {
+  max-width: 720px;
+  margin-bottom: 17px;
+}
+
+.fileGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fileGrid article {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #eee5df;
+  border-radius: 8px;
+  background: #fcfaf8;
+}
+
+.fileGrid article > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fileGrid svg {
+  width: 14px;
+  flex: 0 0 auto;
+  color: #9a3150;
+}
+
+.fileGrid strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.fileGrid p {
+  margin: 6px 0 0 22px;
+  color: #85777a;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.environmentGrid {
+  margin: 18px 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.environmentGrid > div {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8f4f1;
+}
+
+.environmentGrid span,
+.receipt dt {
+  display: block;
+  margin-bottom: 5px;
+  color: #8c7c80;
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.environmentGrid strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.field {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.field > span {
+  color: #514246;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d9cec7;
+  border-radius: 8px;
+  color: #302326;
+  background: #fff;
+  outline: 0;
+}
+
+.field input,
+.field select {
+  min-height: 39px;
+  padding: 0 11px;
+}
+
+.field textarea {
+  padding: 10px 11px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: #9b3150;
+  box-shadow: 0 0 0 3px rgb(155 49 80 / 11%);
+}
+
+.helperText {
+  margin: 8px 0 0;
+  color: #8a7a7e;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.materialStack {
+  display: grid;
+  gap: 10px;
+}
+
+.materialCard {
+  padding: 16px;
+  border: 1px solid #e7ddd6;
+  border-radius: 10px;
+  background: #fdfbf9;
+}
+
+.materialHeading {
+  gap: 10px;
+  margin-bottom: 13px;
+}
+
+.materialHeading > div:first-child {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  color: #8d2746;
+  background: #f8e8ed;
+}
+
+.materialHeading strong {
+  font-size: 13px;
+}
+
+.referenceFields {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.confirmation {
+  margin-top: 17px;
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #e7d9d1;
+  border-radius: 9px;
+  color: #5c4a4f;
+  background: #faf6f3;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.confirmation input {
+  margin-top: 3px;
+  accent-color: #861b3c;
+}
+
+.inlineButton {
+  min-height: 36px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 7px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.verificationCard {
+  margin-top: 17px;
+  overflow: hidden;
+  border: 1px solid #cde6da;
+  border-radius: 10px;
+  background: #f5fbf8;
+}
+
+.verificationSummary {
+  padding: 14px;
+  gap: 11px;
+  border-bottom: 1px solid #d8ebe2;
+}
+
+.verificationSummary > span {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #157354;
+  background: #dff2e9;
+}
+
+.verificationSummary > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.verificationSummary p {
+  margin: 3px 0 0;
+  color: #668176;
+  font-size: 11px;
+}
+
+.verificationSummary code {
+  max-width: 190px;
+  overflow: hidden;
+  color: #3c6a5a;
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+
+.verificationCard ul {
+  margin: 0;
+  padding: 10px 14px 14px;
+  display: grid;
+  gap: 7px;
+  list-style: none;
+}
+
+.verificationCard li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #567268;
+  font-size: 11px;
+}
+
+.verificationCard li svg {
+  width: 14px;
+  flex: 0 0 auto;
+  color: #20805e;
+}
+
+.verificationCard li strong {
+  margin-right: 6px;
+  color: #315c4e;
+}
+
+.emptyVerification {
+  margin-top: 17px;
+  padding: 17px;
+  gap: 12px;
+  border: 1px dashed #d9cdc6;
+  border-radius: 9px;
+  color: #8a7a7e;
+}
+
+.emptyState {
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.emptyState > svg {
+  width: 30px;
+  color: #9b3150;
+}
+
+.emptyState h2 {
+  margin-top: 12px;
+}
+
+.emptyState p {
+  max-width: 480px;
+  margin: 9px auto 0;
+  color: #7c6d70;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.gateRail {
+  padding: 26px 20px;
+  border-left: 1px solid #e3d8d1;
+  background: #fff;
+}
+
+.gateRail h2 {
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.gateRail > p {
+  margin: 10px 0 18px;
+  color: #78696d;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.gateList {
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.gateList li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a09295;
+  font-size: 11px;
+}
+
+.gateList svg {
+  width: 14px;
+  flex: 0 0 auto;
+}
+
+.gateList .gateComplete {
+  color: #26775d;
+}
+
+.issueDisclosure {
+  margin-bottom: 13px;
+  padding: 10px;
+  border: 1px solid #eadbd4;
+  border-radius: 8px;
+  color: #735b62;
+  background: #fbf6f3;
+  font-size: 11px;
+}
+
+.issueDisclosure summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.issueDisclosure ul {
+  margin: 8px 0 0;
+  padding-left: 17px;
+  line-height: 1.5;
+}
+
+.reviewButton,
+.buildButton,
+.exportButton {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.reviewButton {
+  color: #6b1f35;
+  background: #f2d9e0;
+}
+
+.buildButton {
+  background: #642039;
+}
+
+.exportButton {
+  background: #8b173a;
+}
+
+.privacyCard,
+.warningCard {
+  margin-top: 17px;
+  padding: 12px;
+  align-items: flex-start;
+  gap: 9px;
+  border-radius: 8px;
+}
+
+.privacyCard {
+  color: #1c6b51;
+  background: #eef8f3;
+}
+
+.warningCard {
+  color: #79561e;
+  background: #fff7e8;
+}
+
+.privacyCard > svg,
+.warningCard > svg {
+  width: 16px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.privacyCard strong {
+  font-size: 11px;
+}
+
+.receipt {
+  margin: 18px 0 0;
+}
+
+.receipt > div {
+  padding: 8px 0;
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 8px;
+  border-bottom: 1px solid #eee6e1;
+}
+
+.receipt dt {
+  margin: 0;
+}
+
+.receipt dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #504146;
+  font-size: 10px;
+  text-align: right;
+}
+
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+
+  .gateRail {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0 22px 42px;
+    grid-column: 2;
+    border: 1px solid #e3d8d1;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar,
+  .contextBar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .brandRow {
+    flex-wrap: wrap;
+  }
+
+  .projectName {
+    width: 100%;
+    max-width: none;
+    padding: 8px 0 0;
+    border-top: 1px solid rgb(255 255 255 / 13%);
+    border-left: 0;
+  }
+
+  .topActions {
+    justify-content: space-between;
+  }
+
+  .contextBar > div {
+    flex-wrap: wrap;
+  }
+
+  .contextBar select {
+    flex: 1;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .workflowRail {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 16px;
+  }
+
+  .workflowRail ol {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workflowRail ol > li {
+    padding: 0 6px;
+  }
+
+  .boundaryCard {
+    display: none;
+  }
+
+  .content {
+    padding: 30px 16px 40px;
+  }
+
+  .importCard {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .importCard > div:nth-child(2) {
+    min-width: calc(100% - 60px);
+  }
+
+  .importCard button {
+    width: 100%;
+  }
+
+  .panelHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .fileGrid,
+  .environmentGrid,
+  .referenceFields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .verificationSummary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .verificationSummary code {
+    width: 100%;
+    max-width: none;
+    padding-left: 46px;
+  }
+
+  .gateRail {
+    margin: 0 16px 32px;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar,
+  .contextBar {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .topActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workflowRail ol {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

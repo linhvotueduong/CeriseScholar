@@ -18,6 +18,9 @@ interface PdfToolbarProps {
   onReadSelection: () => void;
   onToggleChat?: () => void;
   chatOpen?: boolean;
+  /** Per-source Finish button (docs/research-readiness-checklist-model.md §7.1). */
+  finished?: boolean;
+  onToggleFinished?: () => void;
 }
 
 export default function PdfToolbar({
@@ -36,6 +39,8 @@ export default function PdfToolbar({
   onReadSelection,
   onToggleChat,
   chatOpen,
+  finished,
+  onToggleFinished,
 }: PdfToolbarProps) {
   const [pageInput, setPageInput] = useState("");
 
@@ -155,6 +160,24 @@ export default function PdfToolbar({
       >
         +
       </button>
+
+      {onToggleFinished && (
+        <>
+          <div className="w-px h-4 bg-gray-200 shrink-0" />
+          <button
+            onClick={onToggleFinished}
+            className={`px-2 py-1 text-xs rounded font-medium transition-colors shrink-0 whitespace-nowrap ${
+              finished
+                ? "bg-[#edf8f0] text-[#2f8f5b] border border-[#d7eadf]"
+                : "bg-[#f6efe4] text-[#8f6132] hover:bg-[#efe3d0]"
+            }`}
+            title={finished ? "Mark this source unfinished" : "Mark source finished"}
+            type="button"
+          >
+            {finished ? "✓ Finished" : "Mark source finished"}
+          </button>
+        </>
+      )}
     </div>
   );
 }

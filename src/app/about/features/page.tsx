@@ -176,7 +176,7 @@ export default function FeaturesPage() {
           <p style={{ fontSize: "14px", color: p.muted }}>Free to use. No credit card. Built for researchers.</p>
           <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "28px", alignItems: "center" }}>
             <Link
-              href="/projects-preview"
+              href="/projects"
               className="transition-colors hover:bg-[#1a1208] hover:text-white"
               style={{
                 padding: "14px 36px", borderRadius: "50px",

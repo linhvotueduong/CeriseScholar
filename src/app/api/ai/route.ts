@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/utils/rateLimit";
-import { callOllamaChat, OllamaError } from "@/lib/server/ollama";
-import { canUseHostedAiBypass } from "@/lib/ai/hostedBypass";
+import { callOpenRouterChat, OpenRouterError } from "@/lib/server/openrouter";
+import { resolveAiCredentials } from "@/lib/server/aiCredentials";
+import { BYOK_DECLINED_MESSAGE, isByokDeclinedStatus } from "@/lib/server/aiErrors";
+import type { AiLane } from "@/lib/server/aiCredentials";
+import { checkAiGuardrailsBeforeRequest } from "@/lib/server/aiGuardrails";
+import { getMonthlyDefaultLaneUsage, recordAiUsage } from "@/lib/server/aiUsage";
+import { INCLUDED_MONTHLY_ALLOWANCE, allowanceExceeded } from "@/lib/ai/allowance";
 
 async function getSupabase() {
   const cookieStore = await cookies();
@@ -29,7 +34,20 @@ async function getSupabase() {
   );
 }
 
+// BYOK request-time failure semantics (docs/byok-intake-design.md §2d): a
+// declined key (revoked/out of credits) gets one clear, actionable message —
+// never a silent fallback to the default lane.
+function aiErrorResponse(err: OpenRouterError, lane: AiLane) {
+  if (lane === "byok" && isByokDeclinedStatus(err.status)) {
+    return NextResponse.json({ error: BYOK_DECLINED_MESSAGE }, { status: err.status });
+  }
+  return NextResponse.json({ error: err.message }, { status: err.status });
+}
+
 export async function POST(req: NextRequest) {
+  // Declared outside the try block so the outer catch can still tell whether
+  // this request was on the BYOK lane (needed for the failure mapping above).
+  let lane: AiLane = "default";
   try {
     // Verify user is authenticated
     const supabase = await getSupabase();
@@ -47,11 +65,28 @@ export async function POST(req: NextRequest) {
     const { task, paper, mainAnswer } = body;
     const messages = Array.isArray(body.messages) ? body.messages : [];
 
-    if (!canUseHostedAiBypass(user.email)) {
-      return NextResponse.json(
-        { error: "Hosted AI is enabled only for approved beta accounts. Use the Local Agent for AI-heavy workflows." },
-        { status: 403 }
-      );
+    // Every signed-in user gets AI now — OpenRouter replaces the old hosted-email bypass.
+    const credentials = await resolveAiCredentials(user.id, supabase);
+    const { apiKey, models } = credentials;
+    lane = credentials.lane;
+
+    const guardrailCheck = await checkAiGuardrailsBeforeRequest(supabase, user.id, lane, models);
+    if (!guardrailCheck.allowed) {
+      return NextResponse.json({ error: guardrailCheck.reason }, { status: 429 });
+    }
+
+    // Default-lane fairness cap (Phase 2). BYOK never enforces this — it's the
+    // user's own key and bill, so `enforceAllowance` is false on that lane.
+    if (credentials.enforceAllowance) {
+      const used = await getMonthlyDefaultLaneUsage(supabase, user.id, new Date());
+      if (allowanceExceeded(used, INCLUDED_MONTHLY_ALLOWANCE)) {
+        return NextResponse.json(
+          {
+            error: `This month's Cerise test allowance has been used (${INCLUDED_MONTHLY_ALLOWANCE} requests). Connect an OpenRouter key in Settings -> AI, then add OpenRouter credit for fuller usage.`,
+          },
+          { status: 429 }
+        );
+      }
     }
 
     let systemPrompt = "";
@@ -74,16 +109,26 @@ Be specific about the paper's methodology and findings. Do not force a support c
       ];
 
       try {
-        const content = await callOllamaChat({
+        const { content, servedModel, usage } = await callOpenRouterChat({
           route: "paper_analysis",
           messages: allMessages,
+          models,
+          apiKey,
           timeoutMs: 25000,
-          numPredict: 500,
+          maxTokens: 500,
+        });
+        void recordAiUsage(supabase, {
+          userId: user.id,
+          projectId: null,
+          feature: "paper_analysis",
+          lane,
+          servedModel,
+          usage,
         });
         return NextResponse.json({ content });
       } catch (err) {
-        if (err instanceof OllamaError) {
-          return NextResponse.json({ error: err.message }, { status: err.status });
+        if (err instanceof OpenRouterError) {
+          return aiErrorResponse(err, lane);
         }
         throw err;
       }
@@ -106,16 +151,67 @@ PDF text from first pages:
 ${(pdfText || "").slice(0, 3000)}`;
 
       try {
-        const content = await callOllamaChat({
+        const { content, servedModel, usage } = await callOpenRouterChat({
           route: "generate_apa",
           messages: [{ role: "system", content: "You generate APA citations. Return ONLY the citation string." }, { role: "user", content: apaPrompt }],
+          models,
+          apiKey,
           timeoutMs: 20000,
-          numPredict: 220,
+          maxTokens: 220,
+        });
+        void recordAiUsage(supabase, {
+          userId: user.id,
+          projectId: null,
+          feature: "generate_apa",
+          lane,
+          servedModel,
+          usage,
         });
         const apa = content.trim().replace(/^["']|["']$/g, "");
         return NextResponse.json({ apa });
       } catch {
         return NextResponse.json({ apa: "" });
+      }
+    }
+
+    // Answer a question grounded only in a provided document excerpt (PDF viewer chat).
+    if (task === "pdf_chat") {
+      const { question, excerpt } = body;
+
+      const pdfChatSystemPrompt =
+        "You are a helpful academic assistant answering questions about a document. " +
+        "Ground your answer ONLY in the excerpt provided below — never use outside knowledge or invent details. " +
+        "If the excerpt does not contain enough information to answer, say so plainly instead of guessing.";
+
+      try {
+        const { content: result, servedModel, usage } = await callOpenRouterChat({
+          route: "pdf_chat",
+          messages: [
+            { role: "system", content: pdfChatSystemPrompt },
+            {
+              role: "user",
+              content: `Document excerpt:\n${String(excerpt || "").slice(0, 60000)}\n\nQuestion: ${String(question || "")}`,
+            },
+          ],
+          models,
+          apiKey,
+          timeoutMs: 30000,
+          maxTokens: 700,
+        });
+        void recordAiUsage(supabase, {
+          userId: user.id,
+          projectId: null,
+          feature: "pdf_chat",
+          lane,
+          servedModel,
+          usage,
+        });
+        return NextResponse.json({ result });
+      } catch (err) {
+        if (err instanceof OpenRouterError) {
+          return aiErrorResponse(err, lane);
+        }
+        throw err;
       }
     }
 
@@ -127,36 +223,32 @@ ${(pdfText || "").slice(0, 3000)}`;
       case "suggest_keywords":
         systemPrompt = "Based on the research topic, suggest 5-8 search queries. Return ONLY queries, one per line.";
         break;
-      case "learning_coach": {
-        // Cerise — research-learning coach for the /my-learning/notes coach panel.
-        // Reads the student's actual notes (passed in body.notesContext) so it
-        // can ground its answers in what the student has actually written.
-        const ctx = (body.notesContext || "").slice(0, 6000);
-        systemPrompt =
-          "You are Cerise, the user's research learning coach. " +
-          "Your job is to help them organize and connect the notes they've written while watching course lessons. " +
-          "Be warm, concise, and concrete. Always end your reply with a follow-up question to make the student think — not just receive.\n\n" +
-          (ctx
-            ? `The student's current notes (grouped by module) are below. Reason about THESE — do not invent new content.\n\n${ctx}`
-            : "The student has not written any notes yet. Encourage them to start with one short note per lesson.");
-        break;
-      }
       default:
         systemPrompt = "You are a helpful academic research assistant.";
     }
 
     const allMessages = [{ role: "system", content: systemPrompt }, ...messages];
 
-    const content = await callOllamaChat({
+    const { content, servedModel, usage } = await callOpenRouterChat({
       route: task || "generic_ai",
       messages: allMessages,
-      timeoutMs: task === "learning_coach" ? 25000 : 22000,
-      numPredict: task === "learning_coach" ? 700 : 500,
+      models,
+      apiKey,
+      timeoutMs: 22000,
+      maxTokens: 500,
+    });
+    void recordAiUsage(supabase, {
+      userId: user.id,
+      projectId: null,
+      feature: task || "generic",
+      lane,
+      servedModel,
+      usage,
     });
     return NextResponse.json({ content });
   } catch (err) {
-    if (err instanceof OllamaError) {
-      return NextResponse.json({ error: err.message }, { status: err.status });
+    if (err instanceof OpenRouterError) {
+      return aiErrorResponse(err, lane);
     }
     console.error("AI route error:", err);
     return NextResponse.json(

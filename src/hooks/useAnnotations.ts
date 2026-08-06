@@ -21,7 +21,8 @@ export function useAnnotations(pdfId: string) {
   }, [pdfId]);
 
   useEffect(() => {
-    fetchAnnotations();
+    const timer = window.setTimeout(() => void fetchAnnotations(), 0);
+    return () => window.clearTimeout(timer);
   }, [fetchAnnotations]);
 
   const createAnnotation = useCallback(

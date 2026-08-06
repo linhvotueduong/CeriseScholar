@@ -1,0 +1,280 @@
+.projectsMain {
+  min-height: calc(100vh - 64px);
+  background: #fbfaf8;
+}
+
+.projectsPage {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 54px 0 80px;
+  color: #17120d;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #e6e0d9;
+}
+
+.hero h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(34px, 4vw, 52px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+
+.hero > div:first-child > p:last-child {
+  max-width: 660px;
+  margin: 14px 0 0;
+  color: #6f655c;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.heroActions,
+.projectActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.heroActions button,
+.projectActions a,
+.emptyState button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 18px;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+
+.heroActions button:hover,
+.projectActions a:hover,
+.emptyState button:hover {
+  transform: translateY(-1px);
+}
+
+.newButton,
+.openButton,
+.emptyState button {
+  border: 1px solid #17120d;
+  background: #17120d;
+  color: #fff;
+}
+
+.createCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 22px;
+  border: 1px solid #ded7cf;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 12px 34px rgb(72 54 36 / 6%);
+}
+
+.createCard label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.createCard label span {
+  color: #8c8177;
+  font-weight: 600;
+}
+
+.createCard input,
+.createCard textarea {
+  width: 100%;
+  border: 1px solid #d8d0c7;
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px 14px;
+  color: #17120d;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.createCard input:focus,
+.createCard textarea:focus {
+  border-color: #9a744e;
+  box-shadow: 0 0 0 3px rgb(154 116 78 / 12%);
+}
+
+.createCard textarea {
+  min-height: 46px;
+  resize: vertical;
+}
+
+.createCard > button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 999px;
+  background: #17120d;
+  padding: 0 20px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.createCard > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.errorMessage {
+  margin: 18px 0 0;
+  border: 1px solid #f2beb9;
+  border-radius: 12px;
+  background: #fff3f2;
+  padding: 12px 14px;
+  color: #a72b22;
+  font-size: 13px;
+}
+
+.loadingState {
+  display: flex;
+  min-height: 280px;
+  align-items: center;
+  justify-content: center;
+}
+
+.projectGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.projectCard {
+  display: flex;
+  min-height: 250px;
+  flex-direction: column;
+  border: 1px solid #e1dad2;
+  border-radius: 20px;
+  background: #fff;
+  padding: 22px;
+  box-shadow: 0 9px 26px rgb(67 49 31 / 4%);
+}
+
+.projectCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #8a8076;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.projectMark {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f1e8de;
+  color: #8f6840;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 16px;
+}
+
+.projectCard h2 {
+  margin: 24px 0 10px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.projectCard > p {
+  display: -webkit-box;
+  flex: 1;
+  margin: 0 0 24px;
+  overflow: hidden;
+  color: #70665d;
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.projectActions {
+  justify-content: flex-end;
+}
+
+.emptyState {
+  margin-top: 28px;
+  border: 1px dashed #d7cec4;
+  border-radius: 22px;
+  background: #fff;
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.emptyState h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.emptyState p {
+  max-width: 520px;
+  margin: 12px auto 22px;
+  color: #746a61;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .createCard {
+    grid-template-columns: 1fr;
+  }
+
+  .projectGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .projectsPage {
+    width: min(100% - 28px, 1180px);
+    padding-top: 34px;
+  }
+
+  .heroActions,
+  .projectActions {
+    width: 100%;
+  }
+
+  .heroActions button,
+  .projectActions a {
+    flex: 1;
+  }
+
+  .projectGrid {
+    grid-template-columns: 1fr;
+  }
+}

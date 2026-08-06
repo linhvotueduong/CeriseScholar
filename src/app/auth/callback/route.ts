@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { persistSignupConsents } from "@/lib/legal/persistConsents";
+import { safeInternalPath } from "@/lib/auth/safeRedirect";
 
 const ADMIN_EMAIL = "cerisescholar@gmail.com";
 
@@ -43,6 +45,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const siteOrigin = getSiteOrigin(request);
   const code = searchParams.get("code");
+  const nextPath = safeInternalPath(searchParams.get("next"));
 
   if (code) {
     const supabase = await createClient();
@@ -53,7 +56,21 @@ export async function GET(request: Request) {
       } = await supabase.auth.getUser();
 
       if (user?.email?.toLowerCase() === ADMIN_EMAIL) {
-        return NextResponse.redirect(new URL("/dashboard", siteOrigin));
+        return NextResponse.redirect(new URL("/projects", siteOrigin));
+      }
+
+      if (user) {
+        const consentResult = await persistSignupConsents(supabase, user);
+        if (consentResult.error) {
+          console.error("Auth callback consent persistence failed", {
+            userId: user.id,
+            message: consentResult.error,
+          });
+        }
+      }
+
+      if (nextPath) {
+        return NextResponse.redirect(new URL(nextPath, siteOrigin));
       }
 
       return NextResponse.redirect(new URL("/auth/complete-profile", siteOrigin));

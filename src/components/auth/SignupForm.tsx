@@ -3,40 +3,27 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { requestLocalSetupPrompt } from "@/lib/local-agent/client";
-import { agreementDocuments, type AgreementKey } from "@/lib/legal/agreements";
+import { AGREEMENT_VERSIONS, agreementDocuments, type AgreementKey } from "@/lib/legal/agreements";
 import Link from "next/link";
 import GoogleButton from "./GoogleButton";
 
 const PUBLIC_SIGNUPS_ENABLED = process.env.NEXT_PUBLIC_SIGNUPS_ENABLED !== "false";
 const PENDING_GOOGLE_PROFILE_KEY = "cerise_pending_google_signup_profile";
 const DEVICE_NOTICE =
-  "For the full Cerise Scholar research experience, use the laptop where your files, storage, and local AI agent are set up. Mobile sign-in is available for review and lighter workspace access.";
+  "Your account works the same on any device. Research, files, and AI access are stored securely in the cloud, not on a single computer.";
 
 type PendingSignupAction = "email" | "google" | null;
 
 type SignupProfile = {
   firstName: string;
+  middleName: string;
   lastName: string;
-  phone: string;
-  addressLine1: string;
-  addressLine2: string;
-  city: string;
-  stateProvince: string;
-  postalCode: string;
-  country: string;
 };
 
 const emptySignupProfile: SignupProfile = {
   firstName: "",
+  middleName: "",
   lastName: "",
-  phone: "",
-  addressLine1: "",
-  addressLine2: "",
-  city: "",
-  stateProvince: "",
-  postalCode: "",
-  country: "",
 };
 
 export default function SignupForm() {
@@ -48,6 +35,7 @@ export default function SignupForm() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [authorNameConfirmed, setAuthorNameConfirmed] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [emailUpdatesOptIn, setEmailUpdatesOptIn] = useState(false);
   const [expandedAgreement, setExpandedAgreement] = useState<AgreementKey | null>(null);
@@ -56,17 +44,10 @@ export default function SignupForm() {
   const router = useRouter();
 
   const expandedDocument = expandedAgreement ? agreementDocuments[expandedAgreement] : null;
-  const requiredProfileComplete = [
-    profile.firstName,
-    profile.lastName,
-    profile.phone,
-    profile.addressLine1,
-    profile.city,
-    profile.stateProvince,
-    profile.postalCode,
-    profile.country,
-  ].every((value) => value.trim().length > 0);
-  const canContinueFromDetails = requiredProfileComplete && ageConfirmed;
+  const requiredProfileComplete = [profile.firstName, profile.lastName].every(
+    (value) => value.trim().length > 0
+  );
+  const canContinueFromDetails = requiredProfileComplete && authorNameConfirmed && ageConfirmed;
 
   function updateProfileField(field: keyof SignupProfile, value: string) {
     setProfile((current) => ({
@@ -79,29 +60,24 @@ export default function SignupForm() {
     const trimmedProfile = Object.fromEntries(
       Object.entries(profile).map(([key, value]) => [key, value.trim()]),
     ) as SignupProfile;
-    const fullName = `${trimmedProfile.firstName} ${trimmedProfile.lastName}`.trim();
+    const fullName = [trimmedProfile.firstName, trimmedProfile.middleName, trimmedProfile.lastName]
+      .filter(Boolean)
+      .join(" ");
 
     return {
       first_name: trimmedProfile.firstName,
+      middle_name: trimmedProfile.middleName,
       last_name: trimmedProfile.lastName,
       full_name: fullName,
-      phone: trimmedProfile.phone,
-      address: {
-        line1: trimmedProfile.addressLine1,
-        line2: trimmedProfile.addressLine2,
-        city: trimmedProfile.city,
-        state_province: trimmedProfile.stateProvince,
-        postal_code: trimmedProfile.postalCode,
-        country: trimmedProfile.country,
-      },
+      author_name_confirmed: authorNameConfirmed,
       beta_signup_source: "public_laptop_beta",
       age_confirmed: ageConfirmed,
       age_confirmed_at: ageConfirmed ? new Date().toISOString() : null,
       email_updates_opt_in: emailUpdatesOptIn,
       email_updates_opt_in_at: emailUpdatesOptIn ? new Date().toISOString() : null,
       terms_accepted_at: new Date().toISOString(),
-      terms_version: agreementDocuments.terms.updated,
-      privacy_version: agreementDocuments.privacy.updated,
+      terms_version: AGREEMENT_VERSIONS.terms,
+      privacy_version: AGREEMENT_VERSIONS.privacy,
     };
   }
 
@@ -109,6 +85,7 @@ export default function SignupForm() {
     setError(null);
     setPendingAction(action);
     setExpandedAgreement(null);
+    setAuthorNameConfirmed(false);
     setAgeConfirmed(false);
     setEmailUpdatesOptIn(false);
     setDetailsOpen(true);
@@ -134,8 +111,7 @@ export default function SignupForm() {
     }
 
     if (data.session) {
-      requestLocalSetupPrompt("email-signup");
-      router.push("/dashboard");
+      router.push("/auth/complete-profile");
       router.refresh();
       return;
     }
@@ -158,6 +134,7 @@ export default function SignupForm() {
     setPendingAction(null);
     setPendingGoogleStart(null);
     setExpandedAgreement(null);
+    setAuthorNameConfirmed(false);
     setAgeConfirmed(false);
     setEmailUpdatesOptIn(false);
   }
@@ -179,7 +156,6 @@ export default function SignupForm() {
     setPendingAction(null);
     setPendingGoogleStart(null);
     if (startGoogle) {
-      requestLocalSetupPrompt("google-signup");
       window.localStorage.setItem(PENDING_GOOGLE_PROFILE_KEY, JSON.stringify(getProfileMetadata()));
       await startGoogle();
     }
@@ -246,8 +222,8 @@ export default function SignupForm() {
               Continue with Email
             </button>
             <p className="px-3 pt-1.5 text-center text-[8.8px] leading-[1.45] text-[#9a8a7a]">
-              Start your account here. The deeper research tools will meet you on the trusted
-              laptop where your files and local AI live.
+              Your full Cerise Scholar workspace — projects, ScholarAsk, and saved evidence — works
+              the same on any device you sign in from.
             </p>
           </>
         ) : (
@@ -430,17 +406,20 @@ export default function SignupForm() {
                 Cerise Scholar public laptop beta
               </p>
               <h2 id="signup-details-title" className="mt-2 text-xl font-semibold text-[#1a1208]">
-                Finish your account details
+                Create your account
               </h2>
               <p className="mt-2 text-sm leading-6 text-[#6f6255]">
-                Add your profile details to continue creating your Cerise Scholar account.
+                Enter the author name you want shown on Cerise Scholar papers. You can add academic details later in Account settings.
               </p>
             </div>
 
             <div className="max-h-[calc(92vh-132px)] space-y-5 overflow-y-auto p-5">
               <section className="space-y-3">
-                <p className="text-sm font-semibold text-[#5f5248]">Name</p>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-sm font-semibold text-[#5f5248]">Author name</p>
+                  <p className="mt-1 text-xs leading-5 text-[#7a6a5a]">Please enter it exactly as it should appear on your research papers. Later changes require Cerise admin approval.</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
                   <input
                     type="text"
                     value={profile.firstName}
@@ -450,6 +429,15 @@ export default function SignupForm() {
                     className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
                     placeholder="First name"
                     aria-label="First name"
+                  />
+                  <input
+                    type="text"
+                    value={profile.middleName}
+                    onChange={(e) => updateProfileField("middleName", e.target.value)}
+                    autoComplete="additional-name"
+                    className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
+                    placeholder="Middle name (optional)"
+                    aria-label="Middle name"
                   />
                   <input
                     type="text"
@@ -464,7 +452,7 @@ export default function SignupForm() {
                 </div>
               </section>
 
-              <section className="grid gap-3 sm:grid-cols-2">
+              <section>
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-[#5f5248]">
                     Account email
@@ -477,88 +465,6 @@ export default function SignupForm() {
                     aria-label="Account email"
                   />
                 </div>
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-[#5f5248]">
-                    Mobile number
-                  </label>
-                  <input
-                    type="tel"
-                    value={profile.phone}
-                    onChange={(e) => updateProfileField("phone", e.target.value)}
-                    required
-                    autoComplete="tel"
-                    className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
-                    placeholder="(000) 000-0000"
-                    aria-label="Mobile number"
-                  />
-                </div>
-              </section>
-
-              <section className="space-y-3">
-                <p className="text-sm font-semibold text-[#5f5248]">Address</p>
-                <input
-                  type="text"
-                  value={profile.addressLine1}
-                  onChange={(e) => updateProfileField("addressLine1", e.target.value)}
-                  required
-                  autoComplete="address-line1"
-                  className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
-                  placeholder="Street address"
-                  aria-label="Street address"
-                />
-                <input
-                  type="text"
-                  value={profile.addressLine2}
-                  onChange={(e) => updateProfileField("addressLine2", e.target.value)}
-                  autoComplete="address-line2"
-                  className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
-                  placeholder="Apartment, suite, unit"
-                  aria-label="Apartment, suite, unit"
-                />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <input
-                    type="text"
-                    value={profile.city}
-                    onChange={(e) => updateProfileField("city", e.target.value)}
-                    required
-                    autoComplete="address-level2"
-                    className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
-                    placeholder="City"
-                    aria-label="City"
-                  />
-                  <input
-                    type="text"
-                    value={profile.stateProvince}
-                    onChange={(e) => updateProfileField("stateProvince", e.target.value)}
-                    required
-                    autoComplete="address-level1"
-                    className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
-                    placeholder="State / Province"
-                    aria-label="State or province"
-                  />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <input
-                    type="text"
-                    value={profile.postalCode}
-                    onChange={(e) => updateProfileField("postalCode", e.target.value)}
-                    required
-                    autoComplete="postal-code"
-                    className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
-                    placeholder="Postal / ZIP code"
-                    aria-label="Postal or ZIP code"
-                  />
-                  <input
-                    type="text"
-                    value={profile.country}
-                    onChange={(e) => updateProfileField("country", e.target.value)}
-                    required
-                    autoComplete="country-name"
-                    className="min-h-12 w-full rounded-[8px] border border-[#d4cdc5] bg-[#fefefe] px-4 py-3 text-sm text-[#1a1208] shadow-[inset_0_1px_0_rgba(26,18,8,0.03)] transition-colors placeholder:text-[#9a8a7a] focus:border-[#1a1208] focus:ring-2 focus:ring-[#1a1208]/15"
-                    placeholder="Country"
-                    aria-label="Country"
-                  />
-                </div>
               </section>
 
               <p className="rounded-[8px] border border-[#e0d8d0] bg-white px-3 py-3 text-xs leading-5 text-[#7a6a5a]">
@@ -566,6 +472,18 @@ export default function SignupForm() {
               </p>
 
               <div className="space-y-3">
+                <label className="flex gap-3 text-sm leading-6 text-[#5f5248]">
+                  <input
+                    type="checkbox"
+                    checked={authorNameConfirmed}
+                    onChange={(e) => setAuthorNameConfirmed(e.target.checked)}
+                    className="mt-1 h-4 w-4 flex-shrink-0 rounded border-[#d4cdc5]"
+                  />
+                  <span>
+                    I confirm this author name is written correctly and may appear on papers I create. <span className="text-[#c0392b]">*</span>
+                  </span>
+                </label>
+
                 <label className="flex gap-3 text-sm leading-6 text-[#5f5248]">
                   <input
                     type="checkbox"

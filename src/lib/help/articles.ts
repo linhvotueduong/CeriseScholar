@@ -6,27 +6,27 @@ export const helpCategories = [
     tone: "rose" as const,
   },
   {
-    slug: "local-agent-setup",
-    title: "Local Agent & Setup",
-    body: "Learn about the Local Agent, Ollama, trusted folders, and local system checks.",
+    slug: "ai-setup",
+    title: "AI Setup",
+    body: "Learn how included AI, your own OpenRouter key, and usage metering work.",
     tone: "blue" as const,
   },
   {
     slug: "privacy-protection",
     title: "Privacy & Protection",
-    body: "Understand what stays on your laptop, what syncs, and hosted services.",
+    body: "Understand hosted storage, AI processing, account data, and support boundaries.",
     tone: "green" as const,
   },
   {
     slug: "account-access",
     title: "Account & Access",
-    body: "Manage sign-in, Google login, beta access, and trusted laptop settings.",
+    body: "Manage sign-in, Google login, beta access, AI settings, and account preferences.",
     tone: "purple" as const,
   },
   {
     slug: "research-workflow",
     title: "Research Workflow",
-    body: "Work with projects, sources, notes, citations, and course materials effectively.",
+    body: "Work with projects, ScholarAsk, saved evidence, sources, notes, and citations effectively.",
     tone: "amber" as const,
   },
 ];
@@ -36,49 +36,43 @@ export const popularQuestions = [
     category: "Getting Started",
     question: "How do I start using Cerise Scholar?",
     answer:
-      "Create an account, open Cerise Scholar on a trusted laptop, then use Dashboard or Research Desk to create a project and add materials. Local AI checks will appear when the Local Agent and Ollama are ready.",
+      "Create an account, open Projects, and start one focused research question in ScholarAsk. AI is included by default, and you can connect your own OpenRouter key in Settings > AI.",
   },
   {
-    category: "Local Agent",
-    question: "What does the Cerise Scholar Local Agent do?",
+    category: "AI Setup",
+    question: "How does Cerise Scholar AI work?",
     answer:
-      "The Local Agent runs on your trusted laptop and helps Cerise Scholar connect to selected folders, local indexes, and local AI tools for source-file workflows.",
+      "Cerise Scholar routes AI through OpenRouter. An OpenRouter key gives limited testing first, and adding OpenRouter credit unlocks fuller Cerise usage.",
   },
   {
-    category: "Local AI",
-    question: "Can Cerise Scholar install Ollama for me?",
+    category: "AI Setup",
+    question: "Can I use my own AI key?",
     answer:
-      "Cerise can guide you to the official Ollama download and check whether it is ready. A browser page cannot silently install a desktop app or bypass macOS approval prompts.",
+      "Yes. Open Settings > AI, paste an OpenRouter API key, and connect it. The app validates the key, encrypts it server-side, and stores only the encrypted value plus the last four characters.",
   },
   {
     category: "Privacy",
-    question: "Do my research files stay on my laptop?",
+    question: "Where are my research files handled?",
     answer:
-      "Private source-file work is designed for the trusted laptop flow. Hosted services still support login, help, policy pages, and selected app records.",
+      "Research files and project records are handled through Cerise Scholar's hosted app and Supabase-backed project workflows. Support requests should still avoid private files, datasets, passwords, or auth codes.",
   },
   {
     category: "Account",
-    question: "How do I connect or change my research folder?",
+    question: "How do I change my AI plan?",
     answer:
-      "Use Settings > Local Setup to review folder status. You can change, pause, or remove folder access from your trusted laptop flow.",
+      "Use Settings > AI to choose OpenRouter or a supported provider path, connect or disconnect your OpenRouter key, and review monthly usage.",
   },
   {
     category: "Beta Access",
     question: "What features are available during public beta?",
     answer:
-      "Dashboard, Research Desk, Course Library, help, support, and local setup checks are available. Some analytics and settings persistence remain display-only until later backend work.",
+      "Projects, ScholarAsk, Evidence Library, project workspaces, help, support, included AI, own-key AI, and usage metering are available during beta.",
   },
   {
     category: "Research Workflow",
     question: "How do I keep notes, citations, and evidence connected?",
     answer:
       "Start from a project, then keep papers, evidence rows, source notes, citations, and draft sections tied to that project. This helps Cerise Scholar preserve the path from reading to synthesis and writing.",
-  },
-  {
-    category: "Course Library",
-    question: "Can course materials support my research projects?",
-    answer:
-      "Yes. Course materials can help you practice literature review, source verification, citation mapping, and methods work before you apply those skills inside active research projects.",
   },
 ];
 
@@ -88,19 +82,19 @@ export const allHelpQuestions = [
     category: "Getting Started",
     question: "What should I do first after signing in?",
     answer:
-      "Open Dashboard, check the current project, then confirm whether Local Setup is ready. If you are starting fresh, create one research project and add only the sources that belong to that topic.",
+      "Open Projects, create one focused project if you are starting fresh, then begin in ScholarAsk. Add only sources that belong to that topic so your evidence stays clean.",
   },
   {
-    category: "Local Setup",
-    question: "Why does Cerise Scholar care about a trusted laptop?",
+    category: "AI Setup",
+    question: "What is the included AI allowance?",
     answer:
-      "Private source-file workflows work best on a device you control. A trusted laptop lets Cerise Scholar keep research folders, local indexes, local AI checks, and draft support connected without treating every file like a cloud upload.",
+      "OpenRouter allows limited testing before credit is added. Settings > AI explains when adding OpenRouter credit unlocks fuller Cerise usage.",
   },
   {
     category: "Research Workflow",
-    question: "When should I use Research Desk instead of Dashboard?",
+    question: "When should I use ScholarAsk instead of Workspace?",
     answer:
-      "Use Dashboard to see your current status and next move. Use Research Desk when you are actively working with projects, papers, evidence rows, synthesis steps, citations, and draft preparation.",
+      "Use ScholarAsk to explore a research question and find source-backed articles. Use Workspace when you are reading uploaded papers, highlighting passages, adding notes, and preparing synthesis or writing.",
   },
   {
     category: "Research Workflow",
@@ -115,12 +109,6 @@ export const allHelpQuestions = [
       "Yes. Keep each claim connected to its source, evidence row, and context. Cerise Scholar can help organize citation-ready notes so draft sections do not become detached from the papers behind them.",
   },
   {
-    category: "Course Library",
-    question: "What is the Course Library for?",
-    answer:
-      "Course Library helps you practice research skills such as evidence synthesis, source verification, citation mapping, methods review, and meta-analysis preparation alongside your active projects.",
-  },
-  {
     category: "Account",
     question: "What if my beta invite or login email does not match?",
     answer:
@@ -133,10 +121,10 @@ export const allHelpQuestions = [
       "No. Support messages should describe the page, device, setup status, and error. Do not send passwords, private source files, datasets, auth codes, or full research folders.",
   },
   {
-    category: "Local AI",
-    question: "What should I check if local AI is not ready?",
+    category: "AI Setup",
+    question: "What should I check if AI is not answering?",
     answer:
-      "Review Settings > Local Setup for the Local Agent, Ollama or selected local provider, research folder, knowledge base, file index, and safety checks. Fix the item marked incomplete before using private local workflows.",
+      "Open Settings > AI and confirm your included lane or own key is active. If you connected your own key, verify the key still works in your OpenRouter account, then try the request again.",
   },
   {
     category: "Support",
@@ -162,14 +150,14 @@ export const helpArticles = {
   "getting-started": {
     title: "Getting Started with Cerise Scholar",
     intro:
-      "Set up your account, understand the laptop-first workflow, and create your first research project.",
+      "Set up your account, understand the hosted research workflow, and create your first research project.",
     updated: "May 13, 2026",
     category: "Getting Started",
     previewLabel: "Quick start checklist",
     previewTitle: "Follow these steps to get set up and running.",
     previewItems: [
       "Create or sign in",
-      "Check Local Setup",
+      "Review AI setup",
       "Create your first project",
       "Add papers or notes",
       "Continue from Dashboard",
@@ -184,12 +172,12 @@ export const helpArticles = {
         body: "Create a Cerise Scholar account or sign in if you already have one. After signing in, check that your email, profile, and beta access are correct. If you received beta access through a specific email address, use that same email when signing in.",
       },
       {
-        heading: "Understand the laptop-first setup",
-        body: "Cerise Scholar is designed around a trusted laptop. Account access, reading, help pages, and lighter app features may work from the browser, but private source-file workflows are meant to happen from the device where your research folder, local workspace, Local Agent, and local AI tools live.",
+        heading: "Understand the hosted research workspace",
+        body: "Cerise Scholar now runs as a hosted research workspace. Account access, project materials, help pages, and AI features work through the browser, with AI routed through the included OpenRouter lane or your connected key.",
       },
       {
-        heading: "Check Local Setup",
-        body: "Go to Settings > Local Setup to confirm your local environment is ready. The main checks are Local Agent, Ollama or selected local provider, Research Folder, Knowledge Base, File Index, and Safety. If a check is not ready, follow the on-screen guidance before starting private source-file workflows.",
+        heading: "Review AI setup",
+        body: "Go to Settings > AI to connect an OpenRouter key, review usage, and choose a premium model preference. Limited testing works first; adding OpenRouter credit unlocks fuller Cerise usage.",
       },
       {
         heading: "Create your first research project",
@@ -201,70 +189,55 @@ export const helpArticles = {
       },
       {
         heading: "Continue from the Dashboard",
-        body: "The Dashboard shows your most recent project, current phase, next action, today's tasks, local setup readiness, and learning progress. Use it as the starting point when you are unsure what to do next.",
+        body: "The Dashboard shows your most recent project, current phase, next action, today's tasks, AI usage, and learning progress. Use it as the starting point when you are unsure what to do next.",
       },
       {
         heading: "Where to get help",
         body: "Use Help Center articles for setup and workflow questions. Use Contact Us for account access, bugs, setup problems, or confusing pages. Do not send private source files, passwords, datasets, or auth codes in support messages.",
       },
     ],
-    related: ["local-agent-setup", "research-workflow", "account-access"],
+    related: ["ai-setup", "research-workflow", "account-access"],
   },
-  "local-agent-setup": {
-    title: "Local Agent & Setup",
+  "ai-setup": {
+    title: "AI Setup",
     intro:
-      "Learn how the Local Agent connects Cerise Scholar to your trusted laptop, local tools, research folder, and safety checks.",
-    updated: "May 13, 2026",
-    category: "Local Agent & Setup",
+      "Learn how included AI, your own OpenRouter key, and monthly usage metering work in Cerise Scholar.",
+    updated: "July 7, 2026",
+    category: "AI Setup",
     previewLabel: "Guide summary",
-    previewTitle: "What local setup needs before private source-file work starts.",
+    previewTitle: "How Cerise Scholar decides which AI lane serves your request.",
     previewItems: [
-      "What the Local Agent does",
-      "Why local setup matters",
-      "What stays local",
-      "Local Setup checks",
-      "Connect a research folder",
-      "Ollama or local AI readiness",
-      "Troubleshooting readiness",
-      "Best practices",
+      "Limited testing",
+      "Your own key",
+      "Usage meters",
+      "Preferred model",
+      "Troubleshooting",
       "Where to go next",
     ],
     sections: [
       {
-        heading: "What the Local Agent does",
-        body: "The Local Agent is a lightweight helper that runs on your trusted laptop. It helps Cerise Scholar connect to selected local folders, local indexes, and local AI tools for source-file workflows. It should only work with folders and tools you explicitly choose.",
+        heading: "Limited testing",
+        body: "OpenRouter setup starts with limited testing. Cerise Scholar shows usage in Settings > AI and explains when adding OpenRouter credit unlocks fuller product usage.",
       },
       {
-        heading: "Why local setup matters",
-        body: "Cerise Scholar is designed for research work that may involve private papers, notes, drafts, or source files. Local setup helps keep that work tied to your own device instead of treating every research file like a cloud upload.",
+        heading: "Your own OpenRouter key",
+        body: "If you connect your own OpenRouter key in Settings > AI, your AI requests run through your OpenRouter account. The app validates the key, encrypts it with a server-held secret, and stores only the encrypted key plus its last four characters for display.",
       },
       {
-        heading: "What stays local",
-        body: "Your PDFs, drafts, notes, local indexes, source folders, and local AI outputs are intended to stay on your trusted device unless you choose a hosted feature that clearly states what information is used.",
+        heading: "Usage meters",
+        body: "Every AI answer is counted with its lane, feature, token estimate, and served model. Own-key users are not limited by Cerise Scholar's included allowance, but their usage is still counted so the app can show an honest monthly meter.",
       },
       {
-        heading: "Local Setup checks",
-        body: "The Local Setup page checks whether your research environment is ready. The expected checks are Local Agent running, Ollama or selected local provider available, Research Folder connected, Knowledge Base available, File Index up to date, and Safety check configured.",
+        heading: "Preferred model",
+        body: "Settings > AI lets you keep the default free-first model chain or choose a preferred model. Premium models may cost more on your OpenRouter account.",
       },
       {
-        heading: "Connect a research folder",
-        body: "Choose a research folder that you control and understand. You can change, pause, or remove folder access later. Do not connect shared, public, borrowed, school-lab, cafe, library, or employer-controlled folders unless you have permission and understand the privacy risk.",
-      },
-      {
-        heading: "Ollama or local AI readiness",
-        body: "Ollama or another selected local provider may support private research help. If local AI is unavailable, Cerise should show that status clearly and explain what still needs attention. Some setup steps may happen outside Cerise, so review installers and permissions carefully.",
-      },
-      {
-        heading: "Troubleshooting readiness",
-        body: "Common blockers include Local Agent not connected, Ollama unavailable, research folder missing, permissions blocked, file index outdated, or safety check failed. Open Settings > Local Setup to see which item needs attention.",
-      },
-      {
-        heading: "Best practices",
-        body: "Use a trusted laptop, keep the Local Agent updated, review folder access regularly, avoid shared computers, and do not send private research files to support. If you are unsure whether a device is appropriate for private research work, do not connect your source folder yet.",
+        heading: "Troubleshooting",
+        body: "If AI is not answering, check Settings > AI first. Included-lane users may be at the fair-use limit; own-key users should confirm their OpenRouter key is valid, funded if needed, and allowed to call the selected model.",
       },
       {
         heading: "Where to go next",
-        body: "After Local Setup is ready, return to Dashboard or Research Desk. For privacy questions, read Privacy & Protection. For account questions, read Account & Access. For bugs or setup issues, use Contact Us.",
+        body: "After AI is ready, open a project and use ScholarAsk for a real research question. For privacy questions, read Privacy & Protection. For account questions, read Account & Access. For bugs or setup issues, use Contact Us.",
       },
     ],
     related: ["privacy-protection", "getting-started", "research-workflow"],
@@ -272,26 +245,26 @@ export const helpArticles = {
   "privacy-protection": {
     title: "Privacy & Protection in Cerise Scholar",
     intro:
-      "Understand what stays on your laptop, what may sync, and how Cerise Scholar protects private research workflows.",
-    updated: "May 13, 2026",
+      "Understand hosted storage, AI processing, account data, and support boundaries.",
+    updated: "July 7, 2026",
     category: "Privacy & Protection",
     previewLabel: "Privacy at a glance",
     previewTitle: "The privacy boundaries Cerise should make clear before you work.",
     previewItems: [
-      "Local by default",
-      "Sync only where stated",
-      "You control folder access",
-      "Hosted features are labeled",
-      "Security checks matter",
+      "Hosted project workspace",
+      "AI provider boundary",
+      "Support boundaries",
+      "Account controls",
+      "Good privacy habits",
     ],
     sections: [
       {
-        heading: "Local by default",
-        body: "Cerise Scholar is designed so private source-file work can stay tied to your trusted laptop. Research folders, local indexes, private notes, local drafts, and local AI outputs should remain on your device unless you choose a hosted feature that clearly says otherwise.",
+        heading: "Hosted project workspace",
+        body: "Cerise Scholar stores project records and selected research materials through the hosted app and Supabase-backed workflows so your work can move with your account.",
       },
       {
-        heading: "What stays on your laptop",
-        body: "Private PDFs, drafts, notes, source folders, local indexes, and private research outputs are intended to remain local. Cerise should not upload private source files by default or silently use them for hosted processing.",
+        heading: "AI provider boundary",
+        body: "AI requests use OpenRouter through the included lane or your connected key. Do not include material in a prompt unless you are comfortable using it for the requested AI workflow.",
       },
       {
         heading: "What may sync",
@@ -302,8 +275,8 @@ export const helpArticles = {
         body: "Some optional features may use hosted services for login, support, source discovery, selected AI features, or account functions. When a feature uses hosted processing, the app should make that clear before you continue.",
       },
       {
-        heading: "Research folder access and permissions",
-        body: "You choose which folders Cerise can access. You can review, change, pause, or remove access in Settings. Folder access should remain user controlled and should never expand silently to unrelated folders.",
+        heading: "Account and AI controls",
+        body: "Use Settings to review account preferences, privacy choices, and AI setup. You can disconnect your OpenRouter key from Settings > AI if you no longer want own-key usage.",
       },
       {
         heading: "No private files in support",
@@ -311,22 +284,22 @@ export const helpArticles = {
       },
       {
         heading: "How to review your privacy setup",
-        body: "Go to Settings > Privacy & Security to review data controls, sync behavior, folder access, and security actions. Go to Settings > Local Setup to review local readiness and connected services.",
+        body: "Go to Settings > Privacy & Security to review data controls, sync behavior, and security actions. Go to Settings > AI to review AI lane, own-key status, and usage.",
       },
       {
         heading: "Good privacy habits",
-        body: "Use a trusted laptop, avoid shared accounts, review connected folders, keep research files organized, and do not paste sensitive data into support messages. If you are unsure about a file, do not upload or share it.",
+        body: "Avoid shared accounts, keep research files organized, review what you upload or paste into AI prompts, and do not send sensitive data in support messages.",
       },
       {
         heading: "Where to go next",
-        body: "Read the Privacy Policy for the full policy. Read Local Agent & Setup for local setup details. Use Contact Us if you need help understanding a privacy or setup issue.",
+        body: "Read the Privacy Policy for the full policy. Read AI Setup for AI lane details. Use Contact Us if you need help understanding a privacy or setup issue.",
       },
     ],
-    related: ["local-agent-setup", "account-access", "research-workflow"],
+    related: ["ai-setup", "account-access", "research-workflow"],
   },
   "account-access": {
     title: "Account & Access",
-    intro: "Manage sign-in, Google login, beta access, trusted laptops, and account settings.",
+    intro: "Manage sign-in, Google login, beta access, AI setup, and account settings.",
     updated: "May 13, 2026",
     category: "Account & Access",
     previewLabel: "Access checklist",
@@ -335,7 +308,7 @@ export const helpArticles = {
       "Create or sign in",
       "Confirm your email",
       "Use Google login correctly",
-      "Review trusted device settings",
+      "Review AI settings",
       "Fix common access issues",
     ],
     sections: [
@@ -352,12 +325,12 @@ export const helpArticles = {
         body: "Some features may require beta access or an invite. If you received an invite code, use it during sign-up or in Settings > Account if supported. If your invite is missing or does not work, contact support.",
       },
       {
-        heading: "Trusted devices and account security",
-        body: "A trusted laptop may need its own Local Agent and folder setup before advanced local features work. Account sign-in does not automatically mean every device is ready for private source-file workflows.",
+        heading: "AI settings and account security",
+        body: "Settings > AI shows whether you are using included AI or your own OpenRouter key. Keep your account secure and disconnect keys you no longer want Cerise Scholar to use.",
       },
       {
         heading: "Account profile and preferences",
-        body: "Use Settings > Account to update your profile, display name, email, language, timezone, connected accounts, and account preferences.",
+        body: "Use Settings > Account for your profile, author name, email, and connected accounts. Language and timezone live under Preferences, while optional email choices live under Notifications.",
       },
       {
         heading: "Connected accounts",
@@ -369,14 +342,14 @@ export const helpArticles = {
       },
       {
         heading: "Common sign-in issues",
-        body: "Common issues include using the wrong Google account, beta invite email mismatch, unverified email, missing beta access, or trying to use local features from a laptop that has not completed Local Setup.",
+        body: "Common issues include using the wrong Google account, beta invite email mismatch, unverified email, missing beta access, or browser sessions that need to be refreshed after sign-in.",
       },
       {
         heading: "Where to go next",
-        body: "Read Getting Started for the first-use flow. Read Local Agent & Setup for trusted laptop readiness. Read Privacy & Protection for privacy boundaries. Use Contact Us for account access issues.",
+        body: "Read Getting Started for the first-use flow. Read AI Setup for AI lane details. Read Privacy & Protection for privacy boundaries. Use Contact Us for account access issues.",
       },
     ],
-    related: ["getting-started", "local-agent-setup", "privacy-protection"],
+    related: ["getting-started", "ai-setup", "privacy-protection"],
   },
   "research-workflow": {
     title: "Research Workflow in Cerise Scholar",
@@ -425,8 +398,8 @@ export const helpArticles = {
         body: "Move from synthesis into draft sections. Review evidence, citations, gaps, and unclear claims before exporting or submitting work.",
       },
       {
-        heading: "Use Course Library alongside research",
-        body: "Course Library supports skill-building, such as evidence synthesis, citation mapping, and methods review. Course progress should support research work without replacing project-level evidence tracking.",
+        heading: "Use Evidence Library alongside ScholarAsk",
+        body: "Save useful ScholarAsk articles to Evidence Library so you can reopen, compare, export, or remove them without mixing in uploaded workspace documents.",
       },
       {
         heading: "Workflow best practices",
@@ -434,10 +407,10 @@ export const helpArticles = {
       },
       {
         heading: "Where to go next",
-        body: "Use Research Desk for project work, Course Library for skill support, Getting Started for setup, and Contact Us if something in the workflow is confusing.",
+        body: "Use Projects to choose your research, ScholarAsk to explore sources, Evidence Library to manage saved articles, and Contact Us if something in the workflow is confusing.",
       },
     ],
-    related: ["getting-started", "privacy-protection", "local-agent-setup"],
+    related: ["getting-started", "privacy-protection", "ai-setup"],
   },
 } satisfies Record<string, HelpArticle>;
 

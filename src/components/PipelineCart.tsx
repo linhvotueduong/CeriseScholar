@@ -57,7 +57,7 @@ export default function PipelineCart({ stages }: PipelineCartProps) {
     localStorage.setItem("cerise-flow-step", "0");
     setShowCart(false);
     // First go to create project
-    window.location.href = "/projects-preview";
+    window.location.href = "/projects";
   };
 
   return (

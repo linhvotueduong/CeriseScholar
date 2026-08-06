@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CERISE_COMMUNITY_URL } from "@/lib/community";
 
 const supportCards = [
   {
@@ -15,9 +16,9 @@ const supportCards = [
   },
   {
     title: "Ask the community",
-    body: "Bring research workflow questions, setup notes, and study ideas to Cerise Space.",
-    cta: "Open Cerise Space",
-    href: "/dashboard/space",
+    body: "Bring research workflow questions, setup notes, and study ideas to our community on Reddit.",
+    cta: "Open Cerise Community ↗",
+    href: CERISE_COMMUNITY_URL,
   },
 ];
 
@@ -32,12 +33,23 @@ export default function HelpSupportOptions() {
           >
             <h2 className="text-sm font-black tracking-normal text-[#1a1208]">{card.title}</h2>
             <p className="mt-3 min-h-[54px] text-xs leading-5 text-[#7a6a5a]">{card.body}</p>
-            <Link
-              className="mt-5 inline-flex h-7 items-center rounded-full border border-[#d4cdc5] bg-[#faf7f0] px-3 text-[11px] font-black text-[#1a1208] no-underline transition hover:bg-[#1a1208] hover:text-white"
-              href={card.href}
-            >
-              {card.cta}
-            </Link>
+            {card.href.startsWith("http") ? (
+              <a
+                className="mt-5 inline-flex h-7 items-center rounded-full border border-[#d4cdc5] bg-[#faf7f0] px-3 text-[11px] font-black text-[#1a1208] no-underline transition hover:bg-[#1a1208] hover:text-white"
+                href={card.href}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {card.cta}
+              </a>
+            ) : (
+              <Link
+                className="mt-5 inline-flex h-7 items-center rounded-full border border-[#d4cdc5] bg-[#faf7f0] px-3 text-[11px] font-black text-[#1a1208] no-underline transition hover:bg-[#1a1208] hover:text-white"
+                href={card.href}
+              >
+                {card.cta}
+              </Link>
+            )}
           </article>
         ))}
       </div>

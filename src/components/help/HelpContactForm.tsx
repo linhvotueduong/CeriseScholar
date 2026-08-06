@@ -170,7 +170,7 @@ export default function HelpContactForm({ defaultRequestType = "" }: HelpContact
             className={fieldClass}
             maxLength={120}
             onChange={(event) => setArea(event.target.value)}
-            placeholder="e.g., Research Desk > Project Alpha"
+            placeholder="e.g., ScholarAsk > Project Alpha"
             type="text"
             value={area}
           />
@@ -182,7 +182,7 @@ export default function HelpContactForm({ defaultRequestType = "" }: HelpContact
             className={fieldClass}
             maxLength={160}
             onChange={(event) => setContext(event.target.value)}
-            placeholder="MacBook, mobile, Chrome, Local Agent..."
+            placeholder="MacBook, mobile, Chrome, Settings > AI..."
             type="text"
             value={context}
           />

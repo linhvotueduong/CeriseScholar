@@ -3,6 +3,7 @@ import Link from "next/link";
 import AppShell from "@/components/app-shell/AppShell";
 import { AppPageFrame, ContactPageTemplate } from "@/components/app-ui/LayoutGrids";
 import HelpContactForm from "@/components/help/HelpContactForm";
+import { CERISE_COMMUNITY_URL } from "@/lib/community";
 
 export const metadata: Metadata = {
   title: "Contact Us | Cerise Scholar",
@@ -17,7 +18,7 @@ const quickCards = [
 
 const beforeSendCards = [
   ["Email", "cerisescholar@gmail.com", "Best for private account or setup questions.", "mailto:cerisescholar@gmail.com"],
-  ["Community", "Cerise Space", "Ask research workflow questions with other students.", "/dashboard/space"],
+  ["Community", "Cerise Community", "Ask research workflow questions with other students on Reddit.", CERISE_COMMUNITY_URL],
   ["Safety", "No private files", "Do not send passwords, source files, datasets, or auth codes.", ""],
   ["Helpful context", "Page, device, result", "Tell us where it happened and what you expected.", ""],
 ];
@@ -74,7 +75,17 @@ export default async function ContactPage({
                       <p className="mt-2 text-xs leading-5 text-[#625a52]">{body}</p>
                     </div>
                   );
-                  return href ? (
+                  return href?.startsWith("http") ? (
+                    <a
+                      className="text-[#111111] no-underline"
+                      href={href}
+                      key={label}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {card}
+                    </a>
+                  ) : href ? (
                     <Link className="text-[#111111] no-underline" href={href} key={label}>
                       {card}
                     </Link>
@@ -112,14 +123,14 @@ export default async function ContactPage({
             <SideCard title="Useful links">
               <UsefulLink href="/help/privacy" label="Privacy Policy" />
               <UsefulLink href="/help/terms" label="Terms of Use" />
-              <UsefulLink href="/help/articles/local-agent-setup" label="Local Agent & Setup" />
+              <UsefulLink href="/help/articles/ai-setup" label="AI Setup" />
               <UsefulLink href="/help/articles/research-workflow" label="Research Workflow" />
             </SideCard>
 
             <SideCard title="Other support options">
               <UsefulLink href="/help/contact?type=bug" label="Report issue" />
               <UsefulLink href="/help/contact?type=feature" label="Request feature" />
-              <UsefulLink href="/dashboard/space" label="Ask Cerise Space" />
+              <UsefulLink href={CERISE_COMMUNITY_URL} label="Open Cerise Community ↗" />
             </SideCard>
           </aside>
         </ContactPageTemplate>
@@ -147,10 +158,25 @@ function Response({ label, value }: { label: string; value: string }) {
 }
 
 function UsefulLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link className="flex items-center justify-between border-t border-[#eeeae5] py-2.5 text-[13px] font-semibold text-[#111111] no-underline first:border-t-0" href={href}>
+  const className = "flex items-center justify-between border-t border-[#eeeae5] py-2.5 text-[13px] font-semibold text-[#111111] no-underline first:border-t-0";
+  const content = (
+    <>
       {label}
       <span className="text-[#625a52]">-&gt;</span>
+    </>
+  );
+
+  if (href.startsWith("http")) {
+    return (
+      <a className={className} href={href} rel="noopener noreferrer" target="_blank">
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link className={className} href={href}>
+      {content}
     </Link>
   );
 }
